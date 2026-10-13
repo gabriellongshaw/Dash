@@ -8,6 +8,12 @@
   .modal {
     padding: 30px 28px 24px;
   }
+  .account-name {
+    display: inline;
+  }
+  .item-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
   .control-btn {
     width: 80px;
     height: 80px;
@@ -32,5 +38,14 @@
   }
   .credits-container {
     font-size: 0.85rem;
+  }
+  .shop-bar {
+    padding-top: 18px;
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+  .home-account {
+    top: 18px;
+    right: 22px;
   }
 }

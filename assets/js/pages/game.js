@@ -1,6 +1,8 @@
 import { Game } from '../components/game.js';
 import { onThemeChange, detectTouch } from '../core/theme.js';
-import { getBest, setBest } from '../core/storage.js';
+import { profile } from '../core/profile.js';
+import { resolveLook } from '../core/cosmetics.js';
+import { signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 
 const $ = id => document.getElementById(id);
@@ -8,6 +10,7 @@ const $ = id => document.getElementById(id);
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
   initPageFadeIn();
+  profile.init();
 
   const scoreEl = $('score');
   const bestEl = $('best');
@@ -18,10 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let overReady = false;
   let overTimer = 0;
 
-  bestEl.textContent = `Best ${getBest()}`;
+  bestEl.textContent = `Best ${profile.state.best}`;
 
   const game = new Game($('game-canvas'), {
-    best: getBest(),
+    best: profile.state.best,
+    getLook: () => resolveLook(profile.state.equipped),
+    hints: () => profile.state.best === 0,
     onScore(score, coins) {
       scoreEl.textContent = score;
       coinsEl.textContent = coins;
@@ -32,10 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     },
     onOver(result) {
-      if (result.isBest) {
-        setBest(result.best);
-        bestEl.textContent = `Best ${result.best}`;
-      }
+      profile.recordRun({ coins: result.coins, score: result.score });
+      bestEl.textContent = `Best ${profile.state.best}`;
+      $('over-note').classList.toggle('hidden', profile.session.status !== 'out');
       $('over-score').textContent = result.score;
       $('over-best').textContent = result.best;
       $('over-coins').textContent = result.coins;
@@ -137,6 +141,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   ['menu-btn', 'quit-btn', 'over-menu-btn'].forEach(id => {
     $(id).addEventListener('click', () => navigateTo('../'));
+  });
+  $('over-shop-btn').addEventListener('click', () => navigateTo('../shop/'));
+  $('over-signin').addEventListener('click', () => signInFlow());
+
+  profile.subscribe(() => {
+    game.setLook(resolveLook(profile.state.equipped));
+    game.best = Math.max(game.best, profile.state.best);
+    if (game.state !== 'playing') bestEl.textContent = `Best ${profile.state.best}`;
+    $('over-note').classList.toggle('hidden', profile.session.status !== 'out' || overOverlay.classList.contains('hidden'));
   });
 
   document.querySelectorAll('.button, .secondary-button, .leave-button, .icon-button').forEach(el => {

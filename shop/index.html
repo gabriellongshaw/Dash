@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Spend your Dash coins on new colours and hats.">
+  <meta name="author" content="Gabriel Longshaw">
+  <title>Dash Shop</title>
+  <meta name="theme-color" content="#f3faf6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1512" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="../assets/images/icon.svg">
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/fonts.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/animations.css">
+  <link rel="stylesheet" href="../assets/css/components/screens.css">
+  <link rel="stylesheet" href="../assets/css/components/buttons.css">
+  <link rel="stylesheet" href="../assets/css/components/hud.css">
+  <link rel="stylesheet" href="../assets/css/components/account.css">
+  <link rel="stylesheet" href="../assets/css/components/shop.css">
+  <link rel="stylesheet" href="../assets/css/responsive.css">
+</head>
+<body>
+  <div class="page shop-page">
+    <div class="shop-scroll">
+      <div class="shop-inner">
+        <h1 class="shop-title">Shop</h1>
+        <div class="shop-preview">
+          <canvas id="preview-canvas"></canvas>
+          <span class="preview-name" id="preview-name"></span>
+        </div>
+        <p class="shop-note hidden" id="shop-note">
+          <span>Sign in to keep your coins and items on every device.</span>
+          <button class="tertiary-button" id="note-signin">Sign in</button>
+        </p>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-kind="skin" role="tab">Colours</button>
+          <button class="tab" data-kind="hat" role="tab">Hats</button>
+        </div>
+        <div class="item-grid" id="item-grid"></div>
+      </div>
+    </div>
+
+    <div class="shop-bar">
+      <button class="leave-button" id="back-btn" aria-label="Back to menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        <span class="leave-label">Menu</span>
+      </button>
+      <div class="shop-bar-right">
+        <div class="coin-pill"><span class="coin-dot"></span><span id="wallet">0</span></div>
+        <div class="account" id="account"></div>
+      </div>
+    </div>
+
+    <div class="shop-action">
+      <button class="button" id="action-btn">Equip</button>
+    </div>
+  </div>
+  <script type="module" src="../assets/js/pages/shop.js"></script>
+</body>
+</html>

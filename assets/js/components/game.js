@@ -22,9 +22,11 @@ export class Game {
     this.spawner = new Spawner();
     this.particles = new Particles();
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.look = hooks.getLook ? hooks.getLook() : {};
     this.time = 0;
     this.shake = 0;
     this.dustClock = 0;
+    this.sparkClock = 0;
     this.speed = 0;
     this.coast = 0;
     this.last = 0;
@@ -55,6 +57,10 @@ export class Game {
     this.world.resize(this.ctx, this.viewW, this.viewH, this.groundY, this.palette);
   }
 
+  setLook(look) {
+    this.look = look;
+  }
+
   reset() {
     this.dist = 0;
     this.coins = 0;
@@ -63,7 +69,7 @@ export class Game {
     this.coast = 0;
     this.shake = 0;
     this.particles.clear();
-    this.spawner.reset();
+    this.spawner.reset(false);
     this.runner.reset(this.runner.x, this.groundY);
     this.state = 'ready';
     this.emitScore();
@@ -71,6 +77,7 @@ export class Game {
 
   start() {
     this.reset();
+    this.spawner.reset(this.hooks.hints ? this.hooks.hints() : false);
     this.state = 'playing';
   }
 
@@ -102,7 +109,7 @@ export class Game {
         l1: 0.5,
         z0: 2,
         z1: 4,
-        color: this.palette.runner,
+        color: this.bodyColor(),
         vx: -this.speed * 0.3
       });
     }
@@ -110,6 +117,10 @@ export class Game {
 
   slide(down) {
     if (this.state === 'playing' || this.state === 'ready') this.runner.setSlide(down);
+  }
+
+  bodyColor() {
+    return (this.look.skin && this.look.skin.runner) || this.palette.runner;
   }
 
   emitScore() {
@@ -120,8 +131,8 @@ export class Game {
     }
   }
 
-  emitDust(count, a0, a1, s0, s1) {
-    this.particles.emit(this.runner.x + 17, this.groundY - 2, count, {
+  emitDust(count, a0, a1, s0, s1, dx = 17) {
+    this.particles.emit(this.runner.x + dx, this.groundY - 2, count, {
       a0,
       a1,
       s0,
@@ -135,6 +146,21 @@ export class Game {
     });
   }
 
+  emitSpark() {
+    this.particles.emit(this.runner.x + 8, this.groundY - 3, 1, {
+      a0: -2.9,
+      a1: -2.0,
+      s0: 60,
+      s1: 150,
+      l0: 0.15,
+      l1: 0.32,
+      z0: 1.5,
+      z1: 3,
+      color: (this.look.skin && this.look.skin.scarf) || this.palette.scarf,
+      vx: -this.speed * 0.4
+    });
+  }
+
   die() {
     this.state = 'over';
     this.runner.alive = false;
@@ -143,8 +169,8 @@ export class Game {
     const cx = this.runner.x + 17;
     const cy = this.runner.y - 22;
     const burst = { s0: 120, s1: 420, l0: 0.5, l1: 1, z0: 3, z1: 8, gravity: 900 };
-    this.particles.emit(cx, cy, 24, { ...burst, color: this.palette.runner });
-    this.particles.emit(cx, cy, 8, { ...burst, color: this.palette.scarf });
+    this.particles.emit(cx, cy, 24, { ...burst, color: this.bodyColor() });
+    this.particles.emit(cx, cy, 8, { ...burst, color: (this.look.skin && this.look.skin.scarf) || this.palette.scarf });
     try {
       navigator.vibrate?.(40);
     } catch {}
@@ -177,12 +203,27 @@ export class Game {
     this.speed = Math.min(MAX_SPEED, BASE_SPEED + this.dist * 0.011);
     this.dist += this.speed * h;
     this.world.update(h, this.speed);
-    runner.update(h, this.speed);
+
+    let low = false;
+    for (const o of this.spawner.obstacles) {
+      if (o.kind === 'gate' && o.x < runner.x + 46 && o.x + o.w > runner.x) {
+        low = true;
+        break;
+      }
+    }
+    runner.update(h, this.speed, low);
     this.spawner.update(h, this.speed, this.dist, this.viewW);
 
+    if (runner.slid) this.emitDust(6, -3, -1.8, 40, 110, 8);
     if (runner.landed) this.emitDust(8, -3, -0.15, 60, 160);
     this.dustClock += h;
-    if (runner.grounded && this.dustClock > 0.06) {
+    this.sparkClock += h;
+    if (runner.grounded && runner.sliding) {
+      if (this.sparkClock > 0.035) {
+        this.sparkClock = 0;
+        this.emitSpark();
+      }
+    } else if (runner.grounded && this.dustClock > 0.06) {
       this.dustClock = 0;
       this.emitDust(1, -2.4, -0.8, 20, 70);
     }
@@ -237,8 +278,8 @@ export class Game {
     }
     const speed = this.state === 'over' ? this.coast : this.state === 'ready' ? 150 : this.speed;
     this.world.draw(ctx, speed);
-    this.spawner.draw(ctx, this.palette, this.groundY, this.time);
-    if (this.runner.alive) this.runner.draw(ctx, this.palette, speed, this.time);
+    this.spawner.draw(ctx, this.palette, this.groundY, this.time, this.viewW);
+    if (this.runner.alive) this.runner.draw(ctx, this.palette, speed, this.time, this.look);
     this.particles.draw(ctx);
   }
 }

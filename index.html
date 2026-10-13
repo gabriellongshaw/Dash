@@ -23,17 +23,24 @@
   <link rel="stylesheet" href="assets/css/animations.css">
   <link rel="stylesheet" href="assets/css/components/screens.css">
   <link rel="stylesheet" href="assets/css/components/buttons.css">
+  <link rel="stylesheet" href="assets/css/components/account.css">
+  <link rel="stylesheet" href="assets/css/components/hud.css">
   <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
   <div class="page">
     <canvas id="home-canvas" class="stage-canvas"></canvas>
+    <div class="home-account account" id="account"></div>
     <div class="home-content">
       <h1>Dash</h1>
       <p class="tagline">Run. Jump. Slide. Don't stop.</p>
       <a href="play/" class="button" id="play-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg>
         Play
+      </a>
+      <a href="shop/" class="secondary-button" id="shop-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Shop
       </a>
       <p class="home-best" id="home-best"></p>
       <div class="key-hints">

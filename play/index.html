@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="../assets/css/components/buttons.css">
   <link rel="stylesheet" href="../assets/css/components/hud.css">
   <link rel="stylesheet" href="../assets/css/components/modal.css">
+  <link rel="stylesheet" href="../assets/css/components/account.css">
   <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
@@ -76,7 +77,14 @@
           <div class="stat"><span class="stat-value" id="over-distance">0 m</span><span class="stat-label">Distance</span></div>
         </div>
         <button class="button" id="again-btn">Play again</button>
-        <button class="secondary-button" id="over-menu-btn">Menu</button>
+        <div class="modal-row">
+          <button class="secondary-button" id="over-shop-btn">Shop</button>
+          <button class="secondary-button" id="over-menu-btn">Menu</button>
+        </div>
+        <p class="modal-note hidden" id="over-note">
+          <span>Sign in to save your coins.</span>
+          <button class="tertiary-button" id="over-signin">Sign in</button>
+        </p>
       </div>
     </div>
   </div>

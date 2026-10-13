@@ -118,3 +118,38 @@
 .icon-button:active {
   transform: scale(0.97);
 }
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.button:disabled:active {
+  transform: none;
+}
+
+.tertiary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.5rem 0.9rem;
+  border: none;
+  border-radius: 100px;
+  background: none;
+  color: var(--accent-strong);
+  font-family: var(--font-family);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.tertiary-button:hover {
+  background: var(--secondary-bg);
+}
+
+.tertiary-button:active {
+  transform: scale(0.97);
+}
