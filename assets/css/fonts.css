@@ -1,0 +1,5 @@
+@font-face {
+  font-family: ProductSansRegular;
+  src: url('../fonts/ProductSans-Regular.ttf') format('truetype');
+  font-display: swap;
+}

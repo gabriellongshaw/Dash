@@ -1,0 +1,14 @@
+{
+  "name": "Dash",
+  "short_name": "Dash",
+  "description": "A fast, modern 2D endless runner.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0b1512",
+  "theme_color": "#10b981",
+  "icons": [
+    { "src": "assets/images/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

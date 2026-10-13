@@ -1,0 +1,56 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.25s ease, background 0.2s ease;
+}
+
+h1 {
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--header-color);
+  font-size: clamp(2.6rem, 13vmin, 4.6rem);
+  line-height: 1;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.desktop-only {
+  display: inline-flex;
+}
+
+.touch-only {
+  display: none;
+}
+
+body.touch .desktop-only {
+  display: none;
+}
+
+body.touch .touch-only {
+  display: inline-flex;
+}

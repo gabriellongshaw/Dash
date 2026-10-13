@@ -1,0 +1,105 @@
+.page {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.stage-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.home-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px 20px 26dvh;
+  text-align: center;
+  animation: fadeInUp 0.5s ease both;
+}
+
+.tagline {
+  font-size: clamp(0.95rem, 3.2vmin, 1.15rem);
+  font-weight: 500;
+  color: var(--meta-text);
+}
+
+.home-content .button {
+  margin-top: 6px;
+}
+
+.home-best {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--meta-text);
+  min-height: 1.2em;
+}
+
+.key-hints {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.key-chip {
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--meta-text);
+}
+
+.key-chip kbd {
+  font-family: var(--font-family);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--secondary-bg);
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+
+.credits-container {
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ground-text);
+  text-align: center;
+  pointer-events: none;
+}
+
+.credits-container a {
+  pointer-events: auto;
+}
+
+.credits-link {
+  color: var(--ground-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+.credits-link:hover {
+  color: var(--accent-soft);
+}

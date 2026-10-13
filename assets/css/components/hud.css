@@ -1,0 +1,153 @@
+.hud {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+  pointer-events: none;
+  z-index: 10;
+}
+
+.hud button {
+  pointer-events: auto;
+}
+
+.score-block {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.score {
+  font-size: clamp(1.7rem, 7vmin, 2.4rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.score.bump {
+  animation: scoreBump 0.25s ease;
+}
+
+.best {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--meta-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.coin-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--coin);
+  border: 2px solid var(--coin-dark);
+  flex-shrink: 0;
+}
+
+.start-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+  animation: hintPulse 1.8s ease-in-out infinite;
+}
+
+.hint-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.hint-sub {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--meta-text);
+}
+
+.controls {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  pointer-events: none;
+  z-index: 10;
+}
+
+body.touch .controls {
+  display: flex;
+}
+
+.control-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  touch-action: none;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.control-btn:active,
+.control-btn.held {
+  background: rgba(255, 255, 255, 0.26);
+  transform: scale(0.97);
+}
+
+.control-jump {
+  width: 88px;
+  height: 88px;
+  background: var(--runner);
+  border-color: transparent;
+  color: var(--visor);
+}
+
+.control-jump:active,
+.control-jump.held {
+  background: var(--runner-dark);
+}
