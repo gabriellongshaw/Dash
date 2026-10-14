@@ -8,6 +8,10 @@
   .modal {
     padding: 30px 28px 24px;
   }
+  .account-chip {
+    justify-content: flex-start;
+    padding: 0 14px 0 5px;
+  }
   .account-name {
     display: inline;
   }

@@ -18,8 +18,10 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  justify-content: center;
+  min-width: 40px;
   height: 40px;
-  padding: 0 14px 0 5px;
+  padding: 0 5px;
   border: none;
   border-radius: 999px;
   background: var(--button-secondary-bg);
@@ -46,6 +48,7 @@
   justify-content: center;
   width: 30px;
   height: 30px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--accent);
   color: #ffffff;
