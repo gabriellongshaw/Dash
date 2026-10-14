@@ -3,8 +3,8 @@ import { Runner } from '../components/runner.js';
 import { fitStage } from '../components/stage.js';
 import { mountAccount } from '../components/account.js';
 import { profile } from '../core/profile.js';
-import { resolveLook } from '../core/cosmetics.js';
-import { readPalette, onThemeChange, detectTouch } from '../core/theme.js';
+import { resolveLook, resolveWorld } from '../core/cosmetics.js';
+import { readPalette, onThemeChange, detectTouch, isDark } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { clamp } from '../core/utils.js';
 
@@ -25,6 +25,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('home-canvas');
   const ctx = canvas.getContext('2d');
   const world = new World();
+  world.bindSky(mode => {
+    document.documentElement.dataset.sky = mode;
+  });
+  let theme = resolveWorld(profile.state.equipped.world);
+  world.setTheme(theme, isDark());
+  profile.subscribe(() => {
+    const next = resolveWorld(profile.state.equipped.world);
+    if (next === theme) return;
+    theme = next;
+    world.setTheme(theme, isDark());
+  });
   const runner = new Runner();
   const speed = 220;
   let view;
@@ -35,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resize() {
     view = fitStage(canvas);
     palette = readPalette();
-    world.resize(ctx, view.viewW, view.viewH, view.groundY, palette);
+    world.resize(view.viewW, view.viewH, view.groundY);
     runner.reset(clamp(view.viewW * 0.18, 70, 170), view.groundY);
   }
 
@@ -53,7 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   resize();
   window.addEventListener('resize', resize);
-  onThemeChange(resize);
+  onThemeChange(() => {
+    resize();
+    world.setTheme(theme, isDark());
+  });
   requestAnimationFrame(frame);
 
   document.querySelectorAll('#play-btn, #shop-btn').forEach(link => {

@@ -15,8 +15,8 @@ const defaults = () => ({
   coins: 0,
   best: 0,
   runs: 0,
-  owned: ['skin:emerald', 'hat:none'],
-  equipped: { skin: 'skin:emerald', hat: 'hat:none' }
+  owned: ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'],
+  equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' }
 });
 
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
@@ -28,8 +28,10 @@ function sanitize(raw) {
   if (Array.isArray(data.owned)) data.owned.forEach(id => findItem(id) && owned.add(id));
   const equipped = { ...base.equipped };
   const eq = data.equipped || {};
-  if (owned.has(eq.skin) && kindOf(eq.skin) === 'skin') equipped.skin = eq.skin;
-  if (owned.has(eq.hat) && kindOf(eq.hat) === 'hat') equipped.hat = eq.hat;
+  for (const kind of Object.keys(equipped)) {
+    const id = eq[kind];
+    if (typeof id === 'string' && owned.has(id) && kindOf(id) === kind) equipped[kind] = id;
+  }
   return {
     coins: whole(data.coins),
     best: whole(data.best),

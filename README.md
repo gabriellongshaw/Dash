@@ -16,7 +16,12 @@ Run as far as you can. Coins add 5 points each, and distance adds the rest. The 
 
 ## Shop and Accounts
 
-Coins from every run go into your wallet. Spend them in the shop on character colours and hats.
+Coins from every run go into your wallet. Spend them in the shop on colours, characters, hats and worlds.
+
+- **Characters:** Bot, Slime, Ninja, Fox, Ghost and Astronaut. Every character can be combined with any colour and hat.
+- **Worlds:** Skyline, Desert, Arctic, Neon and Volcano. Each has its own scenery, weather and obstacle colours.
+
+Backgrounds adapt as you run: the sky moves through day, dusk and night, stars and auroras fade in, and the score text switches colour to stay readable. A world starts at day in light mode and at night in dark mode.
 
 Progress is saved on the device as a guest. Signing in with Google saves it to the cloud so it follows you across devices. Any guest progress is merged into the account on first sign-in.
 
@@ -45,8 +50,8 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 - `index.html` — home screen with an animated background
 - `play/` — the game page
 - `shop/` — the shop page
-- `assets/js/core/` — theme, profile (guest and cloud saves), Firebase loader, cosmetics, utilities
-- `assets/js/components/` — game engine, runner, hats, obstacles, world, particles, account UI
+- `assets/js/core/` — theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, utilities
+- `assets/js/components/` — game engine, runner, characters, hats, obstacles, world, particles, account UI
 - `assets/js/pages/` — page entry points
 
 ## Credits

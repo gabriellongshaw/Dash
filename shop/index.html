@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Spend your Dash coins on new colours and hats.">
+  <meta name="description" content="Spend your Dash coins on new colours, characters, hats and worlds.">
   <meta name="author" content="Gabriel Longshaw">
   <title>Dash Shop</title>
   <meta name="theme-color" content="#f3faf6" media="(prefers-color-scheme: light)">
@@ -28,17 +28,21 @@
     <div class="shop-scroll">
       <div class="shop-inner">
         <h1 class="shop-title">Shop</h1>
-        <div class="shop-preview">
+        <div class="shop-preview" id="shop-preview">
           <canvas id="preview-canvas"></canvas>
           <span class="preview-name" id="preview-name"></span>
+          <span class="preview-world" id="preview-world"></span>
         </div>
         <p class="shop-note hidden" id="shop-note">
           <span>Sign in to keep your coins and items on every device.</span>
           <button class="tertiary-button" id="note-signin">Sign in</button>
         </p>
-        <div class="tabs" role="tablist">
-          <button class="tab active" data-kind="skin" role="tab">Colours</button>
-          <button class="tab" data-kind="hat" role="tab">Hats</button>
+        <div class="tabs" id="tabs" role="tablist">
+          <span class="tab-pill" aria-hidden="true"></span>
+          <button class="tab active" data-kind="skin" role="tab" aria-selected="true">Colours</button>
+          <button class="tab" data-kind="char" role="tab" aria-selected="false">Characters</button>
+          <button class="tab" data-kind="hat" role="tab" aria-selected="false">Hats</button>
+          <button class="tab" data-kind="world" role="tab" aria-selected="false">Worlds</button>
         </div>
         <div class="item-grid" id="item-grid"></div>
       </div>

@@ -22,16 +22,7 @@
   --shadow-soft: 0 10px 30px rgba(16, 185, 129, 0.18), 0 2px 8px rgba(16, 38, 27, 0.08);
   --shape-large: 22px;
   --font-family: ProductSansRegular, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --sky-top: #c4f0da;
-  --sky-bottom: #f3faf6;
-  --sun: #ffffff;
-  --cloud: rgba(255, 255, 255, 0.9);
-  --far: #c3ead6;
-  --mid: #9ddcbe;
-  --ground: #14231c;
-  --ground-line: #34d399;
   --ground-text: rgba(232, 247, 239, 0.6);
-  --dust: #e8f7ef;
   --runner: #10b981;
   --runner-dark: #047857;
   --visor: #10261b;
@@ -41,6 +32,8 @@
   --hazard-light: #fda4af;
   --coin: #fbbf24;
   --coin-dark: #d97706;
+  --sky-text: var(--text);
+  --sky-meta: var(--meta-text);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -64,15 +57,6 @@
     --modal-bg: #14231c;
     --modal-text: #e8f7ef;
     --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
-    --sky-top: #0b1512;
-    --sky-bottom: #17382b;
-    --sun: #d7f5e6;
-    --cloud: rgba(110, 231, 183, 0.12);
-    --far: #12281f;
-    --mid: #1a3b2d;
-    --ground: #050c09;
-    --ground-line: #1bb37a;
-    --dust: #6ee7b7;
     --runner: #34d399;
     --runner-dark: #10b981;
     --visor: #0b1512;
@@ -80,4 +64,14 @@
     --hazard-dark: #e11d48;
     --hazard-light: #fecdd3;
   }
+}
+
+[data-sky="dark"] {
+  --sky-text: #e8f7ef;
+  --sky-meta: rgba(232, 247, 239, 0.68);
+}
+
+[data-sky="light"] {
+  --sky-text: #10261b;
+  --sky-meta: rgba(16, 38, 27, 0.62);
 }

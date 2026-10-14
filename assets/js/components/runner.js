@@ -1,5 +1,6 @@
 import { clamp, lerp } from '../core/utils.js';
 import { drawHat } from './hats.js';
+import { drawCharacter, traitsOf } from './characters.js';
 
 export const GRAVITY = 2700;
 export const JUMP_SPEED = 735;
@@ -113,7 +114,8 @@ export class Runner {
     const pose = this.pose;
     const w = lerp(34, 46, pose);
     const h = lerp(46, 28, pose);
-    const legRegion = lerp(9, 0, pose);
+    const traits = traitsOf(look.char);
+    const legRegion = traits.legs ? lerp(9, 0, pose) : 0;
     const bodyH = h - legRegion;
     const sx = 1 + this.squash * 0.45;
     const sy = 1 - this.squash * 0.45;
@@ -128,57 +130,50 @@ export class Runner {
     ctx.rotate(air + lean);
 
     const k = Math.min(1, speed / 700) + pose * 0.3;
-    const scarfY = -h / 2 + lerp(13, 8, pose);
-    const wave = Math.sin(time * 20);
-    ctx.strokeStyle = scarfColor;
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-w / 2 + 4, scarfY);
-    ctx.quadraticCurveTo(-w / 2 - 10 - k * 8, scarfY + wave * 4, -w / 2 - 22 - k * 18, scarfY + 2 + Math.sin(time * 20 + 1.4) * 5);
-    ctx.stroke();
-
-    const swing = this.grounded ? Math.sin(this.clock) * 0.75 : 0;
-    const legLen = lerp(12, 15, pose);
-    const hips = [
-      { x: lerp(-5.5, w / 2 - 16, pose), y: lerp(h / 2 - 12, h / 2 - 9, pose), a: this.grounded ? swing : 0.5 },
-      { x: lerp(6.5, w / 2 - 12, pose), y: lerp(h / 2 - 12, h / 2 - 4, pose), a: this.grounded ? -swing : -0.35 }
-    ];
-    ctx.fillStyle = darkColor;
-    for (const hip of hips) {
-      ctx.save();
-      ctx.translate(hip.x, hip.y);
-      ctx.rotate(lerp(hip.a, -1.45, pose));
+    if (traits.scarf) {
+      const scarfY = traits.scarf(h, pose);
+      const wave = Math.sin(time * 20);
+      ctx.strokeStyle = scarfColor;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.roundRect(-4.5, 0, 9, legLen, 4);
-      ctx.fill();
-      ctx.restore();
+      ctx.moveTo(-w / 2 + 4, scarfY);
+      ctx.quadraticCurveTo(-w / 2 - 10 - k * 8, scarfY + wave * 4, -w / 2 - 22 - k * 18, scarfY + 2 + Math.sin(time * 20 + 1.4) * 5);
+      ctx.stroke();
     }
 
-    ctx.fillStyle = bodyColor;
-    ctx.beginPath();
-    ctx.roundRect(-w / 2, -h / 2, w, bodyH, lerp(11, 13, pose));
-    ctx.fill();
+    if (traits.legs) {
+      const swing = this.grounded ? Math.sin(this.clock) * 0.75 : 0;
+      const legLen = lerp(12, 15, pose);
+      const hips = [
+        { x: lerp(-5.5, w / 2 - 16, pose), y: lerp(h / 2 - 12, h / 2 - 9, pose), a: this.grounded ? swing : 0.5 },
+        { x: lerp(6.5, w / 2 - 12, pose), y: lerp(h / 2 - 12, h / 2 - 4, pose), a: this.grounded ? -swing : -0.35 }
+      ];
+      ctx.fillStyle = darkColor;
+      for (const hip of hips) {
+        ctx.save();
+        ctx.translate(hip.x, hip.y);
+        ctx.rotate(lerp(hip.a, -1.45, pose));
+        ctx.beginPath();
+        ctx.roundRect(-4.5, 0, 9, legLen, 4);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
 
-    ctx.globalAlpha = 0.2;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.roundRect(-w / 2 + 5, -h / 2 + 4, w - 18, 4, 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    const vw = 19;
-    const vh = lerp(12, 9, pose);
-    const vx = w / 2 - lerp(20, 22, pose);
-    const vy = -h / 2 + lerp(9, 6, pose);
-    ctx.fillStyle = visorColor;
-    ctx.beginPath();
-    ctx.roundRect(vx, vy, vw, vh, vh / 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(vx + vw - 6.5, vy + vh * 0.4, lerp(2.2, 1.8, pose), 0, Math.PI * 2);
-    ctx.fill();
+    drawCharacter(ctx, look.char, {
+      w,
+      h,
+      pose,
+      bodyH,
+      time,
+      clock: this.clock,
+      hat: !!look.hat && look.hat !== 'hat:none',
+      body: bodyColor,
+      dark: darkColor,
+      visor: visorColor,
+      scarf: scarfColor
+    });
 
     if (look.hat && look.hat !== 'hat:none') {
       ctx.save();

@@ -3,7 +3,7 @@ import { World } from './world.js';
 import { Spawner } from './obstacles.js';
 import { Particles } from './particles.js';
 import { fitStage } from './stage.js';
-import { readPalette } from '../core/theme.js';
+import { readPalette, isDark } from '../core/theme.js';
 import { clamp, overlaps } from '../core/utils.js';
 
 const BASE_SPEED = 300;
@@ -16,8 +16,13 @@ export class Game {
     this.ctx = canvas.getContext('2d');
     this.hooks = hooks;
     this.best = hooks.best || 0;
-    this.palette = readPalette();
     this.world = new World();
+    this.world.bindSky(mode => {
+      document.documentElement.dataset.sky = mode;
+    });
+    this.theme = hooks.getWorld ? hooks.getWorld() : null;
+    this.palette = this.buildPalette();
+    if (this.theme) this.world.setTheme(this.theme, isDark());
     this.runner = new Runner();
     this.spawner = new Spawner();
     this.particles = new Particles();
@@ -49,12 +54,23 @@ export class Game {
     this.runner.x = clamp(this.viewW * 0.18, 70, 170);
     this.runner.groundY = this.groundY;
     if (this.runner.grounded) this.runner.y = this.groundY;
-    this.world.resize(this.ctx, this.viewW, this.viewH, this.groundY, this.palette);
+    this.world.resize(this.viewW, this.viewH, this.groundY);
+  }
+
+  buildPalette() {
+    return { ...readPalette(), ...((this.theme && this.theme.hazard) || {}) };
   }
 
   setPalette() {
-    this.palette = readPalette();
-    this.world.resize(this.ctx, this.viewW, this.viewH, this.groundY, this.palette);
+    this.palette = this.buildPalette();
+    this.world.setTheme(this.theme || this.world.theme, isDark());
+  }
+
+  setWorld(theme) {
+    if (!theme || theme === this.theme) return;
+    this.theme = theme;
+    this.palette = this.buildPalette();
+    this.world.setTheme(theme, isDark());
   }
 
   setLook(look) {
@@ -69,6 +85,7 @@ export class Game {
     this.coast = 0;
     this.shake = 0;
     this.particles.clear();
+    this.world.restart();
     this.spawner.reset(false);
     this.runner.reset(this.runner.x, this.groundY);
     this.state = 'ready';
@@ -141,7 +158,7 @@ export class Game {
       l1: 0.5,
       z0: 2,
       z1: 4.5,
-      color: this.palette.dust,
+      color: this.world.p.dust,
       vx: -this.speed * 0.35
     });
   }

@@ -1,11 +1,14 @@
 import { profile } from '../core/profile.js';
-import { SKINS, HATS, findItem, resolveLook } from '../core/cosmetics.js';
-import { readPalette, onThemeChange, detectTouch } from '../core/theme.js';
-import { drawRunnerTo } from '../components/preview.js';
+import { SKINS, CHARACTERS, HATS, WORLDS, findItem, resolveLook, resolveWorld } from '../core/cosmetics.js';
+import { readPalette, onThemeChange, detectTouch, isDark } from '../core/theme.js';
+import { drawRunnerTo, drawWorldTo, createScene } from '../components/preview.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 
 const $ = id => document.getElementById(id);
+
+const KINDS = ['skin', 'char', 'hat', 'world'];
+const LISTS = { skin: SKINS, char: CHARACTERS, hat: HATS, world: WORLDS };
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
@@ -16,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const grid = $('item-grid');
   const actionBtn = $('action-btn');
   const previewCanvas = $('preview-canvas');
+  const previewBox = $('shop-preview');
+  const tabs = $('tabs');
   const note = $('shop-note');
   let palette = readPalette();
   let kind = 'skin';
@@ -23,33 +28,43 @@ document.addEventListener('DOMContentLoaded', () => {
   const selected = { ...profile.state.equipped };
 
   const lookFor = () => resolveLook(selected);
-  const listFor = k => (k === 'skin' ? SKINS : HATS);
+  const themeFor = () => resolveWorld(selected.world);
 
-  function tagFor(item) {
-    const { equipped } = profile.state;
-    if (equipped.skin === item.id || equipped.hat === item.id) return 'Equipped';
-    if (profile.owns(item.id)) return 'Owned';
-    return null;
+  let scene;
+
+  function setScene() {
+    scene = createScene(themeFor(), isDark(), 7000);
+    scene.bindSky(mode => {
+      previewBox.dataset.sky = mode;
+    });
   }
 
+  setScene();
+
   function drawCards() {
-    const cards = grid.querySelectorAll('.item-card');
-    cards.forEach(card => {
+    const base = lookFor();
+    grid.querySelectorAll('.item-card').forEach(card => {
       const item = findItem(card.dataset.id);
       const canvas = card.querySelector('canvas');
-      const look = item.id.startsWith('skin:')
-        ? { skin: item, hat: 'hat:none' }
-        : { skin: lookFor().skin, hat: item.id };
+      if (kind === 'world') {
+        drawWorldTo(canvas, item, isDark());
+        return;
+      }
+      const look = { ...base, hat: 'hat:none' };
+      if (kind === 'skin') look.skin = item;
+      else if (kind === 'char') look.char = item.id;
+      else look.hat = item.id;
       drawRunnerTo(canvas, palette, look, { scale: 1 });
     });
   }
 
   function renderGrid() {
     grid.innerHTML = '';
-    for (const item of listFor(kind)) {
+    LISTS[kind].forEach((item, index) => {
       const card = document.createElement('button');
       card.className = 'item-card';
       card.dataset.id = item.id;
+      card.style.setProperty('--n', index);
       const canvas = document.createElement('canvas');
       canvas.className = 'item-canvas';
       const name = document.createElement('span');
@@ -59,11 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
       tag.className = 'item-tag';
       card.append(canvas, name, tag);
       card.addEventListener('click', () => {
+        const before = selected[kind];
         selected[kind] = item.id;
+        if (kind === 'world' && before !== item.id) setScene();
         refresh();
       });
       grid.appendChild(card);
-    }
+    });
     refresh();
   }
 
@@ -86,8 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
         tag.append(dot, String(item.price));
       }
     });
+    const parts = [];
+    if (selected.char !== 'char:bot') parts.push(findItem(selected.char).name);
+    parts.push(findItem(selected.skin).name);
+    if (selected.hat !== 'hat:none') parts.push(findItem(selected.hat).name);
+    $('preview-name').textContent = parts.join(' · ');
+    $('preview-world').textContent = findItem(selected.world).name;
     const item = findItem(selected[kind]);
-    $('preview-name').textContent = findItem(selected.skin).name + (selected.hat !== 'hat:none' ? ' · ' + findItem(selected.hat).name : '');
     const owned = profile.owns(item.id);
     actionBtn.disabled = false;
     if (equipped[kind] === item.id) {
@@ -123,10 +145,17 @@ document.addEventListener('DOMContentLoaded', () => {
     busy = false;
   });
 
-  document.querySelectorAll('.tab').forEach(tab => {
+  const tabButtons = [...document.querySelectorAll('.tab')];
+  tabButtons.forEach(tab => {
     tab.addEventListener('click', () => {
+      if (kind === tab.dataset.kind) return;
       kind = tab.dataset.kind;
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+      tabs.style.setProperty('--i', KINDS.indexOf(kind));
+      tabButtons.forEach(t => {
+        const active = t === tab;
+        t.classList.toggle('active', active);
+        t.setAttribute('aria-selected', active);
+      });
       renderGrid();
     });
   });
@@ -136,13 +165,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   profile.subscribe(() => {
     const { equipped } = profile.state;
-    if (!profile.owns(selected.skin)) selected.skin = equipped.skin;
-    if (!profile.owns(selected.hat)) selected.hat = equipped.hat;
+    let worldChanged = false;
+    for (const k of KINDS) {
+      if (!profile.owns(selected[k])) {
+        selected[k] = equipped[k];
+        if (k === 'world') worldChanged = true;
+      }
+    }
+    if (worldChanged) setScene();
     refresh();
   });
 
   onThemeChange(() => {
     palette = readPalette();
+    setScene();
     drawCards();
   });
 
@@ -158,9 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let last = performance.now();
   let time = 0;
   function loop(now) {
-    time += Math.min((now - last) / 1000, 0.05);
+    const dt = Math.min((now - last) / 1000, 0.05);
+    time += dt;
     last = now;
-    drawRunnerTo(previewCanvas, palette, lookFor(), { scale: 2.4, time, clock: time * 11, ground: true });
+    scene.update(dt, 260);
+    drawRunnerTo(previewCanvas, palette, lookFor(), { scale: 1.7, time, clock: time * 11, scene });
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

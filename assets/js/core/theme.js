@@ -1,13 +1,4 @@
 const VARS = {
-  skyTop: '--sky-top',
-  skyBottom: '--sky-bottom',
-  sun: '--sun',
-  cloud: '--cloud',
-  far: '--far',
-  mid: '--mid',
-  ground: '--ground',
-  groundLine: '--ground-line',
-  dust: '--dust',
   runner: '--runner',
   runnerDark: '--runner-dark',
   visor: '--visor',
@@ -37,3 +28,5 @@ export function detectTouch() {
     document.body.classList.add('touch');
   }
 }
+
+export const isDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;

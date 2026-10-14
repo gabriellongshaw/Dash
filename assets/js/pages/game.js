@@ -1,7 +1,7 @@
 import { Game } from '../components/game.js';
 import { onThemeChange, detectTouch } from '../core/theme.js';
 import { profile } from '../core/profile.js';
-import { resolveLook } from '../core/cosmetics.js';
+import { resolveLook, resolveWorld } from '../core/cosmetics.js';
 import { signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 
@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const game = new Game($('game-canvas'), {
     best: profile.state.best,
     getLook: () => resolveLook(profile.state.equipped),
+    getWorld: () => resolveWorld(profile.state.equipped.world),
     hints: () => profile.state.best === 0,
     onScore(score, coins) {
       scoreEl.textContent = score;
@@ -147,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   profile.subscribe(() => {
     game.setLook(resolveLook(profile.state.equipped));
+    game.setWorld(resolveWorld(profile.state.equipped.world));
     game.best = Math.max(game.best, profile.state.best);
     if (game.state !== 'playing') bestEl.textContent = `Best ${profile.state.best}`;
     $('over-note').classList.toggle('hidden', profile.session.status !== 'out' || overOverlay.classList.contains('hidden'));

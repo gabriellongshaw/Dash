@@ -22,3 +22,26 @@ export function seeded(seed) {
 export function overlaps(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
+
+export function parseColor(str) {
+  const s = str.trim();
+  if (s[0] === '#') {
+    const hex = s.length === 4 ? s.slice(1).replace(/./g, c => c + c) : s.slice(1);
+    const n = parseInt(hex, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1];
+  }
+  const m = s.match(/[\d.]+/g).map(Number);
+  return [m[0], m[1], m[2], m.length > 3 ? m[3] : 1];
+}
+
+export function mixColor(a, b, t) {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t), lerp(a[3], b[3], t)];
+}
+
+export function tintColor(a, b, t) {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t), a[3]];
+}
+
+export const toCss = c => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${Math.round(c[3] * 1000) / 1000})`;
+
+export const luminance = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
