@@ -110,6 +110,149 @@ const hats = {
     ctx.lineTo(5, -1);
     ctx.fill();
   },
+  'hat:sprout'(ctx, info) {
+    ctx.strokeStyle = '#15803d';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 1);
+    ctx.lineTo(0, -8);
+    ctx.stroke();
+    const sway = Math.sin(info.time * 4) * 0.12;
+    ctx.fillStyle = '#4ade80';
+    ctx.save();
+    ctx.translate(0, -8);
+    ctx.rotate(-0.6 + sway);
+    ctx.beginPath();
+    ctx.ellipse(-6, 0, 7, 3.2, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#22c55e';
+    ctx.save();
+    ctx.translate(0, -8);
+    ctx.rotate(0.6 - sway);
+    ctx.beginPath();
+    ctx.ellipse(6, 0, 7, 3.2, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  },
+  'hat:party'(ctx) {
+    ctx.fillStyle = '#ec4899';
+    ctx.beginPath();
+    ctx.moveTo(-10, 1);
+    ctx.lineTo(0, -26);
+    ctx.lineTo(10, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = '#fde047';
+    for (let i = -2; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-14, -6 + i * 9);
+      ctx.lineTo(14, -16 + i * 9);
+      ctx.lineTo(14, -12 + i * 9);
+      ctx.lineTo(-14, -2 + i * 9);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(0, -27, 3.4, 0, TAU);
+    ctx.fill();
+  },
+  'hat:chef'(ctx) {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#d1d5db';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(-8, -10, 7, 0, TAU);
+    ctx.arc(0, -14, 8, 0, TAU);
+    ctx.arc(8, -10, 7, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(-12, -6, 24, 9, 2);
+    ctx.fill();
+    ctx.stroke();
+  },
+  'hat:cowboy'(ctx) {
+    ctx.fillStyle = '#92400e';
+    ctx.beginPath();
+    ctx.roundRect(-9, -15, 18, 16, [6, 6, 0, 0]);
+    ctx.fill();
+    ctx.fillStyle = '#b45309';
+    ctx.beginPath();
+    ctx.moveTo(-20, -6);
+    ctx.quadraticCurveTo(-14, 5, 0, 3);
+    ctx.quadraticCurveTo(14, 5, 20, -6);
+    ctx.quadraticCurveTo(14, -1, 0, -1);
+    ctx.quadraticCurveTo(-14, -1, -20, -6);
+    ctx.fill();
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(-9, -6, 18, 3);
+  },
+  'hat:viking'(ctx) {
+    ctx.fillStyle = '#fde68a';
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(side * 11, -3);
+      ctx.quadraticCurveTo(side * 22, -3, side * 21, -17);
+      ctx.quadraticCurveTo(side * 17, -8, side * 8, -7);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = '#9ca3af';
+    ctx.beginPath();
+    ctx.arc(0, 1, 13, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#6b7280';
+    ctx.fillRect(-13, -4, 26, 4);
+    ctx.fillStyle = '#d1d5db';
+    ctx.fillRect(-1.5, -14, 3, 10);
+  },
+  'hat:pirate'(ctx) {
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.moveTo(-19, 2);
+    ctx.quadraticCurveTo(-14, -9, -6, -12);
+    ctx.lineTo(6, -12);
+    ctx.quadraticCurveTo(14, -9, 19, 2);
+    ctx.quadraticCurveTo(0, -3, -19, 2);
+    ctx.fill();
+    ctx.fillStyle = '#f9fafb';
+    ctx.beginPath();
+    ctx.arc(0, -6, 2.6, 0, TAU);
+    ctx.fill();
+    ctx.fillRect(-3, -4, 6, 2);
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(-1, -6.3, 0.7, 0, TAU);
+    ctx.arc(1, -6.3, 0.7, 0, TAU);
+    ctx.fill();
+  },
+  'hat:flames'(ctx, info) {
+    for (let i = -1; i <= 1; i++) {
+      const h = 14 + Math.sin(info.time * 9 + i * 1.7) * 4 + (i === 0 ? 6 : 0);
+      const x = i * 8;
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.moveTo(x - 5, 1);
+      ctx.quadraticCurveTo(x - 6, -h * 0.5, x, -h);
+      ctx.quadraticCurveTo(x + 6, -h * 0.5, x + 5, 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.moveTo(x - 2.5, 1);
+      ctx.quadraticCurveTo(x - 3, -h * 0.25, x, -h * 0.55);
+      ctx.quadraticCurveTo(x + 3, -h * 0.25, x + 2.5, 1);
+      ctx.closePath();
+      ctx.fill();
+    }
+  },
   'hat:wizard'(ctx) {
     ctx.fillStyle = '#6d28d9';
     ctx.beginPath();

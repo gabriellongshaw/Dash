@@ -8,7 +8,12 @@ export const TRAITS = {
   'char:slime': { legs: false, scarf: null },
   'char:fox': { legs: true, scarf: null },
   'char:ghost': { legs: false, scarf: null },
-  'char:astronaut': { legs: true, scarf: null }
+  'char:astronaut': { legs: true, scarf: null },
+  'char:frog': { legs: true, scarf: null },
+  'char:cat': { legs: true, scarf: null },
+  'char:dino': { legs: true, scarf: null },
+  'char:alien': { legs: true, scarf: null },
+  'char:penguin': { legs: true, scarf: null }
 };
 
 export const traitsOf = id => TRAITS[id] || TRAITS['char:bot'];
@@ -238,6 +243,217 @@ const drawers = {
     ctx.roundRect(vx + 4, vy + 3, 8, 3, 1.5);
     ctx.fill();
     ctx.globalAlpha = 1;
+  },
+  'char:frog'(ctx, g) {
+    const { w, h, pose } = g;
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(13, 13, pose));
+    ctx.fill();
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 12, -h / 2 + g.bodyH - 8, 12, 5.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    const ey = -h / 2 + lerp(3, 2, pose);
+    eye(ctx, w / 2 - 17, ey, 6, g.visor);
+    eye(ctx, w / 2 - 5, ey, 6, g.visor);
+    ctx.strokeStyle = g.visor;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 10, -h / 2 + lerp(14, 11, pose), 8, 0.25, Math.PI - 0.25);
+    ctx.stroke();
+  },
+
+  'char:cat'(ctx, g) {
+    const { w, h, pose } = g;
+    ctx.strokeStyle = g.body;
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 3, -h / 2 + lerp(26, 18, pose));
+    ctx.quadraticCurveTo(-w / 2 - 12, -h / 2 + 22 + Math.sin(g.time * 9) * 5, -w / 2 - 14, -h / 2 + 6 + Math.sin(g.time * 9 + 1) * 4);
+    ctx.stroke();
+    if (!g.hat) {
+      for (const ex of [-w * 0.28, w * 0.08]) {
+        ctx.fillStyle = g.body;
+        ctx.beginPath();
+        ctx.moveTo(ex - 1, -h / 2 + 4);
+        ctx.lineTo(ex + 3, -h / 2 - 9);
+        ctx.lineTo(ex + 11, -h / 2 + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fda4af';
+        ctx.beginPath();
+        ctx.moveTo(ex + 2, -h / 2 + 3);
+        ctx.lineTo(ex + 4, -h / 2 - 4);
+        ctx.lineTo(ex + 8, -h / 2 + 3);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(12, 13, pose));
+    ctx.fill();
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = g.dark;
+    for (let i = 0; i < 3; i++) ctx.fillRect(-w / 2 + 8 + i * 6, -h / 2, 2.5, 5);
+    ctx.globalAlpha = 1;
+    const ey = -h / 2 + lerp(12, 8, pose);
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 14, ey, 3.2, 4, 0, 0, TAU);
+    ctx.ellipse(w / 2 - 5, ey, 3.2, 4, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = g.visor;
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 14, ey, 1.2, 3.2, 0, 0, TAU);
+    ctx.ellipse(w / 2 - 5, ey, 1.2, 3.2, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#fda4af';
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 12, ey + 7);
+    ctx.lineTo(w / 2 - 7, ey + 7);
+    ctx.lineTo(w / 2 - 9.5, ey + 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 3, ey + 8);
+    ctx.lineTo(w / 2 + 6, ey + 6);
+    ctx.moveTo(w / 2 - 3, ey + 11);
+    ctx.lineTo(w / 2 + 6, ey + 12);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  },
+
+  'char:dino'(ctx, g) {
+    const { w, h, pose } = g;
+    ctx.fillStyle = g.body;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 3, -h / 2 + lerp(14, 10, pose));
+    ctx.lineTo(-w / 2 - 15, -h / 2 + lerp(26, 20, pose) + Math.sin(g.time * 8) * 3);
+    ctx.lineTo(-w / 2 + 3, -h / 2 + lerp(28, 22, pose));
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = g.dark;
+    for (let i = 0; i < 3; i++) {
+      const sx = -w / 2 + 6 + i * 8;
+      ctx.beginPath();
+      ctx.moveTo(sx, -h / 2 + 1);
+      ctx.lineTo(sx + 4, -h / 2 - 7);
+      ctx.lineTo(sx + 8, -h / 2 + 1);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(11, 13, pose));
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(w / 2 - 6, -h / 2 + lerp(8, 5, pose), 12, lerp(15, 12, pose), 5);
+    ctx.fill();
+    shine(ctx, g);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    ctx.ellipse(0, -h / 2 + g.bodyH - 7, 10, 4.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    eye(ctx, w / 2 - 8, -h / 2 + lerp(11, 8, pose), 3.6, g.visor);
+    ctx.fillStyle = g.dark;
+    ctx.beginPath();
+    ctx.arc(w / 2 + 2, -h / 2 + lerp(13, 10, pose), 1.2, 0, TAU);
+    ctx.fill();
+  },
+
+  'char:alien'(ctx, g) {
+    const { w, h, pose } = g;
+    if (!g.hat) {
+      ctx.strokeStyle = g.dark;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      for (const ax of [-5, 6]) {
+        const tilt = ax < 0 ? -4 : 4;
+        ctx.beginPath();
+        ctx.moveTo(ax, -h / 2 + 1);
+        ctx.lineTo(ax + tilt, -h / 2 - 9);
+        ctx.stroke();
+        ctx.fillStyle = g.scarf;
+        ctx.beginPath();
+        ctx.arc(ax + tilt, -h / 2 - 10, 2.8, 0, TAU);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(15, 13, pose));
+    ctx.fill();
+    shine(ctx, g);
+    const ey = -h / 2 + lerp(14, 10, pose);
+    ctx.fillStyle = g.visor;
+    for (const ex of [w / 2 - 17, w / 2 - 6]) {
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.rotate(ex < w / 2 - 10 ? 0.35 : -0.35);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 4.6, 7, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 17, ey - 2.5, 1.2, 0, TAU);
+    ctx.arc(w / 2 - 6, ey - 2.5, 1.2, 0, TAU);
+    ctx.fill();
+  },
+
+  'char:penguin'(ctx, g) {
+    const { w, h, pose, bodyH } = g;
+    const top = -h / 2;
+    ctx.fillStyle = g.dark;
+    bodyPath(ctx, g, lerp(15, 13, pose));
+    ctx.fill();
+
+    ctx.save();
+    bodyPath(ctx, g, lerp(15, 13, pose));
+    ctx.clip();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 11.5, top + bodyH * 0.54, lerp(9.5, 10, pose), bodyH * 0.42, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = g.body;
+    ctx.beginPath();
+    ctx.ellipse(-4, top + bodyH * 0.55, 4.6, lerp(10, 7.5, pose), 0.2 + Math.sin(g.time * 14) * 0.08, 0, TAU);
+    ctx.fill();
+
+    const ey = top + lerp(12, 8.5, pose);
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 15, ey, 2.2, 0, TAU);
+    ctx.arc(w / 2 - 8, ey, 2.2, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 14.4, ey - 0.8, 0.7, 0, TAU);
+    ctx.arc(w / 2 - 7.4, ey - 0.8, 0.7, 0, TAU);
+    ctx.fill();
+
+    const by = ey + 4.2;
+    ctx.fillStyle = '#fb923c';
+    ctx.strokeStyle = '#fb923c';
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 10.5, by);
+    ctx.lineTo(w / 2 + 1.5, by + 1.4);
+    ctx.lineTo(w / 2 - 10.5, by + 4.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
   }
 };
 
