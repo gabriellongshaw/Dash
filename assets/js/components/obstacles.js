@@ -8,6 +8,12 @@ const GATE_CLEARANCE = 36;
 const GATE_TOP = -800;
 const WALL_W = 30;
 const WALL_H = 124;
+const DRONE_W = 50;
+const DRONE_H = 22;
+const DRONE_LIFT = 34;
+const DRONE_HIGH = 92;
+const ROLLER_R = 17;
+const ROLLER_EXTRA = 130;
 
 function tape(ctx, x, y, w, h, a, b) {
   ctx.save();
@@ -144,6 +150,101 @@ class Spikes {
   }
 }
 
+class Drone {
+  constructor(x, bob = false) {
+    this.kind = 'drone';
+    this.x = x;
+    this.w = DRONE_W;
+    this.h = DRONE_H;
+    this.bob = bob;
+    this.t = rand(0, 6);
+    this.hint = null;
+  }
+
+  tick(dt) {
+    this.t += dt;
+  }
+
+  lift() {
+    return this.bob ? DRONE_LIFT + ((Math.sin(this.t * 3) + 1) / 2) * (DRONE_HIGH - DRONE_LIFT) : DRONE_LIFT;
+  }
+
+  box(g) {
+    const top = g - this.lift() - this.h;
+    return { x: this.x + 4, y: top + 4, w: this.w - 8, h: this.h - 6 };
+  }
+
+  draw(ctx, p, g, time) {
+    const top = g - this.lift() - this.h + (this.bob ? 0 : Math.sin(time * 6 + this.x * 0.02) * 2);
+    const cx = this.x + this.w / 2;
+    const blade = 18 + Math.cos(time * 40) * 8;
+    ctx.fillStyle = p.hazardDark;
+    ctx.fillRect(cx - 1.5, top - 1, 3, 7);
+    ctx.fillRect(cx - blade, top - 4, blade * 2, 3);
+    ctx.fillStyle = p.hazard;
+    ctx.beginPath();
+    ctx.roundRect(this.x, top + 5, this.w, this.h - 5, 10);
+    ctx.fill();
+    ctx.fillStyle = p.hazardLight;
+    ctx.beginPath();
+    ctx.arc(this.x + 15, top + 15, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = p.hazardDark;
+    ctx.fillRect(this.x + this.w - 14, top + 13, 8, 3);
+    if (this.bob) {
+      ctx.globalAlpha = 0.35 + Math.sin(time * 9) * 0.25;
+      ctx.fillStyle = p.hazardLight;
+      ctx.fillRect(this.x + this.w - 14, top + 13, 8, 3);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+class Roller {
+  constructor(x) {
+    this.kind = 'roller';
+    this.x = x;
+    this.w = ROLLER_R * 2;
+    this.h = ROLLER_R * 2;
+    this.spin = 0;
+    this.hint = null;
+  }
+
+  tick(dt) {
+    this.x -= ROLLER_EXTRA * dt;
+    this.spin += dt * 9;
+  }
+
+  box(g) {
+    return { x: this.x + 5, y: g - this.h + 5, w: this.w - 10, h: this.h - 5 };
+  }
+
+  draw(ctx, p, g) {
+    ctx.save();
+    ctx.translate(this.x + ROLLER_R, g - ROLLER_R);
+    ctx.rotate(-this.spin);
+    ctx.fillStyle = p.hazard;
+    ctx.beginPath();
+    ctx.arc(0, 0, ROLLER_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = p.hazardDark;
+    for (let i = 0; i < 3; i++) {
+      ctx.rotate((Math.PI * 2) / 3);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(ROLLER_R - 2, -5);
+      ctx.lineTo(ROLLER_R - 2, 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = p.hazardLight;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 class Coin {
   constructor(x, up) {
     this.x = x;
@@ -215,6 +316,64 @@ const builders = {
     s.ladderCoins(x0 + WALL_W / 2, speed, WALL_H);
     return WALL_W + gap + GATE_W;
   },
+  drone(s, x0) {
+    s.obstacles.push(new Drone(x0));
+    s.lowCoins(x0 + 8, 3);
+    return DRONE_W;
+  },
+  bobDrone(s, x0) {
+    s.obstacles.push(new Drone(x0, true));
+    return DRONE_W;
+  },
+  roller(s, x0) {
+    s.obstacles.push(new Roller(x0));
+    return ROLLER_R * 2;
+  },
+  triple(s, x0, speed) {
+    const w = randInt(28, 32);
+    const h = pick([30, 36]);
+    const gap = speed * 0.62 + 50;
+    for (let i = 0; i < 3; i++) s.obstacles.push(new Crate(x0 + i * (w + gap), w, h));
+    return w * 3 + gap * 2;
+  },
+  wideSpikes(s, x0, speed) {
+    const count = randInt(4, 5);
+    s.obstacles.push(new Spikes(x0, count));
+    s.jumpCoins(x0 + (count * SPIKE_W) / 2, speed);
+    return count * SPIKE_W;
+  },
+  droneCrate(s, x0, speed) {
+    const w = randInt(36, 44);
+    const gap = speed * 0.9 + 80;
+    s.obstacles.push(new Drone(x0), new Crate(x0 + DRONE_W + gap, w, pick([34, 44])));
+    return DRONE_W + gap + w;
+  },
+  crateDrone(s, x0, speed) {
+    const w = randInt(36, 44);
+    const gap = speed * 0.9 + 80;
+    s.obstacles.push(new Crate(x0, w, pick([34, 44])), new Drone(x0 + w + gap));
+    s.jumpCoins(x0 + w / 2, speed);
+    return w + gap + DRONE_W;
+  },
+  wallDrone(s, x0, speed) {
+    const gap = speed * 1.05 + 90;
+    s.obstacles.push(new Crate(x0, WALL_W, WALL_H, s.hint('wall')), new Drone(x0 + WALL_W + gap, Math.random() < 0.5));
+    s.ladderCoins(x0 + WALL_W / 2, speed, WALL_H);
+    return WALL_W + gap + DRONE_W;
+  },
+  spikeDrone(s, x0, speed) {
+    const gap = speed * 0.9 + 80;
+    s.obstacles.push(new Spikes(x0, 2), new Drone(x0 + SPIKE_W * 2 + gap));
+    s.jumpCoins(x0 + SPIKE_W, speed);
+    return SPIKE_W * 2 + gap + DRONE_W;
+  },
+  gauntlet(s, x0, speed) {
+    const gap = speed * 0.85 + 70;
+    const parts = ['crate', 'spikes', 'drone', 'gate', 'double'];
+    let x = x0;
+    for (let i = 0; i < 3; i++) x += builders[pick(parts)](s, x, speed) + gap;
+    return x - x0 - gap;
+  },
   coins(s, x0) {
     const count = randInt(5, 8);
     s.lowCoins(x0, count);
@@ -223,15 +382,22 @@ const builders = {
 };
 
 const POOLS = [
-  ['crate', 'crate', 'crate', 'double', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'wall', 'coins'],
-  ['crate', 'crate', 'double', 'double', 'spikes', 'spikes', 'gate', 'gate', 'gate', 'wall', 'wall', 'wall', 'combo', 'coins'],
-  ['crate', 'double', 'double', 'spikes', 'spikes', 'gate', 'gate', 'gate', 'wall', 'wall', 'wall', 'combo', 'combo', 'wallGate', 'wallGate', 'coins']
+  ['crate', 'crate', 'crate', 'double', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'wall', 'drone', 'drone', 'coins'],
+  ['crate', 'crate', 'double', 'double', 'spikes', 'spikes', 'gate', 'gate', 'gate', 'wall', 'wall', 'wall', 'drone', 'drone', 'combo', 'droneCrate', 'coins'],
+  ['crate', 'double', 'double', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'wall', 'drone', 'bobDrone', 'combo', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'triple', 'roller', 'coins'],
+  ['double', 'spikes', 'wideSpikes', 'gate', 'gate', 'wall', 'wall', 'bobDrone', 'bobDrone', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'coins'],
+  ['wideSpikes', 'wideSpikes', 'gate', 'wall', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'gauntlet', 'gauntlet', 'gauntlet']
 ];
+
+const TIERS = [3000, 12000, 28000, 60000];
+const SPACING = [1, 1, 0.96, 0.92, 0.88];
 
 const HINTS = {
   gate: 'Hold to slide',
   wall: 'Double jump'
 };
+
+export const tierOf = dist => TIERS.filter(limit => dist >= limit).length;
 
 export class Spawner {
   constructor() {
@@ -285,6 +451,7 @@ export class Spawner {
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const o = this.obstacles[i];
       o.x -= dx;
+      if (o.tick) o.tick(dt);
       if (o.x + o.w < -80) this.obstacles.splice(i, 1);
     }
     for (let i = this.coins.length - 1; i >= 0; i--) {
@@ -297,11 +464,11 @@ export class Spawner {
   }
 
   spawn(speed, dist, viewW) {
-    const tier = dist < 3000 ? 0 : dist < 12000 ? 1 : 2;
+    const tier = tierOf(dist);
     const kind = this.intro.length ? this.intro.shift() : pick(POOLS[tier]);
     const width = builders[kind](this, viewW + 60, speed);
     this.travel = 0;
-    this.nextAt = width + speed * rand(0.8, 1.25) + 90;
+    this.nextAt = width + speed * rand(0.8, 1.25) * SPACING[tier] + 90;
   }
 
   draw(ctx, p, g, time, viewW) {

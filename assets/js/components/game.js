@@ -7,7 +7,7 @@ import { readPalette, isDark } from '../core/theme.js';
 import { clamp, overlaps } from '../core/utils.js';
 
 const BASE_SPEED = 300;
-const MAX_SPEED = 760;
+const MAX_SPEED = 860;
 const STEP = 1 / 90;
 
 export class Game {
@@ -137,7 +137,9 @@ export class Game {
   }
 
   bodyColor() {
-    return (this.look.skin && this.look.skin.runner) || this.palette.runner;
+    const skin = this.look.skin;
+    if (skin && skin.rainbow) return `hsl(${(this.time * 90) % 360} 85% 58%)`;
+    return (skin && skin.runner) || this.palette.runner;
   }
 
   emitScore() {
