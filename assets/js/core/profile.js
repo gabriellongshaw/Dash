@@ -19,6 +19,16 @@ const defaults = () => ({
   equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' }
 });
 
+const cleanName = v => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60) : '') || null;
+
+const cleanPhoto = v => {
+  try {
+    return typeof v === 'string' && new URL(v).protocol === 'https:' ? v : null;
+  } catch {
+    return null;
+  }
+};
+
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
 function sanitize(raw) {
@@ -54,9 +64,9 @@ function load() {
   }
   return {
     ...base,
-    uid: (raw && raw.uid) || null,
-    name: (raw && raw.name) || null,
-    photo: (raw && raw.photo) || null
+    uid: raw && typeof raw.uid === 'string' ? raw.uid : null,
+    name: cleanName(raw && raw.name),
+    photo: cleanPhoto(raw && raw.photo)
   };
 }
 
@@ -88,7 +98,7 @@ async function sync(user) {
     const snap = await tx.get(ref);
     if (!snap.exists()) {
       const base = guest ? sanitize(guest) : defaults();
-      tx.set(ref, { ...base, name: user.displayName || null, updatedAt: serverTimestamp() });
+      tx.set(ref, { ...base, name: cleanName(user.displayName), updatedAt: serverTimestamp() });
       return base;
     }
     const remote = sanitize(snap.data());
@@ -110,7 +120,7 @@ async function sync(user) {
     });
     return merged;
   });
-  state = { ...result, uid: user.uid, name: user.displayName || null, photo: user.photoURL || null };
+  state = { ...result, uid: user.uid, name: cleanName(user.displayName), photo: cleanPhoto(user.photoURL) };
   persist();
 }
 
