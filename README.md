@@ -9,6 +9,10 @@ Run as far as you can. Coins add 5 points each, and distance adds the rest. The 
 - **Crates and spikes:** jump over them.
 - **Tall walls:** too high for one jump, so you must double jump.
 - **Ceiling gates:** unjumpable, so you must slide underneath.
+- **Drones:** hover low, so slide under them or jump over. Some bob up and down.
+- **Rollers:** fast-moving wheels that arrive sooner than they look.
+
+The game gets harder as you go: speed climbs, gaps tighten and new obstacle combinations appear at higher distances, ending in back-to-back gauntlets.
 
 **Desktop:** `Space` / `↑` / `W` to jump (press again in the air to double jump), hold `↓` / `S` to slide (hold in the air to fast-fall), `P` / `Esc` to pause.
 
@@ -18,8 +22,10 @@ Run as far as you can. Coins add 5 points each, and distance adds the rest. The 
 
 Coins from every run go into your wallet. Spend them in the shop on colours, characters, hats and worlds.
 
-- **Characters:** Bot, Slime, Ninja, Fox, Ghost and Astronaut. Every character can be combined with any colour and hat.
-- **Worlds:** Skyline, Desert, Arctic, Neon and Volcano. Each has its own scenery, weather and obstacle colours.
+- **Colours:** 14 colours, including an animated rainbow Prism.
+- **Characters:** Bot, Slime, Frog, Ninja, Fox, Cat, Ghost, Dino, Alien, Astronaut and Penguin. Every character can be combined with any colour and hat.
+- **Hats:** 15 hats, from a sprout to flames.
+- **Worlds:** Skyline, Desert, Arctic, Neon, Volcano, Forest, Ocean, Candy and Space. Each has its own scenery, weather and obstacle colours.
 
 Backgrounds adapt as you run: the sky moves through day, dusk and night, stars and auroras fade in, and the score text switches colour to stay readable. A world starts at day in light mode and at night in dark mode.
 
