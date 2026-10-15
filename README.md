@@ -25,22 +25,6 @@ Backgrounds adapt as you run: the sky moves through day, dusk and night, stars a
 
 Progress is saved on the device as a guest. Signing in with Google saves it to the cloud so it follows you across devices. Any guest progress is merged into the account on first sign-in.
 
-## Firebase Setup
-
-Cloud saves use the existing `othello-12803` Firebase project through a separately named app, so sign-in never touches the Othello or Connect Four sessions.
-
-1. Authentication → Sign-in method → enable Google.
-2. Authentication → Settings → Authorised domains → add `www.gabriellongshaw.co.uk` and `gabriellongshaw.github.io`.
-3. Firestore → Rules → add:
-
-```
-match /dashProfiles/{uid} {
-  allow read, write: if request.auth != null && request.auth.uid == uid;
-}
-```
-
-Without these steps the game still works fully as a guest.
-
 ## Running Locally
 
 The game uses ES modules, so serve the folder over HTTP (for example `python3 -m http.server`) rather than opening `index.html` directly.
