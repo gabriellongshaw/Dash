@@ -96,6 +96,10 @@
   pointer-events: none;
 }
 
+.credits-copyright {
+  font-family: sans-serif;
+}
+
 .credits-container a {
   pointer-events: auto;
 }
