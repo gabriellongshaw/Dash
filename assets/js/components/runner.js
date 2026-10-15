@@ -118,10 +118,11 @@ export class Runner {
 
   draw(ctx, p, speed, time, look = {}) {
     const skin = look.skin || {};
-    const bodyColor = skin.runner || p.runner;
-    const darkColor = skin.runnerDark || p.runnerDark;
+    const hue = (time * 90) % 360;
+    const bodyColor = skin.rainbow ? `hsl(${hue} 85% 58%)` : skin.runner || p.runner;
+    const darkColor = skin.rainbow ? `hsl(${hue} 75% 38%)` : skin.runnerDark || p.runnerDark;
     const visorColor = skin.visor || p.visor;
-    const scarfColor = skin.scarf || p.scarf;
+    const scarfColor = skin.rainbow ? `hsl(${(hue + 140) % 360} 90% 70%)` : skin.scarf || p.scarf;
     const pose = this.vis;
     const w = lerp(34, 46, pose);
     const h = lerp(46, 28, pose);
