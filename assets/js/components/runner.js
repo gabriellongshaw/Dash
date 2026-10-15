@@ -1,4 +1,4 @@
-import { clamp, lerp } from '../core/utils.js';
+import { clamp, lerp, parseColor, tintColor, toCss } from '../core/utils.js';
 import { drawHat } from './hats.js';
 import { drawCharacter, traitsOf } from './characters.js';
 
@@ -10,6 +10,8 @@ const FAST_FALL = 2.4;
 const BUFFER_TIME = 0.12;
 const MIN_SLIDE = 0.2;
 const POSE_RATE = 22;
+const SPRING_K = 380;
+const SPRING_D = 20;
 
 export const jumpTime = () => (2 * JUMP_SPEED) / GRAVITY;
 export const jumpHeight = t => JUMP_SPEED * t - (GRAVITY * t * t) / 2;
@@ -30,6 +32,8 @@ export class Runner {
     this.slideHeld = false;
     this.slideTime = 0;
     this.pose = 0;
+    this.vis = 0;
+    this.visV = 0;
     this.buffer = 0;
     this.clock = 0;
     this.squash = 0;
@@ -85,10 +89,14 @@ export class Runner {
         this.sliding = true;
         this.slideTime = 0;
         this.slid = true;
+        this.squash = 0.22;
       }
       if (this.sliding) {
         this.slideTime += dt;
-        if (!want && this.slideTime > MIN_SLIDE) this.sliding = false;
+        if (!want && this.slideTime > MIN_SLIDE) {
+          this.sliding = false;
+          this.squash = -0.18;
+        }
       }
       this.clock += dt * (8 + speed / 60);
     } else {
@@ -96,6 +104,9 @@ export class Runner {
     }
 
     this.pose += ((this.sliding ? 1 : 0) - this.pose) * Math.min(1, dt * POSE_RATE);
+    const target = this.sliding ? 1 : 0;
+    this.visV += ((target - this.vis) * SPRING_K - this.visV * SPRING_D) * dt;
+    this.vis = clamp(this.vis + this.visV * dt, -0.12, 1.14);
     this.squash -= this.squash * Math.min(1, dt * 14);
   }
 
@@ -111,7 +122,7 @@ export class Runner {
     const darkColor = skin.runnerDark || p.runnerDark;
     const visorColor = skin.visor || p.visor;
     const scarfColor = skin.scarf || p.scarf;
-    const pose = this.pose;
+    const pose = this.vis;
     const w = lerp(34, 46, pose);
     const h = lerp(46, 28, pose);
     const traits = traitsOf(look.char);
@@ -120,7 +131,7 @@ export class Runner {
     const sx = 1 + this.squash * 0.45;
     const sy = 1 - this.squash * 0.45;
     const air = this.grounded ? 0 : clamp(this.vy / 3500, -0.18, 0.25);
-    const lean = -0.3 * pose;
+    const lean = -0.34 * pose;
     const dip = Math.abs(Math.sin(lean)) * (w / 2) - (h / 2) * (1 - Math.cos(lean));
 
     ctx.save();
@@ -142,23 +153,52 @@ export class Runner {
       ctx.stroke();
     }
 
+    if (pose > 0.05) {
+      const amt = clamp(pose, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = 0.28 * amt;
+      ctx.strokeStyle = bodyColor;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        const len = (14 + i * 7 + Math.sin(time * 26 + i * 2) * 4) * (0.6 + k);
+        const y = -h / 2 + 6 + i * (h / 3.2);
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 - 14 - i * 3, y);
+        ctx.lineTo(-w / 2 - 14 - i * 3 - len, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     if (traits.legs) {
       const swing = this.grounded ? Math.sin(this.clock) * 0.75 : 0;
-      const legLen = lerp(12, 15, pose);
-      const hips = [
-        { x: lerp(-5.5, w / 2 - 16, pose), y: lerp(h / 2 - 12, h / 2 - 9, pose), a: this.grounded ? swing : 0.5 },
-        { x: lerp(6.5, w / 2 - 12, pose), y: lerp(h / 2 - 12, h / 2 - 4, pose), a: this.grounded ? -swing : -0.35 }
-      ];
-      ctx.fillStyle = darkColor;
-      for (const hip of hips) {
+      const flutter = Math.sin(this.clock * 1.6) * 0.07 * pose;
+      const leg = (x, y, angle, len, shade) => {
         ctx.save();
-        ctx.translate(hip.x, hip.y);
-        ctx.rotate(lerp(hip.a, -1.45, pose));
+        ctx.translate(x, y);
+        ctx.rotate(angle);
         ctx.beginPath();
-        ctx.roundRect(-4.5, 0, 9, legLen, 4);
+        ctx.roundRect(-4.5, 0, 9, len, 4);
+        if (pose > 0.05) {
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = bodyColor;
+          ctx.globalAlpha = clamp(pose, 0, 1);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.fillStyle = shade;
         ctx.fill();
         ctx.restore();
-      }
+      };
+      const lighter = toCss(tintColor(parseColor(darkColor), [255, 255, 255, 1], 0.18 * clamp(pose, 0, 1)));
+      const run = [
+        { x: -5.5, y: h / 2 - 12, a: this.grounded ? swing : 0.5 },
+        { x: 6.5, y: h / 2 - 12, a: this.grounded ? -swing : -0.35 }
+      ];
+      const t = clamp(pose, 0, 1);
+      leg(lerp(run[0].x, w / 2 - 15, t), lerp(run[0].y, h / 2 - 12, t), lerp(run[0].a, -1.5 + flutter, t), lerp(12, 22, t), darkColor);
+      leg(lerp(run[1].x, w / 2 - 22, t), lerp(run[1].y, h / 2 - 4, t), lerp(run[1].a, -1.1 - flutter * 2, t), lerp(12, 17, t), lighter);
     }
 
     drawCharacter(ctx, look.char, {
