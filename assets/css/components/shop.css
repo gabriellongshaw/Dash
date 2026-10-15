@@ -11,8 +11,34 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 14px max(12px, env(safe-area-inset-left));
-  background: linear-gradient(var(--bg) 65%, transparent);
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+  background: var(--bg);
+}
+
+.shop-bar::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 30px;
+  pointer-events: none;
+  background: linear-gradient(var(--bg), transparent);
+  background: linear-gradient(to bottom, var(--bg) 0.0%,
+    color-mix(in srgb, var(--bg) 98.5%, transparent) 7.1%,
+    color-mix(in srgb, var(--bg) 94.5%, transparent) 14.3%,
+    color-mix(in srgb, var(--bg) 88.2%, transparent) 21.4%,
+    color-mix(in srgb, var(--bg) 80.2%, transparent) 28.6%,
+    color-mix(in srgb, var(--bg) 70.8%, transparent) 35.7%,
+    color-mix(in srgb, var(--bg) 60.6%, transparent) 42.9%,
+    color-mix(in srgb, var(--bg) 50.0%, transparent) 50.0%,
+    color-mix(in srgb, var(--bg) 39.4%, transparent) 57.1%,
+    color-mix(in srgb, var(--bg) 29.2%, transparent) 64.3%,
+    color-mix(in srgb, var(--bg) 19.8%, transparent) 71.4%,
+    color-mix(in srgb, var(--bg) 11.8%, transparent) 78.6%,
+    color-mix(in srgb, var(--bg) 5.5%, transparent) 85.7%,
+    color-mix(in srgb, var(--bg) 1.5%, transparent) 92.9%,
+    transparent 100.0%);
 }
 
 .shop-bar-right {
@@ -25,7 +51,7 @@
   position: absolute;
   inset: 0;
   overflow-y: auto;
-  padding: calc(max(12px, env(safe-area-inset-top)) + 54px) 16px 120px;
+  padding: calc(max(12px, env(safe-area-inset-top)) + 66px) 16px 150px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -202,8 +228,23 @@
   z-index: 30;
   display: flex;
   justify-content: center;
-  padding: 24px 16px max(16px, env(safe-area-inset-bottom));
-  background: linear-gradient(transparent, var(--bg) 40%);
+  padding: 48px 16px max(16px, env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, var(--bg));
+  background: linear-gradient(to bottom, transparent 0.0%,
+    color-mix(in srgb, var(--bg) 1.5%, transparent) 7.1%,
+    color-mix(in srgb, var(--bg) 5.5%, transparent) 14.3%,
+    color-mix(in srgb, var(--bg) 11.8%, transparent) 21.4%,
+    color-mix(in srgb, var(--bg) 19.8%, transparent) 28.6%,
+    color-mix(in srgb, var(--bg) 29.2%, transparent) 35.7%,
+    color-mix(in srgb, var(--bg) 39.4%, transparent) 42.9%,
+    color-mix(in srgb, var(--bg) 50.0%, transparent) 50.0%,
+    color-mix(in srgb, var(--bg) 60.6%, transparent) 57.1%,
+    color-mix(in srgb, var(--bg) 70.8%, transparent) 64.3%,
+    color-mix(in srgb, var(--bg) 80.2%, transparent) 71.4%,
+    color-mix(in srgb, var(--bg) 88.2%, transparent) 78.6%,
+    color-mix(in srgb, var(--bg) 94.5%, transparent) 85.7%,
+    color-mix(in srgb, var(--bg) 98.5%, transparent) 92.9%,
+    var(--bg) 100.0%);
   pointer-events: none;
 }
 

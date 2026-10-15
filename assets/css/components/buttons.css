@@ -119,8 +119,10 @@
   transform: scale(0.97);
 }
 
-.button:disabled {
-  opacity: 0.5;
+.button:disabled,
+.button:disabled:hover {
+  background: color-mix(in srgb, var(--button-bg) 45%, var(--bg));
+  color: color-mix(in srgb, var(--button-text) 85%, var(--bg));
   cursor: default;
 }
 
