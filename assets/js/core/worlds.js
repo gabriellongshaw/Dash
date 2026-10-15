@@ -172,5 +172,144 @@ export const WORLDS = [
       cap: '#fb923c',
       mote: 'rgba(251,146,60,0.95)'
     }
+  },
+  {
+    id: 'world:forest',
+    name: 'Forest',
+    price: 300,
+    scenery: 'pines',
+    seed: 61,
+    hills: [32, 16, 10, 0.007, 0.015],
+    motes: 'firefly',
+    stars: 0.9,
+    day: {
+      skyTop: '#bde8c6',
+      skyBottom: '#f4fbe9',
+      sun: '#fffbe0',
+      cloud: 'rgba(255,255,255,0.85)',
+      far: '#6fae7e',
+      mid: '#4d9163',
+      ground: '#1c2a1c',
+      groundLine: '#86efac',
+      dust: '#d9f2d0',
+      mote: 'rgba(253,224,71,0.15)'
+    },
+    night: {
+      skyTop: '#050f0b',
+      skyBottom: '#14342a',
+      sun: '#e8f5d0',
+      cloud: 'rgba(134,239,172,0.1)',
+      far: '#0f2a1f',
+      mid: '#153a2a',
+      ground: '#050d08',
+      groundLine: '#4ade80',
+      dust: '#86efac',
+      mote: 'rgba(253,224,71,0.95)'
+    }
+  },
+  {
+    id: 'world:ocean',
+    name: 'Ocean',
+    price: 300,
+    scenery: 'islands',
+    seed: 73,
+    hills: [26, 6, 4, 0.02, 0.04],
+    stars: 1,
+    day: {
+      skyTop: '#7dd3fc',
+      skyBottom: '#e0f7ff',
+      sun: '#fffbeb',
+      cloud: 'rgba(255,255,255,0.9)',
+      far: '#7fc8d8',
+      mid: '#3fa9c9',
+      ground: '#0e3a4a',
+      groundLine: '#67e8f9',
+      dust: '#e0f7ff'
+    },
+    night: {
+      skyTop: '#030b1f',
+      skyBottom: '#0c3a5c',
+      sun: '#e2e8f0',
+      cloud: 'rgba(125,211,252,0.1)',
+      far: '#0b2b45',
+      mid: '#0e4a6b',
+      ground: '#03141d',
+      groundLine: '#22d3ee',
+      dust: '#7dd3fc'
+    }
+  },
+  {
+    id: 'world:candy',
+    name: 'Candy',
+    price: 400,
+    scenery: 'domes',
+    seed: 97,
+    hills: [34, 14, 8, 0.007, 0.013],
+    motes: 'snow',
+    stars: 0.4,
+    hazard: { hazard: '#6366f1', hazardDark: '#4338ca', hazardLight: '#a5b4fc' },
+    day: {
+      skyTop: '#ffd6ec',
+      skyBottom: '#fff7fb',
+      sun: '#fffdfa',
+      cloud: 'rgba(255,255,255,0.9)',
+      far: '#f7a8d0',
+      mid: '#d8b4fe',
+      ground: '#3b1d4a',
+      groundLine: '#f472b6',
+      dust: '#fbcfe8',
+      cap: '#ffffff',
+      mote: 'rgba(244,114,182,0.9)'
+    },
+    night: {
+      skyTop: '#1d0b30',
+      skyBottom: '#4a1d6b',
+      sun: '#fbcfe8',
+      cloud: 'rgba(244,114,182,0.12)',
+      far: '#5a2a73',
+      mid: '#46247a',
+      ground: '#14061f',
+      groundLine: '#f472b6',
+      dust: '#f9a8d4',
+      cap: '#c084fc',
+      mote: 'rgba(251,207,232,0.9)'
+    }
+  },
+  {
+    id: 'world:space',
+    name: 'Space',
+    price: 500,
+    scenery: 'orbs',
+    seed: 85,
+    hills: [30, 12, 9, 0.009, 0.02],
+    motes: 'comet',
+    stars: 1,
+    starsAlways: true,
+    day: {
+      skyTop: '#1e1b4b',
+      skyBottom: '#4c1d95',
+      sun: '#fef9c3',
+      cloud: 'rgba(196,181,253,0.1)',
+      far: '#6d28d9',
+      mid: '#4c3a8a',
+      ground: '#27233a',
+      groundLine: '#c4b5fd',
+      dust: '#ddd6fe',
+      cap: '#a78bfa',
+      mote: 'rgba(255,255,255,0.8)'
+    },
+    night: {
+      skyTop: '#020208',
+      skyBottom: '#150b33',
+      sun: '#e0e7ff',
+      cloud: 'rgba(165,180,252,0.08)',
+      far: '#2e1065',
+      mid: '#1e1b4b',
+      ground: '#0b0a1a',
+      groundLine: '#818cf8',
+      dust: '#a5b4fc',
+      cap: '#6366f1',
+      mote: 'rgba(255,255,255,0.9)'
+    }
   }
 ];

@@ -10,7 +10,11 @@ const SHAPES = {
   city: { w0: 40, w1: 70, h0: 60, h1: 130, step: 1, gap: 12 },
   mesa: { w0: 70, w1: 60, h0: 70, h1: 70, step: 0.8, gap: 60 },
   peaks: { w0: 90, w1: 110, h0: 80, h1: 120, step: 0.55, gap: 20 },
-  towers: { w0: 26, w1: 34, h0: 70, h1: 150, step: 1, gap: 14 }
+  towers: { w0: 26, w1: 34, h0: 70, h1: 150, step: 1, gap: 14 },
+  pines: { w0: 30, w1: 40, h0: 60, h1: 90, step: 0.7, gap: 12 },
+  domes: { w0: 70, w1: 70, h0: 40, h1: 80, step: 0.6, gap: 20 },
+  islands: { w0: 110, w1: 110, h0: 24, h1: 36, step: 0.9, gap: 60 },
+  orbs: { w0: 60, w1: 90, h0: 20, h1: 90, step: 1.6, gap: 90 }
 };
 
 function buildFar(scenery, seed) {
@@ -109,7 +113,8 @@ export class World {
   seedMotes() {
     this.motes = [];
     if (!this.theme.motes) return;
-    const count = Math.ceil(this.w / (this.theme.motes === 'sand' ? 40 : 22));
+    const spacing = { sand: 40, comet: 110, firefly: 34 }[this.theme.motes] || 22;
+    const count = Math.ceil(this.w / spacing);
     for (let i = 0; i < count; i++) {
       this.motes.push({
         x: rand(0, this.w),
@@ -191,6 +196,17 @@ export class World {
           m.y = this.g - rand(0, 20);
           m.x = rand(0, this.w + 40);
         }
+      } else if (kind === 'firefly') {
+        m.x += (Math.sin(this.clock * 0.7 + m.ph) * 14 - speed * 0.12) * dt;
+        m.y = clamp(m.y + Math.cos(this.clock * 0.9 + m.ph) * 8 * dt, this.g * 0.4, this.g - 10);
+        if (m.x < -10) m.x = this.w + 10;
+      } else if (kind === 'comet') {
+        m.x -= (speed * 0.3 + 240 * m.v) * dt;
+        m.y += 110 * m.v * dt;
+        if (m.x < -30 || m.y > this.g * 0.7) {
+          m.x = this.w + rand(0, this.w);
+          m.y = rand(0, this.g * 0.3);
+        }
       } else if (kind === 'sand') {
         m.x -= speed * (0.8 + m.v * 0.5) * dt;
         if (m.x < -30) {
@@ -248,6 +264,66 @@ export class World {
           ctx.lineTo(rx, ly);
           ctx.closePath();
           ctx.fill();
+        } else if (scenery === 'pines') {
+          for (let j = 0; j < 3; j++) {
+            const bottom = g + 2 - j * b.h * 0.26;
+            const half = (b.w / 2) * (1 - j * 0.22);
+            ctx.beginPath();
+            ctx.moveTo(x + b.w / 2 - half, bottom);
+            ctx.lineTo(x + b.w / 2, bottom - b.h * 0.5);
+            ctx.lineTo(x + b.w / 2 + half, bottom);
+            ctx.closePath();
+            ctx.fill();
+          }
+        } else if (scenery === 'domes') {
+          const cx = x + b.w / 2;
+          ctx.beginPath();
+          ctx.ellipse(cx, g + 2, b.w / 2, b.h, 0, Math.PI, 0);
+          ctx.fill();
+          ctx.fillStyle = p.cap;
+          ctx.globalAlpha = 0.6;
+          ctx.beginPath();
+          ctx.ellipse(cx - b.w * 0.12, g + 2 - b.h * 0.7, b.w * 0.14, b.h * 0.09, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        } else if (scenery === 'islands') {
+          const cx = x + b.w / 2;
+          ctx.beginPath();
+          ctx.ellipse(cx, g + 2, b.w / 2, b.h, 0, Math.PI, 0);
+          ctx.fill();
+          if (b.a > 0.5) {
+            ctx.strokeStyle = p.far;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(cx, g + 2 - b.h);
+            ctx.quadraticCurveTo(cx + 3, g - b.h - 14, cx + 7, g - b.h - 26);
+            ctx.stroke();
+            for (const [dx, dy] of [[-12, 4], [-6, -4], [8, -3], [13, 5]]) {
+              ctx.beginPath();
+              ctx.moveTo(cx + 7, g - b.h - 26);
+              ctx.quadraticCurveTo(cx + 7 + dx * 0.6, g - b.h - 33, cx + 7 + dx, g - b.h - 26 + dy);
+              ctx.stroke();
+            }
+          }
+        } else if (scenery === 'orbs') {
+          const cx = x + b.w / 2;
+          const cy = g - b.h * 1.6;
+          const r = b.w / 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = p.cap;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r - 4, Math.PI * 1.05, Math.PI * 1.65);
+          ctx.stroke();
+          if (b.a > 0.5) {
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, r * 1.7, r * 0.3, -0.3, 0, Math.PI * 2);
+            ctx.stroke();
+          }
         } else {
           ctx.fillRect(x, g - b.h, b.w, b.h + 2);
           ctx.fillStyle = p.glow;
@@ -279,6 +355,17 @@ export class World {
         ctx.globalAlpha = 0.5 + Math.sin(this.clock * 8 + m.ph) * 0.4;
         ctx.fillRect(m.x, m.y, m.r, m.r);
         ctx.globalAlpha = 1;
+      } else if (kind === 'firefly') {
+        ctx.globalAlpha = 0.45 + Math.sin(this.clock * 3 + m.ph) * 0.45;
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (kind === 'comet') {
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(m.x + 22 + m.v * 14, m.y - 9 - m.v * 4);
+        ctx.stroke();
       } else {
         ctx.beginPath();
         ctx.moveTo(m.x, m.y);
@@ -298,7 +385,7 @@ export class World {
     ctx.fillStyle = sky;
     ctx.fillRect(-30, -30, w + 60, g + 30);
 
-    const starAlpha = clamp((s - 0.45) / 0.35, 0, 1) * theme.stars;
+    const starAlpha = theme.starsAlways ? 0.85 : clamp((s - 0.45) / 0.35, 0, 1) * theme.stars;
     if (starAlpha > 0.02) {
       ctx.fillStyle = '#ffffff';
       for (const st of this.stars) {
