@@ -1,0 +1,14 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "predeploy": ["node functions/sync-shared.mjs"],
+      "ignore": ["node_modules", "*.test.js"]
+    }
+  ]
+}
