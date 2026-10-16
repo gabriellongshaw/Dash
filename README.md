@@ -35,7 +35,7 @@ Progress is saved on the device as a guest. Signing in with Google saves it to t
 
 Quests are a second way to earn coins. Open **Quests** from the home screen.
 
-- **Daily:** three quests that reset at UTC midnight, worth 25, 45 and 75 coins as they get harder.
+- **Daily:** three quests that reset at local midnight, worth 25, 45 and 75 coins as they get harder.
 - **Weekly:** two bigger quests that reset on Monday, worth 125 to 250 coins each.
 - Quests are picked from a pool (collect coins, run a distance, score in one run, dodge obstacles, jump, double jump, slide and more). The same date always gives the same quests.
 - Progress counts automatically as you play. Tap **Claim** when a bar is full. A badge on the home screen and a note after each run show when something is ready.
@@ -47,33 +47,19 @@ Open **Leaderboard** from the home screen to see the top 25 runners **This week*
 
 Players appear as their first name and last initial. Signed-in players can hide themselves from the leaderboard at any time with the button under the list, which also removes their entries.
 
-### Server side
+### Firestore setup
 
-Signed-in progress is controlled by Cloud Functions, so coins, items, quests and scores cannot be edited from the browser. Firestore rules block every client write except equipping items you own.
+Copy `firestore.rules` into the Firebase console under Firestore Database, Rules, and publish. If the project is shared with other sites, merge the Dash blocks into your existing rules instead of replacing them.
 
-- `startRun` marks the start of a run on the server clock.
-- `submitRun` checks the run against the time that really passed (distance, coins, obstacles, jumps) and then adds coins, quest progress and leaderboard entries. The score is worked out on the server.
-- `claimQuest`, `buyItem` and `setPublicBoard` do their own checks on the server.
-- `syncProfile` creates or loads the profile at sign-in. A guest's coins and items are imported once, capped at 300 coins and 300 coins' worth of items.
+The game runs in the browser, so these rules cannot check a run. They limit what a modified browser can do:
 
-Limits live in `functions/limits.js`. Guest progress stays on the device and can be edited, but it cannot be turned into account coins beyond the import cap.
+- Coins can only go up by a capped amount per save (260 plus 4 per second since the last save) and by at most 3000 per day. Scores can only rise as far as the time since the last save allows.
+- Spending coins must add exactly one item and cost exactly its price. Prices are listed at the top of the rules, so add a price there when you add a shop item or it cannot be bought.
+- Leaderboard entries can never be higher than the player's saved best, and can only go up.
+- New accounts start with at most 300 coins. A guest's coins and the value of their items are imported once as up to 250 coins.
+- Equipping only works for items the player owns.
 
-The game runs in the browser, so a very careful cheater can still send a run that is just inside the limits. They cannot beat real time, so the gain is capped to what a perfect player could earn.
-
-Quests and weeks reset at UTC midnight.
-
-### Deploying
-
-Cloud Functions need the Firebase Blaze plan. Usage for a game this size stays inside the free monthly quota (2 million invocations), and a budget alert can be set in Google Cloud.
-
-```
-npm install -g firebase-tools
-firebase login
-cd functions && npm install && cd ..
-firebase deploy --only firestore:rules,functions
-```
-
-`functions/shared` is copied from `assets/js/core` by `functions/sync-shared.mjs` on every deploy, so quest and item changes reach the server automatically.
+Someone editing the game can still earn up to the daily cap by faking runs, and can claim quests without playing them, but they cannot set coins or scores to whatever they like.
 
 ## Running Locally
 
@@ -86,9 +72,8 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 - `shop/` — the shop page
 - `quests/` — daily and weekly quests
 - `leaderboard/` — weekly and all-time rankings
-- `functions/` — Cloud Functions that validate runs and own coins, items, quests and scores
-- `firestore.rules` — Firestore security rules
 - `assets/js/core/` — theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
+- `firestore.rules` — Firestore security rules
 - `assets/js/components/` — game engine, runner, characters, hats, obstacles, world, particles, account UI
 - `assets/js/pages/` — page entry points
 
