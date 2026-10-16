@@ -7,6 +7,61 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    function prices() {
+      return {
+        'skin:sky': 60,
+        'skin:violet': 60,
+        'skin:sunset': 120,
+        'skin:bubblegum': 120,
+        'skin:graphite': 200,
+        'skin:crimson': 80,
+        'skin:aqua': 80,
+        'skin:lime': 100,
+        'skin:cocoa': 140,
+        'skin:midnight': 160,
+        'skin:ice': 220,
+        'skin:gold': 400,
+        'skin:prism': 700,
+        'char:slime': 150,
+        'char:frog': 200,
+        'char:ninja': 250,
+        'char:fox': 300,
+        'char:cat': 300,
+        'char:ghost': 350,
+        'char:dino': 400,
+        'char:alien': 400,
+        'char:astronaut': 450,
+        'char:penguin': 500,
+        'hat:sprout': 60,
+        'hat:beanie': 50,
+        'hat:cap': 50,
+        'hat:party': 120,
+        'hat:catears': 100,
+        'hat:headphones': 150,
+        'hat:chef': 150,
+        'hat:halo': 200,
+        'hat:tophat': 200,
+        'hat:cowboy': 200,
+        'hat:viking': 250,
+        'hat:wizard': 300,
+        'hat:pirate': 300,
+        'hat:flames': 450,
+        'hat:crown': 500,
+        'world:desert': 200,
+        'world:arctic': 250,
+        'world:neon': 350,
+        'world:volcano': 450,
+        'world:forest': 300,
+        'world:ocean': 300,
+        'world:candy': 400,
+        'world:space': 500
+      };
+    }
+
+    function today() {
+      return math.floor(request.time.toMillis() / 86400000);
+    }
+
     function validEquip(eq, owned) {
       return eq.keys().hasOnly(['skin', 'hat', 'char', 'world'])
         && eq.keys().hasAll(['skin', 'hat', 'char', 'world'])
@@ -16,26 +71,88 @@ service cloud.firestore {
         && eq.world is string && eq.world in owned && eq.world.matches('world:.*');
     }
 
+    function validNew(d) {
+      return d.keys().hasOnly(['coins', 'best', 'runs', 'owned', 'equipped', 'quests', 'publicBoard', 'name', 'updatedAt'])
+        && d.coins is int && d.coins >= 0 && d.coins <= 300
+        && d.best == 0 && d.runs == 0
+        && d.owned.hasOnly(['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'])
+        && d.equipped == {'skin': 'skin:emerald', 'hat': 'hat:none', 'char': 'char:bot', 'world': 'world:skyline'}
+        && d.publicBoard is bool
+        && d.updatedAt == request.time;
+    }
+
+    function earned(before, after, gain, capped) {
+      let sameDay = before.get('earnDay', 0) == today();
+      let base = sameDay ? before.get('earned', 0) : 0;
+      return gain <= 260 + 4 * capped
+        && after.earnDay == today()
+        && after.earned == base + gain
+        && after.earned <= 3000
+        && after.owned == before.owned;
+    }
+
+    function bought(before, after, gain) {
+      let id = after.get('lastBought', '');
+      return id in prices()
+        && prices()[id] == -gain
+        && after.owned.hasAll(before.owned)
+        && after.owned.size() == before.owned.size() + 1
+        && id in after.owned
+        && !(id in before.owned)
+        && after.get('earned', 0) == before.get('earned', 0);
+    }
+
+    function economy(before, after) {
+      let seconds = (request.time - before.get('updatedAt', request.time)).seconds();
+      let gain = after.coins - before.coins;
+      let gained = gain > 0 ? gain : 0;
+      return after.updatedAt == request.time
+        && after.coins is int && after.coins >= 0
+        && after.best is int && after.best >= before.best
+        && (after.best == before.best || after.best <= 29 * (seconds > 1800 ? 1800 : seconds) + 5 * gained + 30)
+        && after.runs is int && after.runs >= before.runs && after.runs <= before.runs + 1
+        && (!('quests' in after) || after.quests is map)
+        && (gain > 0
+          ? earned(before, after, gain, seconds > 300 ? 300 : seconds)
+          : (gain < 0 ? bought(before, after, gain) : after.owned == before.owned));
+    }
+
     match /dashProfiles/{uid} {
       allow read: if signedIn(uid);
-      allow update: if signedIn(uid)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['equipped'])
-        && validEquip(request.resource.data.equipped, resource.data.owned);
-      allow create, delete: if false;
+      allow create: if signedIn(uid) && validNew(request.resource.data);
+      allow delete: if false;
+      allow update: if signedIn(uid) && (
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['equipped'])
+          && validEquip(request.resource.data.equipped, resource.data.owned))
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['publicBoard'])
+          && request.resource.data.publicBoard is bool)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'best', 'runs', 'owned', 'quests', 'earned', 'earnDay', 'lastBought', 'updatedAt'])
+          && economy(resource.data, request.resource.data))
+      );
+    }
+
+    function validEntry(d) {
+      return d.keys().hasOnly(['name', 'score', 'updatedAt'])
+        && d.name is string && d.name.size() <= 24
+        && d.score is int && d.score >= 0 && d.score <= 1000000
+        && d.updatedAt == request.time
+        && d.score <= get(/databases/$(database)/documents/dashProfiles/$(request.auth.uid)).data.best;
     }
 
     match /dashBoard/{uid} {
       allow read: if true;
-      allow write: if false;
+      allow create: if signedIn(uid) && validEntry(request.resource.data);
+      allow update: if signedIn(uid) && validEntry(request.resource.data)
+        && request.resource.data.score >= resource.data.score;
+      allow delete: if signedIn(uid);
     }
 
     match /dashWeeks/{week}/entries/{uid} {
       allow read: if true;
-      allow write: if false;
-    }
-
-    match /dashRuns/{uid} {
-      allow read, write: if false;
+      allow create: if signedIn(uid) && week.matches('[0-9]{4}-W[0-9]{2}') && validEntry(request.resource.data);
+      allow update: if signedIn(uid) && week.matches('[0-9]{4}-W[0-9]{2}') && validEntry(request.resource.data)
+        && request.resource.data.score >= resource.data.score;
+      allow delete: if signedIn(uid);
     }
   }
 }
