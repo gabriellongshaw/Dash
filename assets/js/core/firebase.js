@@ -13,21 +13,13 @@ const firebaseConfig = {
 export function loadFirebase() {
   if (!cached) {
     cached = (async () => {
-      const [appMod, authMod, fsMod, fnMod] = await Promise.all([
+      const [appMod, authMod, fsMod] = await Promise.all([
         import('https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js'),
         import('https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js'),
-        import('https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js'),
-        import('https://www.gstatic.com/firebasejs/10.5.2/firebase-functions.js')
+        import('https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js')
       ]);
       const app = appMod.initializeApp(firebaseConfig, 'dash');
-      return {
-        auth: authMod.getAuth(app),
-        db: fsMod.getFirestore(app),
-        functions: fnMod.getFunctions(app, 'europe-west2'),
-        authMod,
-        fsMod,
-        fnMod
-      };
+      return { auth: authMod.getAuth(app), db: fsMod.getFirestore(app), authMod, fsMod };
     })();
     cached.catch(() => {
       cached = null;
