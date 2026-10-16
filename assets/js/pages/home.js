@@ -19,8 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const { best, coins } = profile.state;
     bestEl.textContent = best > 0 || coins > 0 ? `Best ${best} · ${coins} coins` : '';
   };
+  const badge = document.getElementById('quests-badge');
+  const showBadge = () => {
+    const ready = profile.readyQuests();
+    badge.textContent = ready;
+    badge.classList.toggle('hidden', ready === 0);
+  };
   profile.subscribe(showStats);
+  profile.subscribe(showBadge);
+  profile.refreshQuests();
   showStats();
+  showBadge();
 
   const canvas = document.getElementById('home-canvas');
   const ctx = canvas.getContext('2d');
@@ -70,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   requestAnimationFrame(frame);
 
-  document.querySelectorAll('#play-btn, #shop-btn').forEach(link => {
+  document.querySelectorAll('#play-btn, #shop-btn, #quests-btn, #board-btn').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
       navigateTo(link.getAttribute('href'));

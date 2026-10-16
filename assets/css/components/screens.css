@@ -43,6 +43,33 @@
   margin-top: 6px;
 }
 
+.home-links {
+  display: flex;
+  gap: 8px;
+}
+
+.secondary-button.compact {
+  position: relative;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.88rem;
+}
+
+.badge-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--hazard);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
 .home-best {
   font-size: 0.9rem;
   font-weight: 600;
@@ -113,4 +140,14 @@
 
 .credits-link:hover {
   color: var(--accent-soft);
+}
+
+@media (max-height: 480px) {
+  .home-content {
+    gap: 8px;
+    padding-bottom: 14dvh;
+  }
+  .home-content .button {
+    margin-top: 2px;
+  }
 }
