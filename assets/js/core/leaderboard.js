@@ -19,6 +19,28 @@ function collectionFor(cloud, scope) {
   return scope === 'all' ? collection(cloud.db, ALL_TIME) : collection(cloud.db, WEEKS, scope, 'entries');
 }
 
+function entryRef(cloud, scope, uid) {
+  const { doc } = cloud.fsMod;
+  return scope === 'all' ? doc(cloud.db, ALL_TIME, uid) : doc(cloud.db, WEEKS, scope, 'entries', uid);
+}
+
+export async function submitEntry(scope, uid, name, score) {
+  if (!uid || whole(score) <= 0) return;
+  const cloud = await loadFirebase();
+  await cloud.fsMod.setDoc(entryRef(cloud, scope, uid), {
+    name: shortName(name),
+    score: whole(score),
+    updatedAt: cloud.fsMod.serverTimestamp()
+  });
+}
+
+export async function removeEntries(uid, week) {
+  if (!uid) return;
+  const cloud = await loadFirebase();
+  const { deleteDoc } = cloud.fsMod;
+  await Promise.allSettled([deleteDoc(entryRef(cloud, 'all', uid)), deleteDoc(entryRef(cloud, week, uid))]);
+}
+
 export async function fetchBoard(scope) {
   const cloud = await loadFirebase();
   const { query, orderBy, limit, getDocs } = cloud.fsMod;
