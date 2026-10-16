@@ -1,5 +1,16 @@
 import { loadFirebase } from './firebase.js';
 import { findItem, kindOf } from './cosmetics.js';
+import {
+  freshQuests,
+  cleanQuests,
+  rollQuests,
+  applyRun,
+  allQuests,
+  progressOf,
+  isClaimed,
+  markClaimed,
+  readyCount
+} from './quests.js';
 
 const KEY = 'dash:profile';
 const LEGACY_BEST = 'dash:best';
@@ -10,13 +21,16 @@ const session = { status: 'loading', syncing: false, error: null };
 let cloud = null;
 let cloudReady = false;
 let started = false;
+let runPromise = null;
 
 const defaults = () => ({
   coins: 0,
   best: 0,
   runs: 0,
   owned: ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'],
-  equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' }
+  equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' },
+  quests: freshQuests(),
+  publicBoard: true
 });
 
 const cleanName = v => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60) : '') || null;
@@ -47,7 +61,9 @@ function sanitize(raw) {
     best: whole(data.best),
     runs: whole(data.runs),
     owned: [...owned],
-    equipped
+    equipped,
+    quests: cleanQuests(data.quests),
+    publicBoard: data.publicBoard !== false
   };
 }
 
@@ -90,37 +106,29 @@ function guestState() {
   return { ...defaults(), uid: null, name: null, photo: null };
 }
 
+function call(name, data) {
+  return cloud.fnMod.httpsCallable(cloud.functions, name)(data || {}).then(res => res.data);
+}
+
+function applyServer(remote) {
+  state = { ...state, ...sanitize(remote) };
+  persist();
+  emit();
+}
+
+async function refresh() {
+  if (!cloudReady || !state.uid) return;
+  const uid = state.uid;
+  try {
+    const out = await call('syncProfile', {});
+    if (state.uid === uid) applyServer(out);
+  } catch {}
+}
+
 async function sync(user) {
-  const { runTransaction, doc, serverTimestamp } = cloud.fsMod;
-  const ref = doc(cloud.db, COLLECTION, user.uid);
-  const guest = state.uid ? null : state;
-  const result = await runTransaction(cloud.db, async tx => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) {
-      const base = guest ? sanitize(guest) : defaults();
-      tx.set(ref, { ...base, name: cleanName(user.displayName), updatedAt: serverTimestamp() });
-      return base;
-    }
-    const remote = sanitize(snap.data());
-    if (!guest) return remote;
-    const local = sanitize(guest);
-    const merged = {
-      coins: remote.coins + local.coins,
-      best: Math.max(remote.best, local.best),
-      runs: remote.runs + local.runs,
-      owned: [...new Set([...remote.owned, ...local.owned])],
-      equipped: remote.equipped
-    };
-    tx.update(ref, {
-      coins: merged.coins,
-      best: merged.best,
-      runs: merged.runs,
-      owned: merged.owned,
-      updatedAt: serverTimestamp()
-    });
-    return merged;
-  });
-  state = { ...result, uid: user.uid, name: cleanName(user.displayName), photo: cleanPhoto(user.photoURL) };
+  const guest = state.uid ? null : { coins: state.coins, owned: state.owned };
+  const out = await call('syncProfile', { guest });
+  state = { ...sanitize(out), uid: user.uid, name: cleanName(user.displayName), photo: cleanPhoto(user.photoURL) };
   persist();
 }
 
@@ -208,22 +216,87 @@ export const profile = {
     await cloud.authMod.signOut(cloud.auth);
   },
 
-  recordRun({ coins, score }) {
-    const prevBest = state.best;
+  beginRun() {
+    runPromise = null;
+    if (!cloudReady || !state.uid) return;
+    runPromise = call('startRun').then(out => out.runId).catch(() => null);
+  },
+
+  recordRun(run) {
+    const { coins, score } = run;
     state = {
       ...state,
       coins: state.coins + coins,
       runs: state.runs + 1,
-      best: Math.max(state.best, score)
+      best: Math.max(state.best, score),
+      quests: applyRun(state.quests, run)
     };
     persist();
     emit();
+    const pending = runPromise;
+    runPromise = null;
+    if (!cloudReady || !state.uid) return;
+    const uid = state.uid;
+    Promise.resolve(pending)
+      .then(runId => {
+        if (!runId) throw new Error('no-run');
+        return call('submitRun', {
+          runId,
+          meters: run.meters,
+          coins: run.coins,
+          jumps: run.jumps,
+          doubles: run.doubles,
+          slides: run.slides,
+          dodged: run.dodged
+        });
+      })
+      .then(out => {
+        if (state.uid === uid) applyServer(out.profile);
+      })
+      .catch(() => refresh());
+  },
+
+  refreshQuests() {
+    const rolled = rollQuests(state.quests);
+    if (rolled === state.quests) return;
+    state = { ...state, quests: rolled };
+    persist();
+    emit();
+  },
+
+  readyQuests() {
+    return readyCount(rollQuests(state.quests));
+  },
+
+  async claimQuest(id) {
+    const local = rollQuests(state.quests);
+    const quest = allQuests(local).find(item => item.id === id);
+    if (!quest) return { ok: false, reason: 'unknown' };
+    if (isClaimed(local, quest)) return { ok: true, reward: 0 };
+    if (progressOf(local, quest) < quest.target) return { ok: false, reason: 'progress' };
     if (cloudReady && state.uid) {
-      const { updateDoc, increment, serverTimestamp } = cloud.fsMod;
-      const data = { coins: increment(coins), runs: increment(1), updatedAt: serverTimestamp() };
-      if (score > prevBest) data.best = score;
-      updateDoc(docRef(), data).catch(() => {});
+      try {
+        const out = await call('claimQuest', { id });
+        applyServer(out.profile);
+        return { ok: true, reward: out.reward };
+      } catch {
+        return { ok: false, reason: 'offline' };
+      }
     }
+    state = { ...state, coins: state.coins + quest.reward, quests: markClaimed(local, quest) };
+    persist();
+    emit();
+    return { ok: true, reward: quest.reward };
+  },
+
+  setPublicBoard(on) {
+    state = { ...state, publicBoard: !!on };
+    persist();
+    emit();
+    if (!cloudReady || !state.uid) return;
+    call('setPublicBoard', { on: !!on })
+      .then(out => applyServer(out.profile))
+      .catch(() => refresh());
   },
 
   async buy(id) {
@@ -232,27 +305,15 @@ export const profile = {
     if (state.owned.includes(id)) return { ok: true };
     if (state.coins < item.price) return { ok: false, reason: 'coins' };
     if (cloudReady && state.uid) {
-      const { runTransaction, arrayUnion, serverTimestamp } = cloud.fsMod;
       try {
-        const coins = await runTransaction(cloud.db, async tx => {
-          const snap = await tx.get(docRef());
-          const data = snap.data() || {};
-          if ((data.owned || []).includes(id)) return whole(data.coins);
-          if (whole(data.coins) < item.price) throw new Error('coins');
-          tx.update(docRef(), {
-            coins: whole(data.coins) - item.price,
-            owned: arrayUnion(id),
-            updatedAt: serverTimestamp()
-          });
-          return whole(data.coins) - item.price;
-        });
-        state = { ...state, coins, owned: [...new Set([...state.owned, id])] };
+        const out = await call('buyItem', { id });
+        applyServer(out.profile);
+        return { ok: true };
       } catch (e) {
-        return { ok: false, reason: e && e.message === 'coins' ? 'coins' : 'offline' };
+        return { ok: false, reason: e && e.code === 'functions/failed-precondition' ? 'coins' : 'offline' };
       }
-    } else {
-      state = { ...state, coins: state.coins - item.price, owned: [...state.owned, id] };
     }
+    state = { ...state, coins: state.coins - item.price, owned: [...state.owned, id] };
     persist();
     emit();
     return { ok: true };
