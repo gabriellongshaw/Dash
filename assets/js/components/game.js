@@ -80,6 +80,8 @@ export class Game {
   reset() {
     this.dist = 0;
     this.coins = 0;
+    this.slides = 0;
+    this.dodged = 0;
     this.score = -1;
     this.speed = BASE_SPEED;
     this.coast = 0;
@@ -201,7 +203,11 @@ export class Game {
       coins: this.coins,
       meters: Math.floor(this.dist / 30),
       best: this.best,
-      isBest
+      isBest,
+      jumps: this.runner.jumpCount,
+      doubles: this.runner.doubleCount,
+      slides: this.slides,
+      dodged: this.dodged
     });
   }
 
@@ -233,7 +239,10 @@ export class Game {
     runner.update(h, this.speed, low);
     this.spawner.update(h, this.speed, this.dist, this.viewW);
 
-    if (runner.slid) this.emitDust(6, -3, -1.8, 40, 110, 8);
+    if (runner.slid) {
+      this.slides++;
+      this.emitDust(6, -3, -1.8, 40, 110, 8);
+    }
     if (runner.landed) this.emitDust(8, -3, -0.15, 60, 160);
     this.dustClock += h;
     this.sparkClock += h;
@@ -252,6 +261,12 @@ export class Game {
       if (overlaps(rb, o.box(this.groundY))) {
         this.die();
         return;
+      }
+    }
+    for (const o of this.spawner.obstacles) {
+      if (!o.passed && o.x + o.w < runner.x) {
+        o.passed = true;
+        this.dodged++;
       }
     }
     for (const c of this.spawner.coins) {
