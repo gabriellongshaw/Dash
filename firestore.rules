@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function validEquip(eq, owned) {
+      return eq.keys().hasOnly(['skin', 'hat', 'char', 'world'])
+        && eq.keys().hasAll(['skin', 'hat', 'char', 'world'])
+        && eq.skin is string && eq.skin in owned && eq.skin.matches('skin:.*')
+        && eq.hat is string && eq.hat in owned && eq.hat.matches('hat:.*')
+        && eq.char is string && eq.char in owned && eq.char.matches('char:.*')
+        && eq.world is string && eq.world in owned && eq.world.matches('world:.*');
+    }
+
+    match /dashProfiles/{uid} {
+      allow read: if signedIn(uid);
+      allow update: if signedIn(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['equipped'])
+        && validEquip(request.resource.data.equipped, resource.data.owned);
+      allow create, delete: if false;
+    }
+
+    match /dashBoard/{uid} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /dashWeeks/{week}/entries/{uid} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /dashRuns/{uid} {
+      allow read, write: if false;
+    }
+  }
+}
