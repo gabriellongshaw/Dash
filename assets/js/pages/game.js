@@ -38,8 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     },
     onOver(result) {
-      profile.recordRun({ coins: result.coins, score: result.score });
+      profile.recordRun(result);
       bestEl.textContent = `Best ${profile.state.best}`;
+      showQuestNote();
       $('over-note').classList.toggle('hidden', profile.session.status !== 'out');
       $('over-score').textContent = result.score;
       $('over-best').textContent = result.best;
@@ -54,12 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  function showQuestNote() {
+    const ready = profile.readyQuests();
+    $('over-quests').classList.toggle('hidden', ready === 0);
+    $('over-quests-text').textContent = ready === 1 ? '1 quest ready to claim.' : `${ready} quests ready to claim.`;
+  }
+
   function startRun() {
     clearTimeout(overTimer);
     overReady = false;
     hint.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
+    profile.beginRun();
     game.start();
   }
 
@@ -145,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('over-shop-btn').addEventListener('click', () => navigateTo('../shop/'));
   $('over-signin').addEventListener('click', () => signInFlow());
+  $('over-quests-btn').addEventListener('click', () => navigateTo('../quests/'));
 
   profile.subscribe(() => {
     game.setLook(resolveLook(profile.state.equipped));
