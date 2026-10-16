@@ -27,6 +27,8 @@ export class Runner {
     this.y = groundY;
     this.vy = 0;
     this.jumps = 0;
+    this.jumpCount = 0;
+    this.doubleCount = 0;
     this.grounded = true;
     this.sliding = false;
     this.slideHeld = false;
@@ -50,6 +52,8 @@ export class Runner {
     const first = this.jumps === 0;
     this.vy = -(first ? JUMP_SPEED : DOUBLE_JUMP_SPEED);
     this.jumps++;
+    this.jumpCount++;
+    if (!first) this.doubleCount++;
     this.grounded = false;
     this.sliding = false;
     this.squash = -0.3;
