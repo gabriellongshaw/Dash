@@ -29,11 +29,11 @@ const pad = n => String(n).padStart(2, '0');
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.min(CAP, Math.floor(v)) : 0);
 
 export function dayKey(now = new Date()) {
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`;
 }
 
 export function weekKey(now = new Date()) {
-  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   const year = d.getUTCFullYear();
   const week = Math.ceil(((d - Date.UTC(year, 0, 1)) / 86400000 + 1) / 7);
@@ -41,10 +41,8 @@ export function weekKey(now = new Date()) {
 }
 
 export function msUntilReset(scope, now = new Date()) {
-  const next = new Date(now);
-  next.setHours(0, 0, 0, 0);
-  if (scope === 'd') next.setDate(next.getDate() + 1);
-  else next.setDate(next.getDate() + 7 - ((next.getDay() + 6) % 7));
+  const days = scope === 'd' ? 1 : 7 - ((now.getUTCDay() + 6) % 7);
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + days);
   return Math.max(0, next - now);
 }
 
