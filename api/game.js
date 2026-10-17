@@ -29,6 +29,8 @@ const IMPORT_CAP = 5000;
 const IMPORT_BEST_CAP = 5000;
 const IMPORT_RUNS_CAP = 5000;
 
+const PHOTO_MODES = ['google', 'custom', 'none'];
+
 const DEFAULT_OWNED = ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'];
 
 class Fail extends Error {
@@ -53,7 +55,9 @@ const defaults = () => ({
   lastRun: 0,
   username: null,
   usernameAt: 0,
-  photoOn: true
+  displayName: null,
+  photoMode: 'google',
+  photoData: null
 });
 
 function sanitize(raw) {
@@ -79,7 +83,9 @@ function sanitize(raw) {
     lastRun: whole(data.lastRun),
     username: typeof data.username === 'string' ? data.username : null,
     usernameAt: whole(data.usernameAt),
-    photoOn: data.photoOn !== false
+    displayName: typeof data.displayName === 'string' && data.displayName ? data.displayName : null,
+    photoMode: PHOTO_MODES.includes(data.photoMode) ? data.photoMode : data.photoOn === false ? 'none' : 'google',
+    photoData: typeof data.photoData === 'string' && data.photoData ? data.photoData : null
   };
 }
 
@@ -92,7 +98,9 @@ const view = p => ({
   quests: p.quests,
   publicBoard: p.publicBoard,
   username: p.username,
-  photoOn: p.photoOn
+  displayName: p.displayName,
+  photoMode: p.photoMode,
+  photoData: p.photoData
 });
 
 const cleanPhoto = v => {

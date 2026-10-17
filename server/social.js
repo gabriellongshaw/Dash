@@ -9,6 +9,9 @@ const MAX_PENDING = 30;
 const MAX_GIFT_COINS = 1000;
 const NAME_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const GIFT_PAGE = 20;
+const MAX_DISPLAY_NAME = 24;
+const MAX_PHOTO_CHARS = 30000;
+const PHOTO_DATA = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
 
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
@@ -19,6 +22,25 @@ const cleanPhoto = v => {
     return null;
   }
 };
+
+export function cleanDisplayName(value) {
+  if (typeof value !== 'string') return null;
+  const name = value.replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAX_DISPLAY_NAME);
+  return name || null;
+}
+
+export function validPhoto(value) {
+  if (typeof value !== 'string' || value.length > MAX_PHOTO_CHARS || !PHOTO_DATA.test(value)) return false;
+  const bytes = Buffer.from(value.slice(value.indexOf(',') + 1), 'base64');
+  return bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+}
+
+export function pickPhoto(data) {
+  const mode = ['google', 'custom', 'none'].includes(data.photoMode) ? data.photoMode : data.photoOn === false ? 'none' : 'google';
+  if (mode === 'custom') return validPhoto(data.photoData) ? data.photoData : null;
+  if (mode === 'google') return cleanPhoto(data.photo);
+  return null;
+}
 
 export function createSocial({ db, profileRef, load, sanitize, view, Fail, publish, now }) {
   const nameRef = key => db.doc(`dashUsernames/${key}`);
@@ -31,7 +53,8 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
     return {
       uid,
       username: typeof data.username === 'string' ? data.username : null,
-      photo: data.photoOn !== false ? cleanPhoto(data.photo) : null,
+      displayName: cleanDisplayName(data.displayName),
+      photo: pickPhoto(data),
       best: whole(data.best)
     };
   };
@@ -77,12 +100,25 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
       return { profile: view(profile) };
     },
 
-    async setPhoto(user, body) {
-      const on = !!body.on;
+    async setDisplayName(user, body) {
+      const name = cleanDisplayName(body.displayName);
       return db.runTransaction(async tx => {
         const profile = await load(tx, user.uid);
-        tx.update(profileRef(user.uid), { photoOn: on, updatedAt: FieldValue.serverTimestamp() });
-        return { profile: view({ ...profile, photoOn: on }) };
+        tx.update(profileRef(user.uid), { displayName: name, updatedAt: FieldValue.serverTimestamp() });
+        return { profile: view({ ...profile, displayName: name }) };
+      });
+    },
+
+    async setPhoto(user, body) {
+      const mode = body.mode;
+      if (!['google', 'custom', 'none'].includes(mode)) throw new Fail(400, 'photo');
+      if (mode === 'custom' && !validPhoto(body.data)) throw new Fail(400, 'photo');
+      return db.runTransaction(async tx => {
+        const profile = await load(tx, user.uid);
+        const change = { photoMode: mode, updatedAt: FieldValue.serverTimestamp() };
+        if (mode === 'custom') change.photoData = body.data;
+        tx.update(profileRef(user.uid), change);
+        return { profile: view({ ...profile, photoMode: mode, photoData: mode === 'custom' ? body.data : profile.photoData }) };
       });
     },
 
