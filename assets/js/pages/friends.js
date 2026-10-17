@@ -37,7 +37,7 @@ const MESSAGES = {
   empty: 'Choose coins or an item to send.'
 };
 
-const messageFor = e => MESSAGES[e && e.code] || 'Something went wrong. Try again.';
+const messageFor = e => MESSAGES[e && e.code] || `Something went wrong${e && e.code ? ` (${e.code})` : ''}. Try again.`;
 
 function button(label, className, onClick) {
   const el = document.createElement('button');
