@@ -47,19 +47,26 @@ Open **Leaderboard** from the home screen to see the top 25 runners **This week*
 
 Players appear as their first name and last initial. Signed-in players can hide themselves from the leaderboard at any time with the button under the list, which also removes their entries.
 
-### Firestore setup
+### Server checks
 
-Copy `firestore.rules` into the Firebase console under Firestore Database, Rules, and publish. If the project is shared with other sites, merge the Dash blocks into your existing rules instead of replacing them.
+Coins, items, quests and scores for signed-in players are controlled by a small API in `api/game.js`, which runs on Vercel and talks to Firestore with the Admin SDK. The browser can no longer write any of them.
 
-The game runs in the browser, so these rules cannot check a run. They limit what a modified browser can do:
+- A run is timed by the server. `startRun` hands out a signed token, and `submitRun` checks distance, coins, obstacles and jumps against the time that really passed before paying anything. Each token works once. The score is worked out on the server.
+- Quest claims and shop purchases are checked against the server's own copy of the profile and prices.
+- Leaderboard entries come only from runs the server accepted.
+- A guest's progress is imported once when they first sign in. Their coins and the value of their items are accepted up to 80 coins per run played, capped at 5000. Their best score and run count are kept for display but never reach the leaderboard.
+- Firestore rules only let a player read their own profile and equip items they own.
 
-- Coins can only go up by a capped amount per save (260 plus 4 per second since the last save) and by at most 3000 per day. Scores can only rise as far as the time since the last save allows.
-- Spending coins must add exactly one item and cost exactly its price. Prices are listed at the top of the rules, so add a price there when you add a shop item or it cannot be bought.
-- Leaderboard entries can never be higher than the player's saved best, and can only go up.
-- New accounts start with at most 300 coins. A guest's coins and the value of their items are imported once as up to 250 coins.
-- Equipping only works for items the player owns.
+The game runs in the browser, so no server can prove a run was played by a person. A bot that plays for real is still accepted, but nobody can earn faster than real time or set numbers directly. Limits are at the top of `api/game.js`.
 
-Someone editing the game can still earn up to the daily cap by faking runs, and can claim quests without playing them, but they cannot set coins or scores to whatever they like.
+### Setup
+
+Vercel's Hobby plan and Firebase's Spark plan are both free and need no card.
+
+1. In the Firebase console open Project settings, Service accounts, and choose Generate new private key. Keep the file private.
+2. In Vercel add a new project from this repository. Under Environment Variables add `FIREBASE_SERVICE_ACCOUNT` and paste the whole contents of the key file. Deploy.
+3. Set `API_URL` at the top of `assets/js/core/profile.js` to the deployed address, for example `https://dash-api.vercel.app/api/game`. If the game is served from a different domain than the two in `ORIGINS` in `api/game.js`, add it there.
+4. Copy `firestore.rules` into the Firebase console under Firestore Database, Rules, and publish. If the project is shared with other sites, merge the Dash blocks into your existing rules instead of replacing them.
 
 ## Running Locally
 
@@ -73,6 +80,7 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 - `quests/` — daily and weekly quests
 - `leaderboard/` — weekly and all-time rankings
 - `assets/js/core/` — theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
+- `api/` — Vercel API that validates runs and owns coins, items, quests and scores
 - `firestore.rules` — Firestore security rules
 - `assets/js/components/` — game engine, runner, characters, hats, obstacles, world, particles, account UI
 - `assets/js/pages/` — page entry points
