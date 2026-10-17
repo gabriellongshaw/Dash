@@ -4,6 +4,7 @@ import { msUntilReset } from '../core/quests.js';
 import { mountAccount, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
+import { setCoins } from '../core/motion.js';
 
 const $ = id => document.getElementById(id);
 
@@ -39,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let token = 0;
   const cache = {};
 
-  const weekKey = () => profile.state.quests.week;
-  const scopeKey = () => (scope === 'all' ? 'all' : weekKey());
-  const myScore = () => (scope === 'all' ? profile.state.best : profile.state.quests.w.score);
+  const keyOf = name => (name === 'all' ? 'all' : profile.state.quests.week);
+  const scoreOf = name => (name === 'all' ? profile.state.best : profile.state.quests.w.score);
+  const myScore = () => scoreOf(scope);
 
   function row(entry, rank, index, me) {
     const el = document.createElement('div');
@@ -112,8 +113,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function pull(name) {
+    const key = keyOf(name);
+    const entries = await fetchBoard(key);
+    const uid = profile.state.uid;
+    const score = scoreOf(name);
+    let rank = null;
+    if (uid && profile.state.publicBoard && score > 0 && !entries.some(entry => entry.id === uid)) {
+      try {
+        rank = await fetchRank(key, score);
+      } catch {}
+    }
+    return { entries, rank };
+  }
+
   async function load(force) {
-    const key = scopeKey();
+    const name = scope;
+    const other = name === 'all' ? 'week' : 'all';
+    const key = keyOf(name);
     const mine = ++token;
     const hit = cache[key];
     if (!force && hit && Date.now() - hit.at < CACHE_MS) {
@@ -121,18 +138,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     skeleton();
+    const at = Date.now();
+    const otherKey = keyOf(other);
+    pull(other).then(
+      result => {
+        cache[otherKey] = { at, ...result };
+      },
+      () => {}
+    );
     try {
-      const entries = await fetchBoard(key);
-      let rank = null;
-      const uid = profile.state.uid;
-      if (uid && profile.state.publicBoard && myScore() > 0 && !entries.some(entry => entry.id === uid)) {
-        try {
-          rank = await fetchRank(key, myScore());
-        } catch {}
-      }
-      cache[key] = { at: Date.now(), entries, rank };
+      const result = await pull(name);
+      cache[key] = { at, ...result };
       if (mine !== token) return;
-      renderEntries(entries, rank);
+      renderEntries(result.entries, result.rank);
     } catch (e) {
       if (mine !== token) return;
       message(
@@ -140,6 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
         !(e && e.code === 'permission-denied')
       );
     }
+  }
+
+  function reload() {
+    Object.keys(cache).forEach(k => delete cache[k]);
+    load(true);
   }
 
   function renderMeta() {
@@ -150,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderChrome() {
     const signedIn = profile.session.status === 'in';
     note.classList.toggle('hidden', profile.session.status !== 'out');
-    $('wallet').textContent = profile.state.coins;
+    setCoins($('wallet'), profile.state.coins);
     visibility.classList.toggle('hidden', !signedIn);
     visibility.textContent = profile.state.publicBoard ? 'Hide me from the leaderboard' : 'Show me on the leaderboard';
     renderMeta();
@@ -176,20 +199,30 @@ document.addEventListener('DOMContentLoaded', () => {
     visibility.blur();
     profile.setPublicBoard(!profile.state.publicBoard);
     Object.keys(cache).forEach(k => delete cache[k]);
-    setTimeout(() => load(true), 900);
+    setTimeout(reload, 900);
   });
 
   $('note-signin').addEventListener('click', () => signInFlow());
   $('back-btn').addEventListener('click', () => navigateTo('../'));
 
   let lastUid = profile.state.uid;
+  let wasSyncing = profile.session.syncing;
   profile.subscribe(() => {
     renderChrome();
-    if (profile.state.uid !== lastUid) {
+    const syncing = profile.session.syncing;
+    const synced = wasSyncing && !syncing;
+    wasSyncing = syncing;
+    if (profile.state.uid !== lastUid || synced) {
       lastUid = profile.state.uid;
-      Object.keys(cache).forEach(k => delete cache[k]);
-      load(true);
+      reload();
     }
+  });
+
+  window.addEventListener('pageshow', e => {
+    if (e.persisted) reload();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) load(false);
   });
 
   document.querySelectorAll('.leave-button').forEach(el => {
