@@ -51,10 +51,10 @@ Players appear as their first name and last initial. Signed-in players can hide 
 
 Open **Friends** from the home screen. Everything here needs a signed-in account.
 
-- **Username:** Pick a unique username of 3 to 16 letters, numbers or underscores. Friends find you by it, and it replaces your name on the leaderboard. It can be changed once a day.
-- **Display name:** An optional name of up to 24 characters that shows above your username on your friends' lists. Friends still add you by username.
+- **Username:** Pick a unique username of 3 to 16 lowercase letters, numbers or underscores. Capitals are turned into lowercase, and older usernames are lowercased the next time that player opens the game. It replaces your name on the leaderboard and can be changed once a day.
+- **Display name:** An optional name of up to 24 characters that shows above your username on your friends' lists. Both are searchable.
 - **Photo:** Use your Google photo, upload your own (it is cropped to a small square in the browser), or have none. Tap the pencil on your profile card to change it.
-- **Adding friends:** Type a username and send a request. They accept or decline from their Friends page. If you both request each other you become friends straight away. Each player can have 50 friends and 30 pending requests.
+- **Adding friends:** Search by display name or username (the start of either, at least two letters) and tap Add on a result. You can switch **Show me in search** off in your profile editor to stay out of results. They accept or decline from their Friends page. If you both request each other you become friends straight away. Each player can have 50 friends and 30 pending requests.
 - **Gifts:** Send a friend up to 1000 coins, an item, or both. The gift comes out of your coins, and an item costs its shop price. They cannot be sent to someone who already owns the item. The player sees what they were sent the next time they open Friends, and a badge on the home screen shows waiting requests and gifts.
 
 Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes, so `firestore.rules` needs no changes. The API code is in `server/social.js`.
@@ -98,7 +98,7 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 
 ## Structure
 
-- `index.html` — home screen with an animated background
+- `index.html` — home screen with an animated background and quick links to quests, leaderboard and friends
 - `play/` — the game page
 - `shop/` — the shop page
 - `quests/` — daily and weekly quests
