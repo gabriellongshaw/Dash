@@ -112,10 +112,12 @@
   .modal-note,
   .badge-best,
   .account-menu,
+  .sound-menu,
   .nav-button,
   .overlay.closing,
   .overlay.closing .modal,
   .account-menu.closing,
+  .sound-menu.closing,
   .reveal,
   .friend-row,
   .friend-row.leaving,
@@ -139,7 +141,9 @@
   .button,
   .button svg,
   .leave-button svg,
-  .account-avatar {
+  .account-avatar,
+  .sound-switch,
+  .sound-switch::after {
     transition: none;
   }
 }

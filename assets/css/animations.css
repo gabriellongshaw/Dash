@@ -70,7 +70,8 @@
   animation: popOut 0.18s ease both;
 }
 
-.account-menu.closing {
+.account-menu.closing,
+.sound-menu.closing {
   pointer-events: none;
   animation: menuOut 0.14s ease both;
 }
