@@ -194,16 +194,22 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
         const snap = await tx.get(ref);
         const raw = snap.exists ? snap.data() : null;
         const current = sanitize(raw);
-        if (raw && raw.imported === true) return current;
+        if (raw && raw.imported === true) {
+          if (raw.legacyTrusted === true) return current;
+          const vBest = Math.max(current.vBest, current.best);
+          tx.update(ref, { vBest, legacyTrusted: true, updatedAt: FieldValue.serverTimestamp() });
+          return { ...current, vBest };
+        }
         const gift = body.guest ? importGuest(body.guest) : { coins: 0, owned: [], runs: 0, best: 0 };
         const next = {
           ...current,
           coins: current.coins + gift.coins,
           owned: [...new Set([...current.owned, ...gift.owned])],
           runs: current.runs + gift.runs,
-          best: Math.max(current.best, gift.best)
+          best: Math.max(current.best, gift.best),
+          vBest: raw ? Math.max(current.vBest, current.best) : current.vBest
         };
-        const data = { ...next, imported: true, name: shortName(user.name), updatedAt: FieldValue.serverTimestamp() };
+        const data = { ...next, imported: true, legacyTrusted: true, name: shortName(user.name), updatedAt: FieldValue.serverTimestamp() };
         if (snap.exists) tx.update(ref, data);
         else tx.set(ref, data);
         return next;
