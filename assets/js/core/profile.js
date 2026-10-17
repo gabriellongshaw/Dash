@@ -15,7 +15,7 @@ import {
 const KEY = 'dash:profile';
 const LEGACY_BEST = 'dash:best';
 const COLLECTION = 'dashProfiles';
-const API_URL = 'https://dash-api.vercel.app/api/game';
+const API_URL = 'https://dash-gamma-cyan.vercel.app/api/game';
 
 const listeners = new Set();
 const session = { status: 'loading', syncing: false, error: null };
