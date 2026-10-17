@@ -52,7 +52,8 @@ Players appear as their first name and last initial. Signed-in players can hide 
 Open **Friends** from the home screen. Everything here needs a signed-in account.
 
 - **Username:** Pick a unique username of 3 to 16 letters, numbers or underscores. Friends find you by it, and it replaces your name on the leaderboard. It can be changed once a day.
-- **Photo:** Your Google photo shows next to your username for friends. You can hide it with the button on your profile card.
+- **Display name:** An optional name of up to 24 characters that shows above your username on your friends' lists. Friends still add you by username.
+- **Photo:** Use your Google photo, upload your own (it is cropped to a small square in the browser), or have none. Tap the pencil on your profile card to change it.
 - **Adding friends:** Type a username and send a request. They accept or decline from their Friends page. If you both request each other you become friends straight away. Each player can have 50 friends and 30 pending requests.
 - **Gifts:** Send a friend up to 1000 coins, an item, or both. The gift comes out of your coins, and an item costs its shop price. They cannot be sent to someone who already owns the item. The player sees what they were sent the next time they open Friends, and a badge on the home screen shows waiting requests and gifts.
 
