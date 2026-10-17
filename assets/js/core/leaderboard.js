@@ -1,4 +1,5 @@
 import { loadFirebase } from './firebase.js';
+import { FIRST_WEEK } from './quests.js';
 
 const ALL_TIME = 'dashBoard';
 const WEEKS = 'dashWeeks';
@@ -19,7 +20,7 @@ function collectionFor(cloud, scope) {
   return scope === 'all' ? collection(cloud.db, ALL_TIME) : collection(cloud.db, WEEKS, scope, 'entries');
 }
 
-export async function fetchBoard(scope) {
+async function fetchRaw(scope) {
   const cloud = await loadFirebase();
   const { query, orderBy, limit, getDocs } = cloud.fsMod;
   const snap = await getDocs(query(collectionFor(cloud, scope), orderBy('score', 'desc'), limit(PAGE)));
@@ -33,7 +34,19 @@ export async function fetchBoard(scope) {
   });
 }
 
+export async function fetchBoard(scope) {
+  if (scope !== FIRST_WEEK) return fetchRaw(scope);
+  const [weekly, all] = await Promise.all([fetchRaw(scope), fetchRaw('all')]);
+  const best = new Map();
+  [...weekly, ...all].forEach(entry => {
+    const have = best.get(entry.id);
+    if (!have || entry.score > have.score) best.set(entry.id, entry);
+  });
+  return [...best.values()].sort((a, b) => b.score - a.score).slice(0, PAGE);
+}
+
 export async function fetchRank(scope, score) {
+  if (scope === FIRST_WEEK) scope = 'all';
   const cloud = await loadFirebase();
   const { query, where, getCountFromServer } = cloud.fsMod;
   const snap = await getCountFromServer(query(collectionFor(cloud, scope), where('score', '>', whole(score))));

@@ -40,10 +40,8 @@ export function weekKey(now = new Date()) {
   return `${year}-W${pad(week)}`;
 }
 
-// The game launched in this week, so every all-time best was set during it.
 export const FIRST_WEEK = '2026-W42';
 
-// Score shown on the weekly board. In launch week it matches the all-time board.
 export function weekBoardScore(quests, best) {
   const own = quests.w.score;
   return quests.week === FIRST_WEEK ? Math.max(own, whole(best)) : own;
