@@ -113,6 +113,7 @@ async function call(action, data) {
   const token = await user.getIdToken();
   const res = await fetch(API_URL, {
     method: 'POST',
+    keepalive: true,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ action, ...data })
   });
