@@ -266,7 +266,7 @@
   gap: 4px 8px;
 }
 
-.icon-button {
+.round-button {
   display: inline-grid;
   place-items: center;
   width: 36px;
@@ -281,21 +281,50 @@
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.icon-button:hover {
+.round-button:hover {
   background: var(--button-secondary-bg-hover);
 }
 
-.icon-button:active {
+.round-button:active {
   transform: scale(0.94);
 }
 
-.friend-actions .icon-button {
+.friend-actions .round-button {
   width: 32px;
   height: 32px;
   background: none;
   color: var(--meta-text);
 }
 
-.friend-actions .icon-button:hover {
+.friend-actions .round-button:hover {
   background: var(--secondary-bg);
+}
+
+.friend-row.static {
+  animation: none;
+}
+
+.friend-row.leaving,
+.friend-card.gifts.leaving {
+  overflow: hidden;
+  pointer-events: none;
+  animation: rowOut 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.friend-card.leaving > * {
+  animation: swapOut 0.15s ease both;
+}
+
+.friend-card.entering > * {
+  animation: fadeInUp 0.35s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+}
+
+.friend-card.entering > :nth-child(2) { animation-delay: 0.05s; }
+.friend-card.entering > :nth-child(3) { animation-delay: 0.1s; }
+.friend-card.entering > :nth-child(4) { animation-delay: 0.15s; }
+.friend-card.entering > :nth-child(5) { animation-delay: 0.2s; }
+
+.round-button,
+.friend-avatar {
+  transition: background 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
 }

@@ -4,7 +4,7 @@ import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { makeAvatar } from '../components/avatar.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { setCoins } from '../core/motion.js';
+import { exitRow, reducedMotion, reveal, setCoins } from '../core/motion.js';
 
 const $ = id => document.getElementById(id);
 
@@ -118,6 +118,28 @@ document.addEventListener('DOMContentLoaded', () => {
   let loading = false;
   let editing = false;
   let busy = false;
+  let draft = { name: '', user: '' };
+  const seen = new Set();
+  const shown = { content: false, social: false, requests: false };
+
+  function setEditing(next) {
+    const apply = () => {
+      editing = next;
+      draft = { name: profile.state.displayName || '', user: profile.state.username || '' };
+      render();
+    };
+    if (reducedMotion() || !me.firstChild) {
+      apply();
+      return;
+    }
+    me.classList.add('leaving');
+    setTimeout(() => {
+      me.classList.remove('leaving');
+      apply();
+      me.classList.add('entering');
+      setTimeout(() => me.classList.remove('entering'), 480);
+    }, 150);
+  }
 
   async function act(fn, success) {
     if (busy) return false;
@@ -213,8 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.createElement('form');
     form.className = 'friend-editor';
     form.autocomplete = 'off';
-    const nameInput = textInput(displayName, 'Display name (optional)', 24, 'Display name');
-    const userInput = textInput(username, 'Username', 16, 'Username');
+    const nameInput = textInput(draft.name, 'Display name (optional)', 24, 'Display name');
+    const userInput = textInput(draft.user, 'Username', 16, 'Username');
+    nameInput.addEventListener('input', () => {
+      draft.name = nameInput.value;
+    });
+    userInput.addEventListener('input', () => {
+      draft.user = userInput.value;
+    });
     const hint = document.createElement('p');
     hint.className = 'friend-hint';
     hint.textContent = 'Friends add you by username. Your display name shows beside it. You can change your username once a day.';
@@ -225,10 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const row = document.createElement('div');
     row.className = 'friend-form';
     row.appendChild(save);
-    if (username) row.appendChild(button('Cancel', 'secondary-button small', () => {
-      editing = false;
-      render();
-    }));
+    if (username) row.appendChild(button('Cancel', 'secondary-button small', () => setEditing(false)));
     form.append(field('Display name', nameInput), field('Username', userInput), hint, row);
     form.addEventListener('submit', async e => {
       e.preventDefault();
@@ -239,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (ok && nextName !== (displayName || '')) ok = await act(() => profile.api('setDisplayName', { displayName: nextName }));
       if (ok) {
         showToast('Profile saved.');
-        editing = false;
+        setEditing(false);
         load();
       }
     });
@@ -264,20 +289,21 @@ document.addEventListener('DOMContentLoaded', () => {
     best.className = 'friend-sub';
     best.textContent = displayName ? `@${username} · Best ${profile.state.best}` : `Best ${profile.state.best}`;
     names.append(handle, best);
-    const edit = button('', 'icon-button', () => {
-      editing = true;
-      render();
-    });
+    const edit = button('', 'round-button', () => setEditing(true));
     edit.setAttribute('aria-label', 'Edit profile');
     edit.innerHTML = PENCIL;
     row.append(makeAvatar({ uid: profile.state.uid, username, photo: profile.avatar }, 'lg'), names, edit);
     me.appendChild(row);
   }
 
-  function personRow(person, index, actions) {
+  function personRow(person, index, actions, section) {
     const row = document.createElement('div');
     row.className = 'friend-row';
     row.style.setProperty('--n', index);
+    const key = `${section}:${person.uid}`;
+    row.dataset.key = key;
+    if (seen.has(key)) row.classList.add('static');
+    seen.add(key);
     const names = document.createElement('div');
     names.className = 'friend-names';
     const handle = document.createElement('span');
@@ -296,10 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderInbox() {
     const box = $('inbox');
+    const had = box.firstChild;
     box.innerHTML = '';
     if (!data.gifts.length) return;
     const card = document.createElement('div');
     card.className = 'friend-card gifts';
+    if (!had) card.classList.add('reveal');
     data.gifts.forEach(gift => {
       const line = document.createElement('p');
       line.className = 'friend-gift';
@@ -308,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     card.appendChild(button('Got it', 'secondary-button small', async () => {
       data = { ...data, gifts: [] };
+      await exitRow(card);
       renderInbox();
       try {
         await profile.api('seenGifts');
@@ -316,30 +345,40 @@ document.addEventListener('DOMContentLoaded', () => {
     box.appendChild(card);
   }
 
+  function leave(rowEl, promise, success) {
+    return act(() => promise(), success).then(async ok => {
+      if (!ok) return;
+      const row = rowEl.closest('.friend-row');
+      if (row) {
+        seen.delete(row.dataset.key);
+        await exitRow(row);
+      }
+      load();
+    });
+  }
+
   function renderRequests() {
     const section = $('requests-section');
     const list = $('requests');
     list.innerHTML = '';
     const total = data.incoming.length + data.outgoing.length;
     section.classList.toggle('hidden', total === 0);
+    if (total && !shown.requests) reveal(section);
+    shown.requests = total > 0;
     let index = 0;
     data.incoming.forEach(person => {
       const accept = button('Accept', 'button small', () =>
-        act(() => profile.api('respond', { uid: person.uid, accept: true }), `You and @${person.username} are friends.`).then(ok => ok && load())
+        leave(accept, () => profile.api('respond', { uid: person.uid, accept: true }), `You and @${person.username} are friends.`)
       );
-      const decline = button('Decline', 'tertiary-button', () =>
-        act(() => profile.api('respond', { uid: person.uid, accept: false })).then(ok => ok && load())
-      );
-      list.appendChild(personRow(person, index++, [accept, decline]));
+      const decline = button('Decline', 'tertiary-button', () => leave(decline, () => profile.api('respond', { uid: person.uid, accept: false })));
+      list.appendChild(personRow(person, index++, [accept, decline], 'in'));
     });
     data.outgoing.forEach(person => {
       const tag = document.createElement('span');
       tag.className = 'friend-sub';
       tag.textContent = 'Sent';
-      const cancel = button('Cancel', 'tertiary-button', () =>
-        act(() => profile.api('removeFriend', { uid: person.uid })).then(ok => ok && load())
-      );
-      list.appendChild(personRow(person, index++, [tag, cancel]));
+      const cancel = button('Cancel', 'tertiary-button', () => leave(cancel, () => profile.api('removeFriend', { uid: person.uid })));
+      list.appendChild(personRow(person, index++, [tag, cancel], 'out'));
     });
   }
 
@@ -356,13 +395,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     data.friends.forEach((person, index) => {
       const gift = button('Gift', 'secondary-button small', () => openGift(person));
-      const remove = button('', 'icon-button', () => {
+      const remove = button('', 'round-button', () => {
         if (!confirm(`Remove @${person.username} from your friends?`)) return;
-        act(() => profile.api('removeFriend', { uid: person.uid }), 'Friend removed.').then(ok => ok && load());
+        leave(remove, () => profile.api('removeFriend', { uid: person.uid }), 'Friend removed.');
       });
       remove.setAttribute('aria-label', `Remove @${person.username}`);
       remove.innerHTML = CROSS;
-      list.appendChild(personRow(person, index, [gift, remove]));
+      list.appendChild(personRow(person, index, [gift, remove], 'friend'));
     });
   }
 
@@ -371,10 +410,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const signedIn = status === 'in' && !!profile.state.uid;
     note.classList.toggle('hidden', status !== 'out');
     content.classList.toggle('hidden', !signedIn);
+    if (signedIn && !shown.content) reveal(content);
+    shown.content = signedIn;
     setCoins($('wallet'), profile.state.coins);
     if (!signedIn) return;
     renderMe();
-    socialBox.classList.toggle('hidden', !profile.state.username);
+    const hasName = !!profile.state.username;
+    socialBox.classList.toggle('hidden', !hasName);
+    if (hasName && !shown.social) reveal(socialBox);
+    shown.social = hasName;
     if (!profile.state.username) return;
     renderInbox();
     renderRequests();
@@ -442,9 +486,18 @@ document.addEventListener('DOMContentLoaded', () => {
         () => profile.api('gift', { uid: person.uid, coins, item }),
         () => `Gift sent to @${person.username}.`
       );
-      if (ok) overlay.remove();
+      if (ok) close();
     });
-    const cancel = button('Cancel', 'secondary-button', () => overlay.remove());
+    const close = () => {
+      if (overlay.classList.contains('closing')) return;
+      if (reducedMotion()) {
+        overlay.remove();
+        return;
+      }
+      overlay.classList.add('closing');
+      setTimeout(() => overlay.remove(), 200);
+    };
+    const cancel = button('Cancel', 'secondary-button', close);
 
     function cost() {
       const item = select.value ? findItem(select.value) : null;
@@ -468,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     select.addEventListener('change', update);
     overlay.addEventListener('click', e => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) close();
     });
 
     modal.append(title, balance, quick, custom, select, total, send, cancel);
