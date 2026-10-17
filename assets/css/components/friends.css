@@ -222,3 +222,80 @@
   opacity: 0.5;
   cursor: default;
 }
+
+.friend-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.friend-label {
+  padding: 0 4px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--meta-text);
+}
+
+.friend-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.friend-editor .friend-form {
+  gap: 8px;
+}
+
+.friend-editor .friend-input {
+  flex: none;
+  width: 100%;
+}
+
+.friend-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.friend-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.icon-button:hover {
+  background: var(--button-secondary-bg-hover);
+}
+
+.icon-button:active {
+  transform: scale(0.94);
+}
+
+.friend-actions .icon-button {
+  width: 32px;
+  height: 32px;
+  background: none;
+  color: var(--meta-text);
+}
+
+.friend-actions .icon-button:hover {
+  background: var(--secondary-bg);
+}

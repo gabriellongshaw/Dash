@@ -12,6 +12,7 @@ import {
   readyCount
 } from './quests.js';
 
+const PHOTO_MODES = ['google', 'custom', 'none'];
 const KEY = 'dash:profile';
 const LEGACY_BEST = 'dash:best';
 const COLLECTION = 'dashProfiles';
@@ -33,7 +34,9 @@ const defaults = () => ({
   quests: freshQuests(),
   publicBoard: true,
   username: null,
-  photoOn: true
+  displayName: null,
+  photoMode: 'google',
+  photoData: null
 });
 
 const cleanName = v => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60) : '') || null;
@@ -68,7 +71,9 @@ function sanitize(raw) {
     quests: cleanQuests(data.quests),
     publicBoard: data.publicBoard !== false,
     username: typeof data.username === 'string' ? data.username : null,
-    photoOn: data.photoOn !== false
+    displayName: typeof data.displayName === 'string' && data.displayName ? data.displayName : null,
+    photoMode: PHOTO_MODES.includes(data.photoMode) ? data.photoMode : data.photoOn === false ? 'none' : 'google',
+    photoData: typeof data.photoData === 'string' && data.photoData.startsWith('data:image/jpeg;base64,') ? data.photoData : null
   };
 }
 
@@ -307,6 +312,12 @@ export const profile = {
     persist();
     emit();
     return { ok: true, reward: quest.reward };
+  },
+
+  get avatar() {
+    if (state.photoMode === 'custom') return state.photoData;
+    if (state.photoMode === 'google') return state.photo;
+    return null;
   },
 
   get social() {
