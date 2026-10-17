@@ -4,6 +4,8 @@ import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { setCoins } from '../core/motion.js';
+import { initAudio, audio } from '../core/audio.js';
+import { mountSound } from '../components/sound.js';
 
 const $ = id => document.getElementById(id);
 
@@ -24,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
   initPageFadeIn();
   profile.init();
+  initAudio(1);
+  mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
 
   const list = $('quest-list');
@@ -113,8 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const result = await profile.claimQuest(id);
     busy = false;
     if (result.ok) {
-      if (result.reward > 0) showToast(`+${result.reward} coins`);
+      if (result.reward > 0) {
+        audio.sfx('claim');
+        showToast(`+${result.reward} coins`);
+      }
     } else {
+      audio.sfx('error');
       showToast(result.reason === 'offline' ? 'Could not reach cloud saves. Try again.' : 'Quest is not complete yet.');
       render();
     }

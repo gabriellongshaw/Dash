@@ -6,6 +6,8 @@ import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { setCoins } from '../core/motion.js';
 import { colourFor } from '../components/avatar.js';
+import { initAudio } from '../core/audio.js';
+import { mountSound } from '../components/sound.js';
 
 const $ = id => document.getElementById(id);
 
@@ -24,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
   initPageFadeIn();
   profile.init();
+  initAudio(1);
+  mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
 
   const list = $('rank-list');

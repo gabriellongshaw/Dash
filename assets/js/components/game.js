@@ -5,6 +5,7 @@ import { Particles } from './particles.js';
 import { fitStage } from './stage.js';
 import { readPalette, isDark } from '../core/theme.js';
 import { clamp, overlaps } from '../core/utils.js';
+import { audio } from '../core/audio.js';
 
 const BASE_SPEED = 300;
 const MAX_SPEED = 860;
@@ -117,8 +118,10 @@ export class Game {
     if (this.state !== 'playing') return;
     const result = this.runner.jump();
     if (result === 'jump') {
+      audio.sfx('jump');
       this.emitDust(8, -3, -0.2, 40, 120);
     } else if (result === 'double') {
+      audio.sfx('double');
       this.particles.emit(this.runner.x + 17, this.runner.y - 4, 10, {
         a0: 0,
         a1: Math.PI,
@@ -184,6 +187,7 @@ export class Game {
 
   die() {
     this.state = 'over';
+    audio.sfx('hit');
     this.runner.alive = false;
     this.coast = this.speed;
     this.shake = this.reducedMotion ? 0 : 1;
@@ -240,6 +244,7 @@ export class Game {
     this.spawner.update(h, this.speed, this.dist, this.viewW);
 
     if (runner.slid) {
+      audio.sfx('slide');
       this.slides++;
       this.emitDust(6, -3, -1.8, 40, 110, 8);
     }
@@ -275,6 +280,7 @@ export class Game {
       if (overlaps({ x: rb.x - 6, y: rb.y - 6, w: rb.w + 12, h: rb.h + 12 }, cb)) {
         c.taken = true;
         this.coins++;
+        audio.sfx('coin');
         this.particles.emit(c.x, this.groundY - c.up, 8, {
           s0: 40,
           s1: 160,

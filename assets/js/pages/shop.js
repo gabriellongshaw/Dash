@@ -5,6 +5,8 @@ import { drawRunnerTo, drawWorldTo, createScene } from '../components/preview.js
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { setCoins } from '../core/motion.js';
+import { initAudio, audio } from '../core/audio.js';
+import { mountSound } from '../components/sound.js';
 
 const $ = id => document.getElementById(id);
 
@@ -15,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
   initPageFadeIn();
   profile.init();
+  initAudio(1);
+  mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
 
   const grid = $('item-grid');
@@ -133,15 +137,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (busy) return;
     const item = findItem(selected[kind]);
     busy = true;
-    if (!profile.owns(item.id)) {
+    const bought = !profile.owns(item.id);
+    if (bought) {
       const result = await profile.buy(item.id);
       if (!result.ok) {
+        audio.sfx('error');
         showToast(result.reason === 'offline' ? 'Could not reach cloud saves. Try again.' : 'Not enough coins.');
         busy = false;
         refresh();
         return;
       }
     }
+    audio.sfx(bought ? 'buy' : 'equip');
     profile.equip(item.id);
     busy = false;
   });

@@ -5,6 +5,8 @@ import { resolveLook, resolveWorld } from '../core/cosmetics.js';
 import { signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { countTo, hideEl, showEl } from '../core/motion.js';
+import { initAudio, audio } from '../core/audio.js';
+import { mountSound } from '../components/sound.js';
 
 const $ = id => document.getElementById(id);
 
@@ -12,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
   initPageFadeIn();
   profile.init();
+  initAudio(0.6);
+  $('pause-btn').before(mountSound(document.querySelector('.hud-right'), { className: 'icon-button' }));
 
   const scoreEl = $('score');
   const bestEl = $('best');
@@ -42,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       profile.recordRun(result);
       bestEl.textContent = `Best ${profile.state.best}`;
       showQuestNote();
+      audio.duck(0.2);
       $('over-note').classList.toggle('hidden', profile.session.status !== 'out');
       $('over-score').textContent = result.score;
       $('over-best').textContent = result.best;
@@ -51,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
       overReady = false;
       overTimer = setTimeout(() => {
         showEl(overOverlay);
+        if (result.isBest) audio.sfx('best');
         overReady = true;
         countTo($('over-score'), result.score, { duration: 850 });
         countTo($('over-best'), result.best, { duration: 850 });
@@ -72,16 +78,21 @@ document.addEventListener('DOMContentLoaded', () => {
     hint.classList.add('hidden');
     hideEl(pauseOverlay);
     hideEl(overOverlay);
+    audio.duck(0.6);
     profile.beginRun();
     game.start();
   }
 
   function pauseGame() {
-    if (game.pause()) showEl(pauseOverlay);
+    if (game.pause()) {
+      showEl(pauseOverlay);
+      audio.duck(0.25);
+    }
   }
 
   function resumeGame() {
     hideEl(pauseOverlay);
+    audio.duck(0.6);
     game.resume();
   }
 

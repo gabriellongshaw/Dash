@@ -5,6 +5,8 @@ import { makeAvatar } from '../components/avatar.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { exitRow, reducedMotion, reveal, setCoins } from '../core/motion.js';
+import { initAudio, audio } from '../core/audio.js';
+import { mountSound } from '../components/sound.js';
 
 const $ = id => document.getElementById(id);
 
@@ -104,6 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
   initPageFadeIn();
   profile.init();
+  initAudio(1);
+  mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
 
   const note = $('note');
@@ -140,14 +144,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 150);
   }
 
-  async function act(fn, success) {
+  async function act(fn, success, sound) {
     if (busy) return false;
     busy = true;
     try {
       const out = await fn();
       if (success) showToast(typeof success === 'function' ? success(out) : success);
+      if (sound) audio.sfx(sound);
       return true;
     } catch (e) {
+      audio.sfx('error');
       showToast(messageFor(e));
       return false;
     } finally {
@@ -331,7 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!data.gifts.length) return;
     const card = document.createElement('div');
     card.className = 'friend-card gifts';
-    if (!had) card.classList.add('reveal');
+    if (!had) {
+      card.classList.add('reveal');
+      audio.sfx('gift');
+    }
     data.gifts.forEach(gift => {
       const line = document.createElement('p');
       line.className = 'friend-gift';
@@ -349,8 +358,8 @@ document.addEventListener('DOMContentLoaded', () => {
     box.appendChild(card);
   }
 
-  function leave(rowEl, promise, success) {
-    return act(() => promise(), success).then(async ok => {
+  function leave(rowEl, promise, success, sound) {
+    return act(() => promise(), success, sound).then(async ok => {
       if (!ok) return;
       const row = rowEl.closest('.friend-row');
       if (row) {
@@ -372,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let index = 0;
     data.incoming.forEach(person => {
       const accept = button('Accept', 'button small', () =>
-        leave(accept, () => profile.api('respond', { uid: person.uid, accept: true }), `You and @${person.username} are friends.`)
+        leave(accept, () => profile.api('respond', { uid: person.uid, accept: true }), `You and @${person.username} are friends.`, 'claim')
       );
       const decline = button('Decline', 'tertiary-button', () => leave(decline, () => profile.api('respond', { uid: person.uid, accept: false })));
       list.appendChild(personRow(person, index++, [accept, decline], 'in'));
@@ -488,7 +497,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = select.value || null;
       const ok = await act(
         () => profile.api('gift', { uid: person.uid, coins, item }),
-        () => `Gift sent to @${person.username}.`
+        () => `Gift sent to @${person.username}.`,
+        'gift'
       );
       if (ok) close();
     });
@@ -554,14 +564,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const incoming = person.state === 'in';
       const add = button(incoming ? 'Accept' : 'Add', 'button small', async () => {
         const ok = incoming
-          ? await act(() => profile.api('respond', { uid: person.uid, accept: true }), `You and @${person.username} are friends.`)
+          ? await act(() => profile.api('respond', { uid: person.uid, accept: true }), `You and @${person.username} are friends.`, 'claim')
           : await act(
               async () => {
                 const out = await profile.api('request', { username: person.username });
                 person.state = out.accepted ? 'friend' : 'out';
                 return out;
               },
-              out => (out.accepted ? 'You are now friends.' : 'Friend request sent.')
+              out => (out.accepted ? 'You are now friends.' : 'Friend request sent.'),
+              'request'
             );
         if (!ok) return;
         if (incoming) person.state = 'friend';
