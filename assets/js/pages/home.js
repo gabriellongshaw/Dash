@@ -25,6 +25,27 @@ document.addEventListener('DOMContentLoaded', () => {
     badge.textContent = ready;
     badge.classList.toggle('hidden', ready === 0);
   };
+  const friendsBadge = document.getElementById('friends-badge');
+  let socialFetched = false;
+  const showFriendsBadge = async () => {
+    const { status, syncing } = profile.session;
+    if (status !== 'in') {
+      socialFetched = false;
+      friendsBadge.classList.add('hidden');
+      return;
+    }
+    if (syncing || socialFetched || !profile.social) return;
+    socialFetched = true;
+    try {
+      const out = await profile.api('social');
+      const waiting = out.incoming.length + out.gifts.length;
+      friendsBadge.textContent = waiting;
+      friendsBadge.classList.toggle('hidden', waiting === 0);
+    } catch {
+      socialFetched = false;
+    }
+  };
+  profile.subscribe(showFriendsBadge);
   profile.subscribe(showStats);
   profile.subscribe(showBadge);
   profile.refreshQuests();
@@ -79,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   requestAnimationFrame(frame);
 
-  document.querySelectorAll('#play-btn, #shop-btn, #quests-btn, #board-btn').forEach(link => {
+  document.querySelectorAll('#play-btn, #shop-btn, #quests-btn, #board-btn, #friends-btn').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
       navigateTo(link.getAttribute('href'));

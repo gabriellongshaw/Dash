@@ -5,17 +5,11 @@ import { mountAccount, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { setCoins } from '../core/motion.js';
+import { colourFor } from '../components/avatar.js';
 
 const $ = id => document.getElementById(id);
 
-const COLOURS = ['#10b981', '#0891b2', '#6366f1', '#a855f7', '#db2777', '#d97706', '#dc2626', '#65a30d'];
 const CACHE_MS = 30000;
-
-function colourFor(id) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return COLOURS[h % COLOURS.length];
-}
 
 function formatTime(ms) {
   const mins = Math.ceil(ms / 60000);

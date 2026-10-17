@@ -46,7 +46,8 @@ export function mountAccount(el) {
 
   function render() {
     const { status, syncing, error } = profile.session;
-    const { uid, name, photo } = profile.state;
+    const { uid, photo, username } = profile.state;
+    const name = username || profile.state.name;
     el.innerHTML = '';
     el.classList.toggle('hidden', status === 'unavailable' && !uid);
 
