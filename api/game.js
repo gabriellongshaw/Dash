@@ -183,6 +183,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
     if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(user.name, profile.vBest)));
     if (week.w.score > 0) writes.push(weekRef(week.week, user.uid).set(entry(user.name, week.w.score)));
     const results = await Promise.allSettled(writes);
+    results.forEach(result => result.status === 'rejected' && console.error('board write failed', result.reason));
     return results.every(result => result.status === 'fulfilled');
   }
 
