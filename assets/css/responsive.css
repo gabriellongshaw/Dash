@@ -18,6 +18,7 @@
   .account-name {
     display: inline;
   }
+
   .item-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -28,6 +29,15 @@
   .control-jump {
     width: 96px;
     height: 96px;
+  }
+}
+
+@media (min-width: 640px) {
+  .nav-button {
+    padding: 0 16px 0 12px;
+  }
+  .nav-label {
+    display: inline;
   }
 }
 
@@ -102,6 +112,7 @@
   .modal-note,
   .badge-best,
   .account-menu,
+  .nav-button,
   .overlay.closing,
   .overlay.closing .modal,
   .account-menu.closing,
