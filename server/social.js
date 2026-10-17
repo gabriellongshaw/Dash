@@ -1,7 +1,7 @@
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldPath, FieldValue } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
 
-export const USERNAME = /^[A-Za-z0-9_]{3,16}$/;
+export const USERNAME = /^[a-z0-9_]{3,16}$/;
 
 const RESERVED = new Set(['admin', 'administrator', 'dash', 'dev', 'developer', 'gabriel', 'moderator', 'mod', 'official', 'staff', 'support', 'system', 'owner']);
 const MAX_FRIENDS = 50;
@@ -9,6 +9,8 @@ const MAX_PENDING = 30;
 const MAX_GIFT_COINS = 1000;
 const NAME_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const GIFT_PAGE = 20;
+const SEARCH_LIMIT = 12;
+const SEARCH_FETCH = 15;
 const MAX_DISPLAY_NAME = 24;
 const MAX_PHOTO_CHARS = 30000;
 const PHOTO_DATA = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -27,6 +29,17 @@ export function cleanDisplayName(value) {
   if (typeof value !== 'string') return null;
   const name = value.replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAX_DISPLAY_NAME);
   return name || null;
+}
+
+export function profileFixups(raw, photo) {
+  if (!raw) return {};
+  const fix = {};
+  if (raw.photo !== photo) fix.photo = photo;
+  if (typeof raw.username === 'string' && raw.username !== raw.username.toLowerCase()) fix.username = raw.username.toLowerCase();
+  const name = cleanDisplayName(raw.displayName);
+  const lower = name ? name.toLowerCase() : null;
+  if ((raw.displayLower || null) !== lower) fix.displayLower = lower;
+  return fix;
 }
 
 export function validPhoto(value) {
@@ -52,8 +65,9 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
     const data = snap && snap.exists ? snap.data() : {};
     return {
       uid,
-      username: typeof data.username === 'string' ? data.username : null,
+      username: typeof data.username === 'string' ? data.username.toLowerCase() : null,
       displayName: cleanDisplayName(data.displayName),
+      searchable: data.searchable !== false,
       photo: pickPhoto(data),
       best: whole(data.best)
     };
@@ -77,9 +91,9 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
 
   return {
     async setUsername(user, body) {
-      const name = typeof body.username === 'string' ? body.username.trim() : '';
+      const name = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
       if (!USERNAME.test(name)) throw new Fail(400, 'username');
-      const key = name.toLowerCase();
+      const key = name;
       if (RESERVED.has(key)) throw new Fail(409, 'taken');
       const profile = await db.runTransaction(async tx => {
         const profileSnap = await tx.get(profileRef(user.uid));
@@ -90,6 +104,10 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
         const old = typeof raw.username === 'string' ? raw.username : null;
         const me = sanitize(raw);
         if (old === name) return me;
+        if (old && old.toLowerCase() === name) {
+          tx.update(profileRef(user.uid), { username: name, updatedAt: FieldValue.serverTimestamp() });
+          return { ...me, username: name };
+        }
         if (old && now() - whole(raw.usernameAt) < NAME_COOLDOWN_MS) throw new Fail(429, 'cooldown');
         if (old) tx.delete(nameRef(old.toLowerCase()));
         tx.set(nameRef(key), { uid: user.uid });
@@ -104,7 +122,7 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
       const name = cleanDisplayName(body.displayName);
       return db.runTransaction(async tx => {
         const profile = await load(tx, user.uid);
-        tx.update(profileRef(user.uid), { displayName: name, updatedAt: FieldValue.serverTimestamp() });
+        tx.update(profileRef(user.uid), { displayName: name, displayLower: name ? name.toLowerCase() : null, updatedAt: FieldValue.serverTimestamp() });
         return { profile: view({ ...profile, displayName: name }) };
       });
     },
@@ -122,6 +140,41 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
       });
     },
 
+    async setSearchable(user, body) {
+      const on = !!body.on;
+      return db.runTransaction(async tx => {
+        const profile = await load(tx, user.uid);
+        tx.update(profileRef(user.uid), { searchable: on, updatedAt: FieldValue.serverTimestamp() });
+        return { profile: view({ ...profile, searchable: on }) };
+      });
+    },
+
+    async search(user, body) {
+      const q = typeof body.q === 'string' ? body.q.replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/^@/, '').slice(0, MAX_DISPLAY_NAME) : '';
+      if (q.length < 2) return { results: [] };
+      const end = `${q}\uf8ff`;
+      const [byUser, byName, mine] = await Promise.all([
+        db.collection('dashUsernames').where(FieldPath.documentId(), '>=', q).where(FieldPath.documentId(), '<', end).limit(SEARCH_FETCH).get(),
+        db.collection('dashProfiles').where('displayLower', '>=', q).where('displayLower', '<', end).limit(SEARCH_FETCH).get(),
+        entries(user.uid).get()
+      ]);
+      const uids = [...new Set([...byUser.docs.map(doc => doc.data().uid), ...byName.docs.map(doc => doc.id)])].filter(uid => uid && uid !== user.uid);
+      const people = await cards(uids);
+      const states = new Map(mine.docs.map(doc => [doc.id, doc.data().state]));
+      const rank = person => {
+        const name = (person.displayName || '').toLowerCase();
+        if (person.username === q || name === q) return 0;
+        if (person.username.startsWith(q) || name.startsWith(q)) return 1;
+        return 2;
+      };
+      const results = [...people.values()]
+        .filter(person => person.username && person.searchable)
+        .map(person => ({ uid: person.uid, username: person.username, displayName: person.displayName, photo: person.photo, best: person.best, state: states.get(person.uid) || null }))
+        .sort((a, b) => rank(a) - rank(b) || a.username.localeCompare(b.username))
+        .slice(0, SEARCH_LIMIT);
+      return { results };
+    },
+
     async social(user) {
       const [mine, unseen] = await Promise.all([entries(user.uid).get(), gifts(user.uid).where('seen', '==', false).limit(GIFT_PAGE).get()]);
       const uids = mine.docs.map(doc => doc.id);
@@ -135,7 +188,7 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
       const received = unseen.docs
         .map(doc => {
           const data = doc.data();
-          return { id: doc.id, from: typeof data.fromName === 'string' ? data.fromName : 'Someone', coins: whole(data.coins), item: typeof data.item === 'string' ? data.item : null, at: whole(data.at) };
+          return { id: doc.id, from: typeof data.fromName === 'string' ? data.fromName.toLowerCase() : 'someone', coins: whole(data.coins), item: typeof data.item === 'string' ? data.item : null, at: whole(data.at) };
         })
         .sort((a, b) => b.at - a.at);
       return { friends: group('friend'), incoming: group('in'), outgoing: group('out'), gifts: received };

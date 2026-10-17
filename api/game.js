@@ -3,7 +3,7 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
-import { createSocial } from '../server/social.js';
+import { createSocial, profileFixups } from '../server/social.js';
 import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
 const ORIGINS = ['https://gabriellongshaw.co.uk', 'https://www.gabriellongshaw.co.uk'];
@@ -56,6 +56,7 @@ const defaults = () => ({
   username: null,
   usernameAt: 0,
   displayName: null,
+  searchable: true,
   photoMode: 'google',
   photoData: null
 });
@@ -81,9 +82,10 @@ function sanitize(raw) {
     quests: cleanQuests(data.quests),
     publicBoard: data.publicBoard !== false,
     lastRun: whole(data.lastRun),
-    username: typeof data.username === 'string' ? data.username : null,
+    username: typeof data.username === 'string' ? data.username.toLowerCase() : null,
     usernameAt: whole(data.usernameAt),
     displayName: typeof data.displayName === 'string' && data.displayName ? data.displayName : null,
+    searchable: data.searchable !== false,
     photoMode: PHOTO_MODES.includes(data.photoMode) ? data.photoMode : data.photoOn === false ? 'none' : 'google',
     photoData: typeof data.photoData === 'string' && data.photoData ? data.photoData : null
   };
@@ -99,6 +101,7 @@ const view = p => ({
   publicBoard: p.publicBoard,
   username: p.username,
   displayName: p.displayName,
+  searchable: p.searchable,
   photoMode: p.photoMode,
   photoData: p.photoData
 });
@@ -225,14 +228,14 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
         const raw = snap.exists ? snap.data() : null;
         const current = sanitize(raw);
         const photo = cleanPhoto(user.photo);
-        const photoChange = raw && raw.photo !== photo ? { photo } : {};
+        const fix = profileFixups(raw, photo);
         if (raw && raw.imported === true) {
           if (raw.legacyTrusted === true) {
-            if (Object.keys(photoChange).length) tx.update(ref, photoChange);
+            if (Object.keys(fix).length) tx.update(ref, fix);
             return current;
           }
           const vBest = Math.max(current.vBest, current.best);
-          tx.update(ref, { vBest, legacyTrusted: true, ...photoChange, updatedAt: FieldValue.serverTimestamp() });
+          tx.update(ref, { vBest, legacyTrusted: true, ...fix, updatedAt: FieldValue.serverTimestamp() });
           return { ...current, vBest };
         }
         const gift = body.guest ? importGuest(body.guest) : { coins: 0, owned: [], runs: 0, best: 0 };
@@ -244,7 +247,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
           best: Math.max(current.best, gift.best),
           vBest: raw ? Math.max(current.vBest, current.best) : current.vBest
         };
-        const data = { ...next, imported: true, legacyTrusted: true, name: shortName(user.name), photo, updatedAt: FieldValue.serverTimestamp() };
+        const data = { ...next, imported: true, legacyTrusted: true, name: shortName(user.name), photo, ...fix, updatedAt: FieldValue.serverTimestamp() };
         if (snap.exists) tx.update(ref, data);
         else tx.set(ref, data);
         return next;
