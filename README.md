@@ -37,7 +37,7 @@ Dash has an original chiptune theme and sound effects, all generated in the brow
 
 - **Theme:** A 16-bar loop at 138 BPM with a lead, bass, arpeggio and drums. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
 - **Effects:** Jump, double jump, slide, coin, crash, new best, buttons, buying, equipping, quest claims, gifts and friend requests.
-- **Controls:** The speaker button turns music and effects on or off, and the choice is remembered on the device.
+- **Controls:** The speaker button opens sound settings with separate switches for music and sound effects, and the choices are remembered on the device.
 - **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first interaction on a page. Music pauses while the tab is hidden.
 - **Editing:** The tune is the `SCORE` list in `assets/js/core/music.js` and the effects are in `assets/js/core/audio.js`.
 
