@@ -177,12 +177,13 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
   }
 
   async function publish(user, profile) {
-    if (!profile.publicBoard) return;
+    if (!profile.publicBoard) return true;
     const week = rollQuests(profile.quests);
     const writes = [];
     if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(user.name, profile.vBest)));
     if (week.w.score > 0) writes.push(weekRef(week.week, user.uid).set(entry(user.name, week.w.score)));
-    await Promise.allSettled(writes);
+    const results = await Promise.allSettled(writes);
+    return results.every(result => result.status === 'fulfilled');
   }
 
   const actions = {
@@ -221,12 +222,12 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
       if (!run || !started) throw new Fail(400, 'run');
       const out = await db.runTransaction(async tx => {
         const profile = await load(tx, user.uid);
-        if (started <= profile.lastRun) return { profile, rejected: 'replay', board: false };
+        if (started <= profile.lastRun) return { profile, rejected: 'replay' };
         const problem = checkRun(run, (now() - started) / 1000);
         const base = { lastRun: started, updatedAt: FieldValue.serverTimestamp() };
         if (problem) {
           tx.update(profileRef(user.uid), base);
-          return { profile, rejected: problem, board: false };
+          return { profile, rejected: problem };
         }
         const score = run.meters + run.coins * 5;
         const quests = applyRun(profile.quests, { ...run, score });
@@ -246,10 +247,9 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
           quests,
           ...base
         });
-        const week = rollQuests(profile.quests).w.score;
-        return { profile: next, rejected: null, board: score > profile.vBest || score > week };
+        return { profile: next, rejected: null };
       });
-      if (out.board) await publish(user, out.profile);
+      if (!out.rejected && !(await publish(user, out.profile))) throw new Fail(503, 'board');
       return { rejected: out.rejected, profile: view(out.profile) };
     },
 
