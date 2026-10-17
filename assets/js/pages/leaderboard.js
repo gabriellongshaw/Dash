@@ -1,6 +1,6 @@
 import { profile } from '../core/profile.js';
 import { fetchBoard, fetchRank, shortName } from '../core/leaderboard.js';
-import { msUntilReset } from '../core/quests.js';
+import { msUntilReset, weekBoardScore } from '../core/quests.js';
 import { mountAccount, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let shown = '';
 
   const keyOf = name => (name === 'all' ? 'all' : profile.state.quests.week);
-  const scoreOf = name => (name === 'all' ? profile.state.best : profile.state.quests.w.score);
+  const scoreOf = name => (name === 'all' ? profile.state.best : weekBoardScore(profile.state.quests, profile.state.best));
   const myScore = () => scoreOf(scope);
 
   function row(entry, rank, index, me) {

@@ -3,7 +3,7 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
-import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests } from '../assets/js/core/quests.js';
+import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
 const ORIGINS = ['https://gabriellongshaw.co.uk', 'https://www.gabriellongshaw.co.uk'];
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
@@ -181,7 +181,8 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
     const week = rollQuests(profile.quests);
     const writes = [];
     if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(user.name, profile.vBest)));
-    if (week.w.score > 0) writes.push(weekRef(week.week, user.uid).set(entry(user.name, week.w.score)));
+    const weekScore = weekBoardScore(week, profile.vBest);
+    if (weekScore > 0) writes.push(weekRef(week.week, user.uid).set(entry(user.name, weekScore)));
     const results = await Promise.allSettled(writes);
     results.forEach(result => result.status === 'rejected' && console.error('board write failed', result.reason));
     return results.every(result => result.status === 'fulfilled');

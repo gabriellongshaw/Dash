@@ -40,6 +40,15 @@ export function weekKey(now = new Date()) {
   return `${year}-W${pad(week)}`;
 }
 
+// The game launched in this week, so every all-time best was set during it.
+export const FIRST_WEEK = '2026-W42';
+
+// Score shown on the weekly board. In launch week it matches the all-time board.
+export function weekBoardScore(quests, best) {
+  const own = quests.w.score;
+  return quests.week === FIRST_WEEK ? Math.max(own, whole(best)) : own;
+}
+
 export function msUntilReset(scope, now = new Date()) {
   const days = scope === 'd' ? 1 : 7 - ((now.getUTCDay() + 6) % 7);
   const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + days);
