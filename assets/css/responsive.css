@@ -56,3 +56,71 @@
     right: 22px;
   }
 }
+
+@media (hover: hover) {
+  .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--button-bg) 35%, transparent);
+  }
+  .button:hover svg {
+    transform: translateX(3px);
+  }
+  .secondary-button:hover,
+  .icon-button:hover,
+  .leave-button:hover {
+    transform: translateY(-1px);
+  }
+  .leave-button:hover svg {
+    transform: translateX(-3px);
+  }
+  .account-chip:hover .account-avatar {
+    transform: scale(1.1);
+  }
+  .item-card:hover {
+    transform: translateY(-3px);
+  }
+  .quest-card:hover,
+  .rank-row:hover {
+    transform: translateY(-2px);
+  }
+  .button:hover:active,
+  .secondary-button:hover:active,
+  .icon-button:hover:active,
+  .leave-button:hover:active,
+  .item-card:hover:active {
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-content > *,
+  .shop-inner > *,
+  #play-btn,
+  .badge-dot,
+  .modal,
+  .modal .stat,
+  .modal-note,
+  .badge-best,
+  .account-menu,
+  .item-card,
+  .quest-card,
+  .quest-card::after,
+  .quest-bar span,
+  .quest-done svg,
+  .rank-row,
+  .rank-row::after,
+  .shop-action .button,
+  .shop-bar-right .coin-dot,
+  .coin-pill {
+    animation: none;
+  }
+  .tab-pill,
+  .page,
+  .toast,
+  .button,
+  .button svg,
+  .leave-button svg,
+  .account-avatar {
+    transition: none;
+  }
+}

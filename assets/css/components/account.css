@@ -55,6 +55,7 @@
   font-size: 0.85rem;
   font-weight: 700;
   object-fit: cover;
+  transition: transform 0.2s ease;
 }
 
 .account-name {
@@ -72,6 +73,8 @@
   border-radius: 14px;
   background: var(--card-bg);
   box-shadow: var(--shadow-soft);
+  transform-origin: top right;
+  animation: menuPop 0.18s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 }
 
 .account-menu-item {
@@ -86,6 +89,7 @@
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .account-menu-item:hover {
@@ -109,13 +113,13 @@
   text-align: center;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 12px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transform: translate(-50%, 14px) scale(0.94);
+  transition: opacity 0.25s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .toast.visible {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translate(-50%, 0) scale(1);
 }
 
 .home-account {
