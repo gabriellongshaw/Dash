@@ -37,6 +37,50 @@ const MESSAGES = {
   empty: 'Choose coins or an item to send.'
 };
 
+const PENCIL =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+
+const CROSS =
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
+const PHOTO_SIZE = 96;
+const PHOTO_MAX_CHARS = 24000;
+
+function resizePhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image'));
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        if (!side) {
+          reject(new Error('image'));
+          return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = PHOTO_SIZE;
+        canvas.height = PHOTO_SIZE;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, PHOTO_SIZE, PHOTO_SIZE);
+        ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, PHOTO_SIZE, PHOTO_SIZE);
+        let quality = 0.85;
+        let out = canvas.toDataURL('image/jpeg', quality);
+        while (out.length > PHOTO_MAX_CHARS && quality > 0.3) {
+          quality -= 0.1;
+          out = canvas.toDataURL('image/jpeg', quality);
+        }
+        if (out.length > PHOTO_MAX_CHARS) reject(new Error('size'));
+        else resolve(out);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 const messageFor = e => MESSAGES[e && e.code] || `Something went wrong${e && e.code ? ` (${e.code})` : ''}. Try again.`;
 
 function button(label, className, onClick) {
@@ -103,55 +147,110 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   }
 
+  function field(labelText, input) {
+    const wrap = document.createElement('label');
+    wrap.className = 'friend-field';
+    const label = document.createElement('span');
+    label.className = 'friend-label';
+    label.textContent = labelText;
+    wrap.append(label, input);
+    return wrap;
+  }
+
+  function textInput(value, placeholder, max, name) {
+    const input = document.createElement('input');
+    input.className = 'friend-input';
+    input.type = 'text';
+    input.maxLength = max;
+    input.placeholder = placeholder;
+    input.value = value || '';
+    input.autocapitalize = 'none';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.setAttribute('aria-label', name);
+    return input;
+  }
+
+  function renderEditor() {
+    const { username, displayName, photoMode } = profile.state;
+    const title = document.createElement('p');
+    title.className = 'friend-title';
+    title.textContent = username ? 'Edit profile' : 'Set up your profile';
+    me.appendChild(title);
+
+    const photoRow = document.createElement('div');
+    photoRow.className = 'friend-photo-row';
+    photoRow.appendChild(makeAvatar({ uid: profile.state.uid, username: username || displayName || '?', photo: profile.avatar }, 'lg'));
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = 'image/*';
+    picker.className = 'hidden';
+    picker.addEventListener('change', async () => {
+      const file = picker.files && picker.files[0];
+      picker.value = '';
+      if (!file) return;
+      let data;
+      try {
+        data = await resizePhoto(file);
+      } catch {
+        showToast('Could not read that image.');
+        return;
+      }
+      act(() => profile.api('setPhoto', { mode: 'custom', data }), 'Photo updated.');
+    });
+    const choices = document.createElement('div');
+    choices.className = 'friend-photo-actions';
+    choices.appendChild(button('Upload photo', 'secondary-button small', () => picker.click()));
+    if (profile.state.photo && photoMode !== 'google') {
+      choices.appendChild(button('Use Google photo', 'tertiary-button', () => act(() => profile.api('setPhoto', { mode: 'google' }))));
+    }
+    if (photoMode !== 'none') {
+      choices.appendChild(button('Remove photo', 'tertiary-button', () => act(() => profile.api('setPhoto', { mode: 'none' }))));
+    }
+    photoRow.append(choices, picker);
+    me.appendChild(photoRow);
+
+    const form = document.createElement('form');
+    form.className = 'friend-editor';
+    form.autocomplete = 'off';
+    const nameInput = textInput(displayName, 'Display name (optional)', 24, 'Display name');
+    const userInput = textInput(username, 'Username', 16, 'Username');
+    const hint = document.createElement('p');
+    hint.className = 'friend-hint';
+    hint.textContent = 'Friends add you by username. Your display name shows beside it. You can change your username once a day.';
+    const save = document.createElement('button');
+    save.type = 'submit';
+    save.className = 'button small';
+    save.textContent = 'Save';
+    const row = document.createElement('div');
+    row.className = 'friend-form';
+    row.appendChild(save);
+    if (username) row.appendChild(button('Cancel', 'secondary-button small', () => {
+      editing = false;
+      render();
+    }));
+    form.append(field('Display name', nameInput), field('Username', userInput), hint, row);
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const nextName = nameInput.value.trim().replace(/\s+/g, ' ');
+      const nextUser = userInput.value.trim();
+      let ok = true;
+      if (nextUser !== (username || '')) ok = await act(() => profile.api('setUsername', { username: nextUser }));
+      if (ok && nextName !== (displayName || '')) ok = await act(() => profile.api('setDisplayName', { displayName: nextName }));
+      if (ok) {
+        showToast('Profile saved.');
+        editing = false;
+        load();
+      }
+    });
+    me.appendChild(form);
+  }
+
   function renderMe() {
-    const { username, photoOn } = profile.state;
-    const photo = photoOn ? profile.state.photo : null;
+    const { username, displayName } = profile.state;
     me.innerHTML = '';
     if (!username || editing) {
-      const title = document.createElement('p');
-      title.className = 'friend-title';
-      title.textContent = username ? 'Change username' : 'Choose a username';
-      const hint = document.createElement('p');
-      hint.className = 'friend-hint';
-      hint.textContent = username
-        ? 'You can change it once a day.'
-        : 'Friends find you by it, and it shows on the leaderboard instead of your name.';
-      const form = document.createElement('form');
-      form.className = 'friend-form';
-      form.autocomplete = 'off';
-      const input = document.createElement('input');
-      input.className = 'friend-input';
-      input.type = 'text';
-      input.maxLength = 16;
-      input.placeholder = 'Username';
-      input.value = username || '';
-      input.autocapitalize = 'none';
-      input.spellcheck = false;
-      input.setAttribute('aria-label', 'Username');
-      const save = document.createElement('button');
-      save.type = 'submit';
-      save.className = 'button small';
-      save.textContent = 'Save';
-      form.append(input, save);
-      form.addEventListener('submit', async e => {
-        e.preventDefault();
-        const value = input.value.trim();
-        if (value === username) {
-          editing = false;
-          render();
-          return;
-        }
-        const ok = await act(() => profile.api('setUsername', { username: value }), 'Username saved.');
-        if (ok) {
-          editing = false;
-          load();
-        }
-      });
-      me.append(title, hint, form);
-      if (username) me.appendChild(button('Cancel', 'tertiary-button', () => {
-        editing = false;
-        render();
-      }));
+      renderEditor();
       return;
     }
     const row = document.createElement('div');
@@ -160,23 +259,19 @@ document.addEventListener('DOMContentLoaded', () => {
     names.className = 'friend-names';
     const handle = document.createElement('span');
     handle.className = 'friend-handle';
-    handle.textContent = `@${username}`;
+    handle.textContent = displayName || `@${username}`;
     const best = document.createElement('span');
     best.className = 'friend-sub';
-    best.textContent = `Best ${profile.state.best}`;
+    best.textContent = displayName ? `@${username} · Best ${profile.state.best}` : `Best ${profile.state.best}`;
     names.append(handle, best);
-    row.append(makeAvatar({ uid: profile.state.uid, username, photo }, 'lg'), names, button('Edit', 'tertiary-button', () => {
+    const edit = button('', 'icon-button', () => {
       editing = true;
       render();
-    }));
+    });
+    edit.setAttribute('aria-label', 'Edit profile');
+    edit.innerHTML = PENCIL;
+    row.append(makeAvatar({ uid: profile.state.uid, username, photo: profile.avatar }, 'lg'), names, edit);
     me.appendChild(row);
-    if (profile.state.photo) {
-      const toggle = button(photoOn ? 'Hide my photo from friends' : 'Show my photo to friends', 'tertiary-button', () => {
-        toggle.blur();
-        act(() => profile.api('setPhoto', { on: !photoOn }));
-      });
-      me.appendChild(toggle);
-    }
   }
 
   function personRow(person, index, actions) {
@@ -187,10 +282,10 @@ document.addEventListener('DOMContentLoaded', () => {
     names.className = 'friend-names';
     const handle = document.createElement('span');
     handle.className = 'friend-handle';
-    handle.textContent = `@${person.username}`;
+    handle.textContent = person.displayName || `@${person.username}`;
     const sub = document.createElement('span');
     sub.className = 'friend-sub';
-    sub.textContent = `Best ${person.best}`;
+    sub.textContent = person.displayName ? `@${person.username} · Best ${person.best}` : `Best ${person.best}`;
     names.append(handle, sub);
     const side = document.createElement('div');
     side.className = 'friend-actions';
@@ -261,10 +356,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     data.friends.forEach((person, index) => {
       const gift = button('Gift', 'secondary-button small', () => openGift(person));
-      const remove = button('Remove', 'tertiary-button', () => {
+      const remove = button('', 'icon-button', () => {
         if (!confirm(`Remove @${person.username} from your friends?`)) return;
         act(() => profile.api('removeFriend', { uid: person.uid }), 'Friend removed.').then(ok => ok && load());
       });
+      remove.setAttribute('aria-label', `Remove @${person.username}`);
+      remove.innerHTML = CROSS;
       list.appendChild(personRow(person, index, [gift, remove]));
     });
   }
