@@ -20,6 +20,7 @@ let step = 0;
 let nextTime = 0;
 let playing = false;
 let unlockBound = false;
+let unlocked = false;
 let uiBound = false;
 
 function loadSettings() {
@@ -48,6 +49,8 @@ function ensure() {
   const Context = window.AudioContext || window.webkitAudioContext;
   if (!Context) return null;
   ctx = new Context();
+  ctx.onstatechange = onState;
+  if (ctx.state === 'running') unlocked = true;
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -10;
   limiter.ratio.value = 6;
@@ -126,21 +129,31 @@ function tryStart() {
   c.resume().then(beginMusic, () => {});
 }
 
+function onState() {
+  if (ctx.state === 'running') {
+    unlocked = true;
+    tryStart();
+  } else endMusic(0);
+}
+
+function prime(c) {
+  const src = c.createBufferSource();
+  src.buffer = c.createBuffer(1, 1, c.sampleRate);
+  src.connect(c.destination);
+  src.start(0);
+}
+
 function bindUnlock() {
   if (unlockBound) return;
   unlockBound = true;
   const unlock = () => {
     const c = ensure();
     if (!c) return;
-    c.resume().then(() => {
-      tryStart();
-      if (c.state === 'running') {
-        ['pointerdown', 'touchend', 'keydown', 'click'].forEach(type => window.removeEventListener(type, unlock, true));
-        unlockBound = false;
-      }
-    }, () => {});
+    if (!unlocked) prime(c);
+    if (c.state === 'running') tryStart();
+    else c.resume().then(tryStart, () => {});
   };
-  ['pointerdown', 'touchend', 'keydown', 'click'].forEach(type => window.addEventListener(type, unlock, true));
+  ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach(type => window.addEventListener(type, unlock, true));
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) endMusic(0.1);
     else tryStart();
@@ -236,12 +249,6 @@ export const audio = {
     if (!settings.music) endMusic(0.2);
     else tryStart();
     emit();
-  },
-
-  toggleAll() {
-    const on = !this.enabled;
-    this.set({ music: on, sfx: on });
-    if (on) this.sfx('toggle');
   },
 
   sfx(name) {
