@@ -128,3 +128,35 @@
   right: max(12px, env(safe-area-inset-right));
   z-index: 20;
 }
+
+.sound-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.sound-btn:hover {
+  background: var(--button-secondary-bg-hover);
+}
+
+.sound-btn:active {
+  transform: scale(0.94);
+}
+
+.sound-btn svg {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+.home-nav .sound-btn {
+  animation: fadeInUp 0.5s cubic-bezier(0.33, 1, 0.68, 1) 0.18s backwards;
+}
