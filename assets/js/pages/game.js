@@ -4,6 +4,7 @@ import { profile } from '../core/profile.js';
 import { resolveLook, resolveWorld } from '../core/cosmetics.js';
 import { signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
+import { countTo } from '../core/motion.js';
 
 const $ = id => document.getElementById(id);
 
@@ -51,6 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
       overTimer = setTimeout(() => {
         overOverlay.classList.remove('hidden');
         overReady = true;
+        countTo($('over-score'), result.score, { duration: 850 });
+        countTo($('over-best'), result.best, { duration: 850 });
+        countTo($('over-coins'), result.coins, { duration: 700 });
+        countTo($('over-distance'), result.meters, { duration: 850, suffix: ' m' });
       }, 600);
     }
   });

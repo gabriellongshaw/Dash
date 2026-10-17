@@ -3,6 +3,7 @@ import { dailyQuests, weeklyQuests, progressOf, isClaimed, isReady, msUntilReset
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
+import { setCoins } from '../core/motion.js';
 
 const $ = id => document.getElementById(id);
 
@@ -47,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function render() {
     const q = profile.state.quests;
-    wallet.textContent = profile.state.coins;
+    setCoins(wallet, profile.state.coins);
     note.classList.toggle('hidden', profile.session.status !== 'out');
     renderMeta();
     list.innerHTML = '';
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bar.className = 'quest-bar';
       const fill = document.createElement('span');
       fill.style.width = `${(progress / quest.target) * 100}%`;
+      if (animate) fill.classList.add('grow');
       bar.appendChild(fill);
       const count = document.createElement('span');
       count.className = 'quest-count';

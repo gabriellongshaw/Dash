@@ -4,6 +4,7 @@ import { readPalette, onThemeChange, detectTouch, isDark } from '../core/theme.j
 import { drawRunnerTo, drawWorldTo, createScene } from '../components/preview.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
+import { setCoins } from '../core/motion.js';
 
 const $ = id => document.getElementById(id);
 
@@ -86,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function refresh() {
     const { coins, equipped } = profile.state;
-    $('wallet').textContent = coins;
+    setCoins($('wallet'), coins);
     grid.querySelectorAll('.item-card').forEach(card => {
       const item = findItem(card.dataset.id);
       const owned = profile.owns(item.id);
