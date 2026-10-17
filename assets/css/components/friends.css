@@ -96,6 +96,25 @@
   color: var(--meta-text);
 }
 
+.friend-search {
+  position: relative;
+  width: 100%;
+}
+
+.friend-search .friend-input {
+  width: 100%;
+  padding-left: 42px;
+}
+
+.friend-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  color: var(--meta-text);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
 .friend-row {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;

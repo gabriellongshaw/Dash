@@ -35,6 +35,7 @@ const defaults = () => ({
   publicBoard: true,
   username: null,
   displayName: null,
+  searchable: true,
   photoMode: 'google',
   photoData: null
 });
@@ -70,8 +71,9 @@ function sanitize(raw) {
     equipped,
     quests: cleanQuests(data.quests),
     publicBoard: data.publicBoard !== false,
-    username: typeof data.username === 'string' ? data.username : null,
+    username: typeof data.username === 'string' ? data.username.toLowerCase() : null,
     displayName: typeof data.displayName === 'string' && data.displayName ? data.displayName : null,
+    searchable: data.searchable !== false,
     photoMode: PHOTO_MODES.includes(data.photoMode) ? data.photoMode : data.photoOn === false ? 'none' : 'google',
     photoData: typeof data.photoData === 'string' && data.photoData.startsWith('data:image/jpeg;base64,') ? data.photoData : null
   };

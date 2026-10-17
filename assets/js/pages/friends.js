@@ -19,7 +19,7 @@ const GROUPS = [
 
 const MESSAGES = {
   taken: 'That username is taken.',
-  username: 'Use 3 to 16 letters, numbers or underscores.',
+  username: 'Use 3 to 16 lowercase letters, numbers or underscores.',
   cooldown: 'You can only change your username once a day.',
   'no-user': 'No player has that username.',
   self: 'That is your own username.',
@@ -112,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const me = $('me');
   const addForm = $('add-form');
   const addInput = $('add-input');
-  const addBtn = $('add-btn');
   let data = { friends: [], incoming: [], outgoing: [], gifts: [] };
   let loaded = false;
   let loading = false;
@@ -235,17 +234,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.createElement('form');
     form.className = 'friend-editor';
     form.autocomplete = 'off';
+    const searchToggle = button(`Show me in search: ${profile.state.searchable ? 'On' : 'Off'}`, 'tertiary-button', () => {
+      searchToggle.blur();
+      act(() => profile.api('setSearchable', { on: !profile.state.searchable }));
+    });
     const nameInput = textInput(draft.name, 'Display name (optional)', 24, 'Display name');
     const userInput = textInput(draft.user, 'Username', 16, 'Username');
     nameInput.addEventListener('input', () => {
       draft.name = nameInput.value;
     });
     userInput.addEventListener('input', () => {
+      userInput.value = userInput.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
       draft.user = userInput.value;
     });
     const hint = document.createElement('p');
     hint.className = 'friend-hint';
-    hint.textContent = 'Friends add you by username. Your display name shows beside it. You can change your username once a day.';
+    hint.textContent = 'Usernames are lowercase letters, numbers and underscores. You can change yours once a day.';
     const save = document.createElement('button');
     save.type = 'submit';
     save.className = 'button small';
@@ -254,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     row.className = 'friend-form';
     row.appendChild(save);
     if (username) row.appendChild(button('Cancel', 'secondary-button small', () => setEditing(false)));
-    form.append(field('Display name', nameInput), field('Username', userInput), hint, row);
+    form.append(field('Display name', nameInput), field('Username', userInput), hint, searchToggle, row);
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const nextName = nameInput.value.trim().replace(/\s+/g, ' ');
@@ -389,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!data.friends.length) {
       const empty = document.createElement('p');
       empty.className = 'quest-empty';
-      empty.textContent = loaded ? 'No friends yet. Add someone by their username.' : 'Loading';
+      empty.textContent = loaded ? 'No friends yet. Search above to find someone.' : 'Loading';
       list.appendChild(empty);
       return;
     }
@@ -530,16 +534,92 @@ document.addEventListener('DOMContentLoaded', () => {
     update();
   }
 
-  addForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const name = addInput.value.trim().replace(/^@/, '');
-    if (!name) return;
-    addBtn.blur();
-    const ok = await act(() => profile.api('request', { username: name }), out => (out.accepted ? 'You are now friends.' : 'Friend request sent.'));
-    if (ok) {
-      addInput.value = '';
-      load();
+  const resultsBox = $('results');
+  let results = [];
+  let searched = '';
+  let searchToken = 0;
+  let searchTimer = 0;
+
+  function resultRow(person, index) {
+    const actions = [];
+    const mark = text => {
+      const tag = document.createElement('span');
+      tag.className = 'friend-sub';
+      tag.textContent = text;
+      return tag;
+    };
+    if (person.state === 'friend') actions.push(mark('Friends'));
+    else if (person.state === 'out') actions.push(mark('Sent'));
+    else {
+      const incoming = person.state === 'in';
+      const add = button(incoming ? 'Accept' : 'Add', 'button small', async () => {
+        const ok = incoming
+          ? await act(() => profile.api('respond', { uid: person.uid, accept: true }), `You and @${person.username} are friends.`)
+          : await act(
+              async () => {
+                const out = await profile.api('request', { username: person.username });
+                person.state = out.accepted ? 'friend' : 'out';
+                return out;
+              },
+              out => (out.accepted ? 'You are now friends.' : 'Friend request sent.')
+            );
+        if (!ok) return;
+        if (incoming) person.state = 'friend';
+        renderResults();
+        load();
+      });
+      actions.push(add);
     }
+    return personRow(person, index, actions, 'search');
+  }
+
+  function renderResults() {
+    resultsBox.innerHTML = '';
+    const active = searched.length >= 2;
+    resultsBox.classList.toggle('hidden', !active);
+    if (!active) return;
+    if (!results.length) {
+      const empty = document.createElement('p');
+      empty.className = 'quest-empty';
+      empty.textContent = 'No players found.';
+      resultsBox.appendChild(empty);
+      return;
+    }
+    results.forEach((person, index) => resultsBox.appendChild(resultRow(person, index)));
+  }
+
+  async function runSearch(term) {
+    const mine = ++searchToken;
+    try {
+      const out = await profile.api('search', { q: term });
+      if (mine !== searchToken) return;
+      Array.from(seen).filter(key => key.startsWith('search:')).forEach(key => seen.delete(key));
+      results = out.results;
+      searched = term;
+      renderResults();
+    } catch (e) {
+      if (mine === searchToken) showToast(messageFor(e));
+    }
+  }
+
+  function scheduleSearch(immediate) {
+    clearTimeout(searchTimer);
+    const term = addInput.value.trim();
+    if (term.length < 2) {
+      searchToken++;
+      results = [];
+      searched = '';
+      renderResults();
+      return;
+    }
+    searchTimer = setTimeout(() => runSearch(term), immediate ? 0 : 280);
+  }
+
+  addInput.addEventListener('input', () => scheduleSearch(false));
+  addForm.addEventListener('submit', e => {
+    e.preventDefault();
+    addInput.blur();
+    scheduleSearch(true);
   });
 
   $('note-signin').addEventListener('click', () => signInFlow());
