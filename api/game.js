@@ -3,6 +3,7 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
+import { createSocial } from '../server/social.js';
 import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
 const ORIGINS = ['https://gabriellongshaw.co.uk', 'https://www.gabriellongshaw.co.uk'];
@@ -49,7 +50,10 @@ const defaults = () => ({
   equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' },
   quests: freshQuests(),
   publicBoard: true,
-  lastRun: 0
+  lastRun: 0,
+  username: null,
+  usernameAt: 0,
+  photoOn: true
 });
 
 function sanitize(raw) {
@@ -72,7 +76,10 @@ function sanitize(raw) {
     equipped,
     quests: cleanQuests(data.quests),
     publicBoard: data.publicBoard !== false,
-    lastRun: whole(data.lastRun)
+    lastRun: whole(data.lastRun),
+    username: typeof data.username === 'string' ? data.username : null,
+    usernameAt: whole(data.usernameAt),
+    photoOn: data.photoOn !== false
   };
 }
 
@@ -83,8 +90,18 @@ const view = p => ({
   owned: p.owned,
   equipped: p.equipped,
   quests: p.quests,
-  publicBoard: p.publicBoard
+  publicBoard: p.publicBoard,
+  username: p.username,
+  photoOn: p.photoOn
 });
+
+const cleanPhoto = v => {
+  try {
+    return typeof v === 'string' && new URL(v).protocol === 'https:' ? v : null;
+  } catch {
+    return null;
+  }
+};
 
 export function maxMeters(seconds) {
   const rampEnd = Math.log(MAX_SPEED / BASE_SPEED) / SPEED_GAIN;
@@ -180,25 +197,34 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
     if (!profile.publicBoard) return true;
     const week = rollQuests(profile.quests);
     const writes = [];
-    if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(user.name, profile.vBest)));
+    if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(profile.username || user.name, profile.vBest)));
     const weekScore = weekBoardScore(week, profile.vBest);
-    if (weekScore > 0) writes.push(weekRef(week.week, user.uid).set(entry(user.name, weekScore)));
+    if (weekScore > 0) writes.push(weekRef(week.week, user.uid).set(entry(profile.username || user.name, weekScore)));
     const results = await Promise.allSettled(writes);
     results.forEach(result => result.status === 'rejected' && console.error('board write failed', result.reason));
     return results.every(result => result.status === 'fulfilled');
   }
 
+  const social = createSocial({ db, profileRef, load, sanitize, view, Fail, publish, now });
+
   const actions = {
+    ...social,
+
     async syncProfile(user, body) {
       const profile = await db.runTransaction(async tx => {
         const ref = profileRef(user.uid);
         const snap = await tx.get(ref);
         const raw = snap.exists ? snap.data() : null;
         const current = sanitize(raw);
+        const photo = cleanPhoto(user.photo);
+        const photoChange = raw && raw.photo !== photo ? { photo } : {};
         if (raw && raw.imported === true) {
-          if (raw.legacyTrusted === true) return current;
+          if (raw.legacyTrusted === true) {
+            if (Object.keys(photoChange).length) tx.update(ref, photoChange);
+            return current;
+          }
           const vBest = Math.max(current.vBest, current.best);
-          tx.update(ref, { vBest, legacyTrusted: true, updatedAt: FieldValue.serverTimestamp() });
+          tx.update(ref, { vBest, legacyTrusted: true, ...photoChange, updatedAt: FieldValue.serverTimestamp() });
           return { ...current, vBest };
         }
         const gift = body.guest ? importGuest(body.guest) : { coins: 0, owned: [], runs: 0, best: 0 };
@@ -210,7 +236,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
           best: Math.max(current.best, gift.best),
           vBest: raw ? Math.max(current.vBest, current.best) : current.vBest
         };
-        const data = { ...next, imported: true, legacyTrusted: true, name: shortName(user.name), updatedAt: FieldValue.serverTimestamp() };
+        const data = { ...next, imported: true, legacyTrusted: true, name: shortName(user.name), photo, updatedAt: FieldValue.serverTimestamp() };
         if (snap.exists) tx.update(ref, data);
         else tx.set(ref, data);
         return next;
@@ -326,7 +352,7 @@ function setup() {
     verify: async token => {
       try {
         const decoded = await getAuth().verifyIdToken(token);
-        return { uid: decoded.uid, name: decoded.name || null };
+        return { uid: decoded.uid, name: decoded.name || null, photo: decoded.picture || null };
       } catch {
         return null;
       }
