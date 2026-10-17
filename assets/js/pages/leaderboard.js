@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let scope = 'week';
   let token = 0;
   const cache = {};
+  let shown = '';
 
   const keyOf = name => (name === 'all' ? 'all' : profile.state.quests.week);
   const scoreOf = name => (name === 'all' ? profile.state.best : profile.state.quests.w.score);
@@ -72,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function message(text, retry) {
+    shown = '';
     list.innerHTML = '';
     const p = document.createElement('p');
     p.className = 'quest-empty';
@@ -87,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function skeleton() {
+    shown = '';
     list.innerHTML = '';
     for (let i = 0; i < 6; i++) {
       const el = row({ id: String(i), name: '        ', score: '0000' }, i + 1, i, false);
@@ -127,17 +130,20 @@ document.addEventListener('DOMContentLoaded', () => {
     return { entries, rank };
   }
 
-  async function load(force) {
+  const signature = (key, result) => JSON.stringify([key, profile.state.uid, result.entries.map(entry => [entry.id, entry.score]), result.rank]);
+
+  async function load(force, quiet) {
     const name = scope;
     const other = name === 'all' ? 'week' : 'all';
     const key = keyOf(name);
     const mine = ++token;
     const hit = cache[key];
     if (!force && hit && Date.now() - hit.at < CACHE_MS) {
+      shown = signature(key, hit);
       renderEntries(hit.entries, hit.rank);
       return;
     }
-    skeleton();
+    if (!quiet || !shown) skeleton();
     const at = Date.now();
     const otherKey = keyOf(other);
     pull(other).then(
@@ -150,6 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await pull(name);
       cache[key] = { at, ...result };
       if (mine !== token) return;
+      const next = signature(key, result);
+      if (quiet && next === shown) return;
+      shown = next;
       renderEntries(result.entries, result.rank);
     } catch (e) {
       if (mine !== token) return;
@@ -162,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function reload() {
     Object.keys(cache).forEach(k => delete cache[k]);
-    load(true);
+    load(true, true);
   }
 
   function renderMeta() {
