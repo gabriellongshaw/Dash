@@ -35,6 +35,50 @@
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes popOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(10px) scale(0.94); }
+}
+
+@keyframes menuOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-6px) scale(0.92); }
+}
+
+@keyframes rowOut {
+  from { opacity: 1; max-height: var(--h, 80px); transform: translateX(0); }
+  60%  { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: -5px; margin-bottom: -5px; border-width: 0; transform: translateX(28px); }
+}
+
+@keyframes swapOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+.overlay.closing {
+  pointer-events: none;
+  animation: fadeOut 0.18s ease both;
+}
+
+.overlay.closing .modal {
+  animation: popOut 0.18s ease both;
+}
+
+.account-menu.closing {
+  pointer-events: none;
+  animation: menuOut 0.14s ease both;
+}
+
+.reveal {
+  animation: fadeInUp 0.45s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+}
+
 @keyframes menuPop {
   from { opacity: 0; transform: translateY(-6px) scale(0.92); }
   to   { opacity: 1; transform: translateY(0) scale(1); }

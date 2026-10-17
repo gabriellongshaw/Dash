@@ -1,4 +1,5 @@
 import { profile } from '../core/profile.js';
+import { hideEl, showEl } from '../core/motion.js';
 
 let toastEl = null;
 let toastTimer = 0;
@@ -77,7 +78,7 @@ export function mountAccount(el) {
       out.textContent = 'Sign out';
       out.addEventListener('click', async e => {
         e.stopPropagation();
-        menu.classList.add('hidden');
+        hideEl(menu);
         try {
           await profile.signOut();
         } catch {
@@ -87,7 +88,8 @@ export function mountAccount(el) {
       menu.appendChild(out);
       chip.addEventListener('click', e => {
         e.stopPropagation();
-        menu.classList.toggle('hidden');
+        if (menu.classList.contains('hidden') || menu.classList.contains('closing')) showEl(menu);
+        else hideEl(menu);
       });
       el.append(chip, menu);
     } else {
@@ -110,7 +112,7 @@ export function mountAccount(el) {
 
   document.addEventListener('click', () => {
     const menu = el.querySelector('.account-menu');
-    if (menu) menu.classList.add('hidden');
+    if (menu) hideEl(menu);
   });
 
   profile.subscribe(render);

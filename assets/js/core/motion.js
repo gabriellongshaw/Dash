@@ -1,5 +1,40 @@
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+export const reducedMotion = reduced;
+
+export function showEl(el) {
+  clearTimeout(el.hideTimer);
+  el.classList.remove('closing', 'hidden');
+}
+
+export function hideEl(el, ms = 180) {
+  clearTimeout(el.hideTimer);
+  if (el.classList.contains('hidden')) return;
+  if (reduced()) {
+    el.classList.add('hidden');
+    return;
+  }
+  el.classList.add('closing');
+  el.hideTimer = setTimeout(() => {
+    el.classList.add('hidden');
+    el.classList.remove('closing');
+  }, ms);
+}
+
+export function reveal(el) {
+  el.classList.remove('reveal');
+  void el.offsetWidth;
+  el.classList.add('reveal');
+}
+
+export function exitRow(el, ms = 260) {
+  if (reduced()) return Promise.resolve();
+  el.style.setProperty('--h', `${el.offsetHeight}px`);
+  void el.offsetWidth;
+  el.classList.add('leaving');
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export function bump(el) {
   el.classList.remove('bump');
   void el.offsetWidth;

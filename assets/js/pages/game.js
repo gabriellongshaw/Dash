@@ -4,7 +4,7 @@ import { profile } from '../core/profile.js';
 import { resolveLook, resolveWorld } from '../core/cosmetics.js';
 import { signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { countTo } from '../core/motion.js';
+import { countTo, hideEl, showEl } from '../core/motion.js';
 
 const $ = id => document.getElementById(id);
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('over-badge').classList.toggle('hidden', !result.isBest);
       overReady = false;
       overTimer = setTimeout(() => {
-        overOverlay.classList.remove('hidden');
+        showEl(overOverlay);
         overReady = true;
         countTo($('over-score'), result.score, { duration: 850 });
         countTo($('over-best'), result.best, { duration: 850 });
@@ -70,18 +70,18 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTimeout(overTimer);
     overReady = false;
     hint.classList.add('hidden');
-    pauseOverlay.classList.add('hidden');
-    overOverlay.classList.add('hidden');
+    hideEl(pauseOverlay);
+    hideEl(overOverlay);
     profile.beginRun();
     game.start();
   }
 
   function pauseGame() {
-    if (game.pause()) pauseOverlay.classList.remove('hidden');
+    if (game.pause()) showEl(pauseOverlay);
   }
 
   function resumeGame() {
-    pauseOverlay.classList.add('hidden');
+    hideEl(pauseOverlay);
     game.resume();
   }
 
