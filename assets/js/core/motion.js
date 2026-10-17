@@ -2,18 +2,33 @@ const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matc
 
 export const reducedMotion = reduced;
 
+function restartAnimations(el) {
+  const nodes = [el, ...el.querySelectorAll('*')];
+  nodes.forEach(node => {
+    node.style.animation = 'none';
+  });
+  void el.offsetWidth;
+  nodes.forEach(node => {
+    node.style.animation = '';
+  });
+}
+
 export function showEl(el) {
   clearTimeout(el.hideTimer);
   el.classList.remove('closing', 'hidden');
+  restartAnimations(el);
 }
 
 export function hideEl(el, ms = 180) {
   clearTimeout(el.hideTimer);
   if (el.classList.contains('hidden')) return;
   if (reduced()) {
+    el.classList.remove('closing');
     el.classList.add('hidden');
     return;
   }
+  el.classList.remove('closing');
+  void el.offsetWidth;
   el.classList.add('closing');
   el.hideTimer = setTimeout(() => {
     el.classList.add('hidden');

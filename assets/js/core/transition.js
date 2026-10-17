@@ -8,6 +8,12 @@ export function initPageFadeIn() {
     if (e.persisted) {
       document.body.classList.remove('leaving');
       document.body.style.opacity = '1';
+      document.getAnimations().forEach(a => {
+        if (a.animationName) {
+          a.cancel();
+          a.play();
+        }
+      });
     }
   });
 }
