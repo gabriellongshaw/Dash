@@ -31,6 +31,16 @@ Backgrounds adapt as you run: the sky moves through day, dusk and night, stars a
 
 Progress is saved on the device as a guest. Signing in with Google saves it to the cloud so it follows you across devices. Any guest progress is merged into the account on first sign-in.
 
+## Sound
+
+Dash has an original chiptune theme and sound effects, all generated in the browser with the Web Audio API, so there are no audio files to load or license.
+
+- **Theme:** A 16-bar loop at 138 BPM with a lead, bass, arpeggio and drums. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
+- **Effects:** Jump, double jump, slide, coin, crash, new best, buttons, buying, equipping, quest claims, gifts and friend requests.
+- **Controls:** The speaker button turns music and effects on or off, and the choice is remembered on the device.
+- **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first interaction on a page. Music pauses while the tab is hidden.
+- **Editing:** The tune is the `SCORE` list in `assets/js/core/music.js` and the effects are in `assets/js/core/audio.js`.
+
 ## Quests
 
 Quests are a second way to earn coins. Open **Quests** from the home screen.
@@ -104,7 +114,7 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 - `quests/` — daily and weekly quests
 - `friends/` — usernames, friends and gifting
 - `leaderboard/` — weekly and all-time rankings
-- `assets/js/core/` — theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
+- `assets/js/core/` — audio and music, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
 - `server/` — friends and gifting logic used by the API
 - `scripts/` — developer tools, such as gifting coins and items
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
