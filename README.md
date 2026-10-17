@@ -47,6 +47,17 @@ Open **Leaderboard** from the home screen to see the top 25 runners **This week*
 
 Players appear as their first name and last initial. Signed-in players can hide themselves from the leaderboard at any time with the button under the list, which also removes their entries.
 
+## Friends
+
+Open **Friends** from the home screen. Everything here needs a signed-in account.
+
+- **Username:** Pick a unique username of 3 to 16 letters, numbers or underscores. Friends find you by it, and it replaces your name on the leaderboard. It can be changed once a day.
+- **Photo:** Your Google photo shows next to your username for friends. You can hide it with the button on your profile card.
+- **Adding friends:** Type a username and send a request. They accept or decline from their Friends page. If you both request each other you become friends straight away. Each player can have 50 friends and 30 pending requests.
+- **Gifts:** Send a friend up to 1000 coins, an item, or both. The gift comes out of your coins, and an item costs its shop price. They cannot be sent to someone who already owns the item. The player sees what they were sent the next time they open Friends, and a badge on the home screen shows waiting requests and gifts.
+
+Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes, so `firestore.rules` needs no changes. The API code is in `server/social.js`.
+
 ### Server checks
 
 Coins, items, quests and scores for signed-in players are controlled by a small API in `api/game.js`, which runs on Vercel and talks to Firestore with the Admin SDK. The browser can no longer write any of them.
@@ -90,8 +101,10 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 - `play/` — the game page
 - `shop/` — the shop page
 - `quests/` — daily and weekly quests
+- `friends/` — usernames, friends and gifting
 - `leaderboard/` — weekly and all-time rankings
 - `assets/js/core/` — theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
+- `server/` — friends and gifting logic used by the API
 - `scripts/` — developer tools, such as gifting coins and items
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
 - `firestore.rules` — Firestore security rules
