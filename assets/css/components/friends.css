@@ -1,0 +1,224 @@
+.friends-page input,
+.friends-page select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.friends-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 440px;
+}
+
+.friends-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.friends-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--meta-text);
+}
+
+.friend-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 14px;
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  background: var(--card-bg);
+  text-align: left;
+}
+
+.friend-card.gifts {
+  border-color: var(--accent);
+}
+
+.friend-card .tertiary-button {
+  align-self: center;
+}
+
+.friend-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.friend-hint {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--meta-text);
+}
+
+.friend-gift {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.friend-form {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.friend-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.friend-input:focus {
+  border-color: var(--accent);
+}
+
+.friend-input::placeholder {
+  color: var(--meta-text);
+}
+
+.friend-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 10px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--card-bg);
+  animation: cardIn 0.3s ease backwards;
+  animation-delay: calc(var(--n, 0) * 24ms);
+}
+
+.friend-row.plain {
+  padding: 0;
+  border: none;
+  background: none;
+  animation: none;
+}
+
+.friend-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  object-fit: cover;
+}
+
+.friend-avatar.lg {
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+}
+
+.friend-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.friend-handle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.97rem;
+  font-weight: 700;
+}
+
+.friend-sub {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--meta-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.friend-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.secondary-button.small {
+  padding: 0.5rem 1.05rem;
+  font-size: 0.86rem;
+}
+
+.friend-actions .tertiary-button {
+  padding: 0.5rem 0.6rem;
+  color: var(--meta-text);
+}
+
+.gift-modal {
+  gap: 10px;
+}
+
+.gift-quick {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.gift-chip {
+  flex: 1;
+  height: 40px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.gift-chip:active {
+  transform: scale(0.96);
+}
+
+.gift-chip.active {
+  border-color: var(--accent);
+  background: var(--secondary-bg);
+}
+
+.gift-modal .friend-input {
+  flex: none;
+  width: 100%;
+}
+
+.gift-total {
+  min-height: 1.2em;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--meta-text);
+}
+
+.gift-modal .button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

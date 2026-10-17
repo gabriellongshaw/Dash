@@ -31,7 +31,9 @@ const defaults = () => ({
   owned: ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'],
   equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' },
   quests: freshQuests(),
-  publicBoard: true
+  publicBoard: true,
+  username: null,
+  photoOn: true
 });
 
 const cleanName = v => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60) : '') || null;
@@ -64,7 +66,9 @@ function sanitize(raw) {
     owned: [...owned],
     equipped,
     quests: cleanQuests(data.quests),
-    publicBoard: data.publicBoard !== false
+    publicBoard: data.publicBoard !== false,
+    username: typeof data.username === 'string' ? data.username : null,
+    photoOn: data.photoOn !== false
   };
 }
 
@@ -303,6 +307,22 @@ export const profile = {
     persist();
     emit();
     return { ok: true, reward: quest.reward };
+  },
+
+  get social() {
+    return cloudReady && !!state.uid;
+  },
+
+  async api(action, data) {
+    if (!cloudReady || !state.uid) {
+      const err = new Error('signed-out');
+      err.code = 'signed-out';
+      throw err;
+    }
+    const uid = state.uid;
+    const out = await call(action, data);
+    if (out.profile && state.uid === uid) applyServer(out.profile);
+    return out;
   },
 
   setPublicBoard(on) {
