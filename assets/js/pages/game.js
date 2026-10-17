@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hint.classList.add('hidden');
     pauseOverlay.classList.add('hidden');
     overOverlay.classList.add('hidden');
+    profile.beginRun();
     game.start();
   }
 
