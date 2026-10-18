@@ -67,6 +67,16 @@ document.addEventListener('DOMContentLoaded', () => {
     score.className = 'rank-score';
     score.textContent = entry.score;
     el.append(pos, avatar, name, score);
+    if (profile.social && entry.id) {
+      const open = () => navigateTo(me ? '../profile/' : `../profile/?id=${encodeURIComponent(entry.id)}`);
+      el.classList.add('link');
+      el.tabIndex = 0;
+      el.setAttribute('role', 'link');
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') open();
+      });
+    }
     return el;
   }
 
@@ -90,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     shown = '';
     list.innerHTML = '';
     for (let i = 0; i < 6; i++) {
-      const el = row({ id: String(i), name: '        ', score: '0000' }, i + 1, i, false);
+      const el = row({ id: '', name: '        ', score: '0000' }, i + 1, i, false);
       el.classList.add('skeleton');
       list.appendChild(el);
     }
@@ -128,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return { entries, rank };
   }
 
-  const signature = (key, result) => JSON.stringify([key, profile.state.uid, result.entries.map(entry => [entry.id, entry.score]), result.rank]);
+  const signature = (key, result) => JSON.stringify([key, profile.state.uid, profile.social, result.entries.map(entry => [entry.id, entry.score]), result.rank]);
 
   async function load(force, quiet) {
     const name = scope;

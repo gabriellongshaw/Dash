@@ -277,3 +277,13 @@
     background: var(--border);
   }
 }
+
+.rank-row.link {
+  cursor: pointer;
+}
+
+.rank-row.link:hover,
+.rank-row.link:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
