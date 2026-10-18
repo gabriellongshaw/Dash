@@ -14,6 +14,21 @@ const DRONE_LIFT = 34;
 const DRONE_HIGH = 92;
 const ROLLER_R = 17;
 const ROLLER_EXTRA = 130;
+const SAW_R = 24;
+const BOUNCER_R = 15;
+const BOUNCER_EXTRA = 70;
+const BOUNCER_PERIOD = 0.85;
+const BOUNCER_HEIGHT = 64;
+const MISSILE_W = 46;
+const MISSILE_H = 16;
+const MISSILE_EXTRA = 320;
+const MISSILE_WARN = 0.75;
+const FIELD_POST = 10;
+const FIELD_H = 34;
+const RUNNER_X = 110;
+
+const arrival = (x, speed, extra = 0) => (x - RUNNER_X) / (speed + extra);
+const atTime = (t, speed, extra = 0) => RUNNER_X + t * (speed + extra);
 
 function tape(ctx, x, y, w, h, a, b) {
   ctx.save();
@@ -245,6 +260,238 @@ class Roller {
   }
 }
 
+class Saw {
+  constructor(x) {
+    this.kind = 'saw';
+    this.x = x;
+    this.w = SAW_R * 2;
+    this.h = SAW_R * 2 - 8;
+    this.spin = rand(0, 6);
+    this.hint = null;
+  }
+
+  tick(dt) {
+    this.spin += dt * 14;
+  }
+
+  box(g) {
+    return { x: this.x + 9, y: g - this.h + 4, w: this.w - 18, h: this.h - 4 };
+  }
+
+  draw(ctx, p, g) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(this.x - 4, g - this.h - 6, this.w + 8, this.h + 6);
+    ctx.clip();
+    ctx.translate(this.x + SAW_R, g - SAW_R + 8);
+    ctx.rotate(-this.spin);
+    ctx.fillStyle = p.hazardDark;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      ctx.lineTo(Math.cos(a) * SAW_R, Math.sin(a) * SAW_R);
+      ctx.lineTo(Math.cos(a + 0.2) * (SAW_R - 7), Math.sin(a + 0.2) * (SAW_R - 7));
+      ctx.lineTo(Math.cos(a + 0.42) * (SAW_R - 7), Math.sin(a + 0.42) * (SAW_R - 7));
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = p.hazard;
+    ctx.beginPath();
+    ctx.arc(0, 0, SAW_R - 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = p.hazardLight;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+class Bouncer {
+  constructor(x) {
+    this.kind = 'bouncer';
+    this.x = x;
+    this.w = BOUNCER_R * 2;
+    this.h = BOUNCER_R * 2;
+    this.t = 0;
+    this.spin = 0;
+    this.hint = null;
+  }
+
+  tick(dt) {
+    this.t += dt;
+    this.spin += dt * 7;
+    this.x -= BOUNCER_EXTRA * dt;
+  }
+
+  lift() {
+    const u = (this.t / BOUNCER_PERIOD) % 1;
+    return BOUNCER_HEIGHT * 4 * u * (1 - u);
+  }
+
+  box(g) {
+    return { x: this.x + 4, y: g - this.lift() - this.h + 4, w: this.w - 8, h: this.h - 8 };
+  }
+
+  draw(ctx, p, g) {
+    const lift = this.lift();
+    const squash = lift < 6 ? 1 - (6 - lift) * 0.02 : 1;
+    ctx.globalAlpha = 0.18 * (1 - lift / BOUNCER_HEIGHT);
+    ctx.fillStyle = p.hazardDark;
+    ctx.beginPath();
+    ctx.ellipse(this.x + BOUNCER_R, g - 1, BOUNCER_R * (1 - (lift / BOUNCER_HEIGHT) * 0.4), 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.save();
+    ctx.translate(this.x + BOUNCER_R, g - lift - BOUNCER_R);
+    ctx.scale(1 / squash, squash);
+    ctx.rotate(this.spin);
+    ctx.fillStyle = p.hazardDark;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ctx.lineTo(Math.cos(a) * (BOUNCER_R + 5), Math.sin(a) * (BOUNCER_R + 5));
+      ctx.lineTo(Math.cos(a + Math.PI / 8) * (BOUNCER_R - 2), Math.sin(a + Math.PI / 8) * (BOUNCER_R - 2));
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = p.hazard;
+    ctx.beginPath();
+    ctx.arc(0, 0, BOUNCER_R - 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = p.hazardLight;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.arc(-4, -4, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+class Missile {
+  constructor(x, low) {
+    this.kind = 'missile';
+    this.x = x;
+    this.w = MISSILE_W;
+    this.h = MISSILE_H;
+    this.low = low;
+    this.up = low ? 8 : 26;
+    this.hint = null;
+  }
+
+  tick(dt) {
+    this.x -= MISSILE_EXTRA * dt;
+  }
+
+  box(g) {
+    return { x: this.x + 4, y: g - this.up - this.h + 3, w: this.w - 8, h: this.h - 5 };
+  }
+
+  draw(ctx, p, g, time) {
+    const top = g - this.up - this.h;
+    const flame = 8 + Math.sin(time * 50 + this.x) * 4;
+    ctx.fillStyle = p.hazardLight;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(this.x + this.w - 2, top + 3);
+    ctx.lineTo(this.x + this.w + flame, top + this.h / 2);
+    ctx.lineTo(this.x + this.w - 2, top + this.h - 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = p.hazardDark;
+    ctx.beginPath();
+    ctx.moveTo(this.x + this.w - 10, top - 3);
+    ctx.lineTo(this.x + this.w, top - 3);
+    ctx.lineTo(this.x + this.w - 6, top + 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(this.x + this.w - 10, top + this.h + 3);
+    ctx.lineTo(this.x + this.w, top + this.h + 3);
+    ctx.lineTo(this.x + this.w - 6, top + this.h - 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = p.hazard;
+    ctx.beginPath();
+    ctx.moveTo(this.x, top + this.h / 2);
+    ctx.quadraticCurveTo(this.x + 8, top, this.x + 20, top);
+    ctx.lineTo(this.x + this.w - 4, top);
+    ctx.lineTo(this.x + this.w - 4, top + this.h);
+    ctx.lineTo(this.x + 20, top + this.h);
+    ctx.quadraticCurveTo(this.x + 8, top + this.h, this.x, top + this.h / 2);
+    ctx.fill();
+    ctx.fillStyle = p.hazardLight;
+    ctx.globalAlpha = 0.45;
+    ctx.fillRect(this.x + 14, top + 3, 16, 3);
+    ctx.globalAlpha = 1;
+  }
+
+  warn(ctx, p, g, time, viewW) {
+    const y = g - this.up - this.h / 2;
+    const x = viewW - 26;
+    ctx.globalAlpha = 0.55 + Math.sin(time * 18) * 0.45;
+    ctx.fillStyle = p.hazard;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 15);
+    ctx.lineTo(x + 15, y + 11);
+    ctx.lineTo(x - 15, y + 11);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = p.hazardLight;
+    ctx.fillRect(x - 1.5, y - 7, 3, 9);
+    ctx.fillRect(x - 1.5, y + 4, 3, 3);
+    ctx.globalAlpha = 1;
+  }
+}
+
+class Field {
+  constructor(x, span) {
+    this.kind = 'field';
+    this.x = x;
+    this.w = span;
+    this.h = FIELD_H;
+    this.hint = null;
+  }
+
+  box(g) {
+    return { x: this.x + 3, y: g - FIELD_H + 2, w: this.w - 6, h: FIELD_H - 2 };
+  }
+
+  draw(ctx, p, g, time) {
+    const inner = this.w - FIELD_POST * 2;
+    ctx.globalAlpha = 0.16 + Math.sin(time * 16 + this.x * 0.05) * 0.05;
+    ctx.fillStyle = p.hazard;
+    ctx.fillRect(this.x + FIELD_POST, g - FIELD_H, inner, FIELD_H);
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = p.hazardLight;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    for (let k = 0; k < 2; k++) {
+      ctx.beginPath();
+      const y0 = g - FIELD_H * (0.3 + k * 0.4);
+      ctx.moveTo(this.x + FIELD_POST, y0);
+      for (let x = 10; x < inner; x += 10) {
+        ctx.lineTo(this.x + FIELD_POST + x, y0 + Math.sin(time * 30 + x * 0.7 + k * 2) * 6);
+      }
+      ctx.lineTo(this.x + this.w - FIELD_POST, y0);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = p.hazardDark;
+    ctx.beginPath();
+    ctx.roundRect(this.x, g - FIELD_H - 4, FIELD_POST, FIELD_H + 4, [4, 4, 0, 0]);
+    ctx.roundRect(this.x + this.w - FIELD_POST, g - FIELD_H - 4, FIELD_POST, FIELD_H + 4, [4, 4, 0, 0]);
+    ctx.fill();
+    ctx.fillStyle = p.hazardLight;
+    ctx.beginPath();
+    ctx.arc(this.x + FIELD_POST / 2, g - FIELD_H - 1, 2.5, 0, Math.PI * 2);
+    ctx.arc(this.x + this.w - FIELD_POST / 2, g - FIELD_H - 1, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 class Coin {
   constructor(x, up) {
     this.x = x;
@@ -374,6 +621,76 @@ const builders = {
     for (let i = 0; i < 3; i++) x += builders[pick(parts)](s, x, speed) + gap;
     return x - x0 - gap;
   },
+  saw(s, x0, speed) {
+    s.obstacles.push(new Saw(x0));
+    s.jumpCoins(x0 + SAW_R, speed);
+    return SAW_R * 2;
+  },
+  bouncer(s, x0) {
+    s.obstacles.push(new Bouncer(x0));
+    return BOUNCER_R * 2;
+  },
+  missile(s, x0, speed) {
+    const offset = (speed + MISSILE_EXTRA) * MISSILE_WARN;
+    s.obstacles.push(new Missile(x0 + offset, Math.random() < 0.5));
+    return offset + MISSILE_W;
+  },
+  field(s, x0, speed) {
+    const span = randInt(110, 170);
+    s.obstacles.push(new Field(x0, span));
+    s.jumpCoins(x0 + span / 2, speed);
+    return span;
+  },
+  sawPair(s, x0, speed) {
+    const gap = speed * 0.62 + 50;
+    s.obstacles.push(new Saw(x0), new Saw(x0 + SAW_R * 2 + gap));
+    return SAW_R * 4 + gap;
+  },
+  sawGate(s, x0, speed) {
+    const gap = speed * 0.95 + 90;
+    s.obstacles.push(new Saw(x0), new Gate(x0 + SAW_R * 2 + gap, s.hint('gate')));
+    s.jumpCoins(x0 + SAW_R, speed);
+    return SAW_R * 2 + gap + GATE_W;
+  },
+  fieldGate(s, x0, speed) {
+    const span = randInt(110, 150);
+    const gap = speed * 0.95 + 90;
+    s.obstacles.push(new Field(x0, span), new Gate(x0 + span + gap, s.hint('gate')));
+    return span + gap + GATE_W;
+  },
+  fieldDrone(s, x0, speed) {
+    const span = randInt(110, 150);
+    const gap = speed * 0.9 + 90;
+    s.obstacles.push(new Field(x0, span), new Drone(x0 + span + gap));
+    return span + gap + DRONE_W;
+  },
+  bouncerGate(s, x0, speed) {
+    const t = arrival(x0, speed, BOUNCER_EXTRA);
+    const x = atTime(t + 0.95, speed);
+    s.obstacles.push(new Bouncer(x0), new Gate(x, s.hint('gate')));
+    return x - x0 + GATE_W;
+  },
+  missileCrate(s, x0, speed) {
+    const w = randInt(36, 44);
+    const x = atTime(arrival(x0, speed) + 0.95, speed, MISSILE_EXTRA);
+    s.obstacles.push(new Crate(x0, w, pick([34, 44])), new Missile(x, Math.random() < 0.5));
+    s.jumpCoins(x0 + w / 2, speed);
+    return x - x0 + MISSILE_W;
+  },
+  missileSpikes(s, x0, speed) {
+    const x = atTime(arrival(x0, speed) + 0.95, speed, MISSILE_EXTRA);
+    s.obstacles.push(new Spikes(x0, 2), new Missile(x, Math.random() < 0.5));
+    s.jumpCoins(x0 + SPIKE_W, speed);
+    return x - x0 + MISSILE_W;
+  },
+  marathon(s, x0, speed) {
+    const gap = speed * 0.72 + 60;
+    const parts = ['crate', 'spikes', 'saw', 'drone', 'gate', 'double', 'field'];
+    const count = randInt(4, 5);
+    let x = x0;
+    for (let i = 0; i < count; i++) x += builders[pick(parts)](s, x, speed) + gap;
+    return x - x0 - gap;
+  },
   coins(s, x0) {
     const count = randInt(5, 8);
     s.lowCoins(x0, count);
@@ -384,13 +701,19 @@ const builders = {
 const POOLS = [
   ['crate', 'crate', 'crate', 'double', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'wall', 'drone', 'drone', 'coins'],
   ['crate', 'crate', 'double', 'double', 'spikes', 'spikes', 'gate', 'gate', 'gate', 'wall', 'wall', 'wall', 'drone', 'drone', 'combo', 'droneCrate', 'coins'],
-  ['crate', 'double', 'double', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'wall', 'drone', 'bobDrone', 'combo', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'triple', 'roller', 'coins'],
-  ['double', 'spikes', 'wideSpikes', 'gate', 'gate', 'wall', 'wall', 'bobDrone', 'bobDrone', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'coins'],
-  ['wideSpikes', 'wideSpikes', 'gate', 'wall', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'gauntlet', 'gauntlet', 'gauntlet']
+  ['crate', 'double', 'double', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'wall', 'drone', 'bobDrone', 'combo', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'triple', 'roller', 'saw', 'saw', 'coins'],
+  ['double', 'spikes', 'wideSpikes', 'gate', 'gate', 'wall', 'wall', 'bobDrone', 'bobDrone', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'saw', 'saw', 'missile', 'missile', 'field', 'coins'],
+  ['wideSpikes', 'wideSpikes', 'gate', 'wall', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'gauntlet', 'gauntlet', 'gauntlet', 'saw', 'missile', 'missile', 'field', 'bouncer', 'sawPair', 'fieldGate'],
+  ['wideSpikes', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'roller', 'gauntlet', 'gauntlet', 'missile', 'missile', 'field', 'bouncer', 'bouncer', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes', 'bouncerGate'],
+  ['wideSpikes', 'bobDrone', 'wallGate', 'wallDrone', 'spikeDrone', 'triple', 'gauntlet', 'gauntlet', 'marathon', 'marathon', 'missile', 'bouncer', 'bouncer', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes', 'bouncerGate'],
+  ['wallDrone', 'spikeDrone', 'triple', 'gauntlet', 'marathon', 'marathon', 'marathon', 'bouncer', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes', 'bouncerGate']
 ];
 
-const TIERS = [3000, 12000, 28000, 60000];
-const SPACING = [1, 1, 0.96, 0.92, 0.88];
+const TIERS = [3000, 12000, 28000, 60000, 100000, 150000, 210000];
+const SPACING = [1, 1, 0.96, 0.92, 0.88, 0.82, 0.76, 0.72];
+const SPACING_FLOOR = 0.6;
+const SPACING_DECAY = 0.01;
+const SPACING_STEP = 6000;
 
 const HINTS = {
   gate: 'Hold to slide',
@@ -398,6 +721,13 @@ const HINTS = {
 };
 
 export const tierOf = dist => TIERS.filter(limit => dist >= limit).length;
+
+export const spacingOf = dist => {
+  const tier = tierOf(dist);
+  if (tier < TIERS.length) return SPACING[tier];
+  const steps = Math.floor((dist - TIERS[TIERS.length - 1]) / SPACING_STEP);
+  return Math.max(SPACING_FLOOR, SPACING[tier] - steps * SPACING_DECAY);
+};
 
 export class Spawner {
   constructor() {
@@ -468,12 +798,15 @@ export class Spawner {
     const kind = this.intro.length ? this.intro.shift() : pick(POOLS[tier]);
     const width = builders[kind](this, viewW + 60, speed);
     this.travel = 0;
-    this.nextAt = width + speed * rand(0.8, 1.25) * SPACING[tier] + 90;
+    this.nextAt = width + speed * rand(0.8, 1.25) * spacingOf(dist) + 90;
   }
 
   draw(ctx, p, g, time, viewW) {
     for (const c of this.coins) c.draw(ctx, p, g, time);
-    for (const o of this.obstacles) o.draw(ctx, p, g, time);
+    for (const o of this.obstacles) {
+      o.draw(ctx, p, g, time);
+      if (o.warn && o.x > viewW - 20) o.warn(ctx, p, g, time, viewW);
+    }
     ctx.font = '700 14px ProductSansRegular, system-ui, sans-serif';
     ctx.fillStyle = p.hazardDark;
     for (const o of this.obstacles) {
