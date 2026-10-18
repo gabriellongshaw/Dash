@@ -35,3 +35,41 @@ export function button(label, className, onClick) {
   el.addEventListener('click', onClick);
   return el;
 }
+
+const PHOTO_SIZE = 96;
+const PHOTO_MAX_CHARS = 24000;
+
+export function resizePhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image'));
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        if (!side) {
+          reject(new Error('image'));
+          return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = PHOTO_SIZE;
+        canvas.height = PHOTO_SIZE;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, PHOTO_SIZE, PHOTO_SIZE);
+        ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, PHOTO_SIZE, PHOTO_SIZE);
+        let quality = 0.85;
+        let out = canvas.toDataURL('image/jpeg', quality);
+        while (out.length > PHOTO_MAX_CHARS && quality > 0.3) {
+          quality -= 0.1;
+          out = canvas.toDataURL('image/jpeg', quality);
+        }
+        if (out.length > PHOTO_MAX_CHARS) reject(new Error('size'));
+        else resolve(out);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
