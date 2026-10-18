@@ -11,8 +11,12 @@ Run as far as you can. Coins add 5 points each, and distance adds the rest. The 
 - **Ceiling gates:** unjumpable, so you must slide underneath.
 - **Drones:** hover low, so slide under them or jump over. Some bob up and down.
 - **Rollers:** fast-moving wheels that arrive sooner than they look.
+- **Buzzsaws:** spinning blades on the ground, so jump over them.
+- **Bouncing orbs:** spiked balls that hop along the ground. Jump over them when low or slip underneath when they are high.
+- **Missiles:** fast rockets announced by a warning triangle at the edge of the screen. Low ones must be jumped, higher ones can be slid under.
+- **Force fields:** wide barriers between two pylons that need one long jump.
 
-The game gets harder as you go: speed climbs, gaps tighten and new obstacle combinations appear at higher distances, ending in back-to-back gauntlets.
+The game keeps getting harder as you go. Speed climbs until about 5,000 m, and from there the gaps between obstacles keep shrinking while longer back-to-back gauntlets and mixed combinations take over, up to about 9,400 m.
 
 **Desktop:** `Space` / `↑` / `W` to jump (press again in the air to double jump), hold `↓` / `S` to slide (hold in the air to fast-fall), `P` / `Esc` to pause.
 
@@ -33,9 +37,9 @@ Progress is saved on the device as a guest. Signing in with Google saves it to t
 
 ## Sound
 
-Dash has an original chiptune theme and sound effects, all generated in the browser with the Web Audio API, so there are no audio files to load or license.
+Dash has an original theme and sound effects, all generated in the browser with the Web Audio API, so there are no audio files to load or license.
 
-- **Theme:** A 16-bar loop at 138 BPM with a lead, bass, arpeggio and drums. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
+- **Theme:** A 16-bar loop at 124 BPM in the style of 2010s mobile games, with a mallet lead, warm pad, plucky bass, light drums and a touch of reverb. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
 - **Effects:** Jump, double jump, slide, coin, crash, new best, buttons, buying, equipping, quest claims, gifts and friend requests.
 - **Controls:** The speaker button opens sound settings with separate switches for music and sound effects, and the choices are remembered on the device.
 - **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first interaction on a page. Music pauses while the tab is hidden.
@@ -114,7 +118,7 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 - `quests/` — daily and weekly quests
 - `friends/` — usernames, friends and gifting
 - `leaderboard/` — weekly and all-time rankings
-- `assets/js/core/` — audio and music, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
+- `assets/js/core/` — audio and music, difficulty curve, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
 - `server/` — friends and gifting logic used by the API
 - `scripts/` — developer tools, such as gifting coins and items
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
