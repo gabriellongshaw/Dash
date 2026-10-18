@@ -39,7 +39,7 @@ Progress is saved on the device as a guest. Signing in with Google saves it to t
 
 Dash has an original theme and sound effects, all generated in the browser with the Web Audio API, so there are no audio files to load or license.
 
-- **Theme:** A 16-bar loop at 124 BPM in the style of 2010s mobile games, with a mallet lead, warm pad, plucky bass, light drums and a touch of reverb. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
+- **Theme:** A 16-bar loop at 138 BPM in the style of Geometry Dash and Subway Surfers. It has a four-on-the-floor kick, snare and hats, a rolling saw bass, fast arpeggios and a bright lead. The second half is a bigger drop with a supersaw lead and chord stabs, and each 8-bar phrase ends in a snare roll and a riser. A sidechain pump makes everything duck on each kick. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
 - **Effects:** Jump, double jump, slide, coin, crash, new best, buttons, buying, equipping, quest claims, gifts and friend requests.
 - **Controls:** The speaker button opens sound settings with separate switches for music and sound effects, and the choices are remembered on the device.
 - **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first interaction on a page. Music pauses while the tab is hidden.
