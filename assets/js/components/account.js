@@ -54,8 +54,9 @@ export function mountAccount(el, root = '../') {
     const name = displayName || username || profile.state.name;
     el.innerHTML = '';
     el.classList.toggle('hidden', status === 'unavailable' && !uid);
+    el.classList.toggle('pending', status === 'loading' && !uid);
 
-    if (status === 'in' || (status === 'unavailable' && uid)) {
+    if (status === 'in' || ((status === 'unavailable' || status === 'loading') && uid)) {
       const chip = document.createElement('button');
       chip.className = 'account-chip';
       chip.setAttribute('aria-label', 'Account');
