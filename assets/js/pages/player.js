@@ -4,12 +4,12 @@ import { readPalette, onThemeChange, detectTouch, isDark } from '../core/theme.j
 import { drawRunnerTo, createScene } from '../components/preview.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { makeAvatar } from '../components/avatar.js';
-import { initPageFadeIn, navigateBack, navigateTo } from '../core/transition.js';
-import { reveal, setCoins } from '../core/motion.js';
+import { initPageFadeIn, navigateBack } from '../core/transition.js';
+import { reducedMotion, reveal, setCoins } from '../core/motion.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 import { openGift } from '../components/gift.js';
-import { button, messageFor } from '../components/ui.js';
+import { button, messageFor, resizePhoto } from '../components/ui.js';
 
 const $ = id => document.getElementById(id);
 
@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let loading = false;
   let busy = false;
   let shownContent = false;
+  let editing = false;
+  let swapIn = false;
+  let draft = { name: '', user: '' };
   let palette = readPalette();
   let lookCanvas = null;
   let lookScene = null;
@@ -101,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
       render();
       return;
     }
+    if (status === 'setup') status = 'loading';
     loading = true;
     const body = wantedId ? { uid: wantedId } : wantedName ? { username: wantedName } : { uid: profile.state.uid };
     try {
@@ -143,6 +147,116 @@ document.addEventListener('DOMContentLoaded', () => {
     if (person.relation === 'out') badges.appendChild(badge('Request sent'));
     if (person.relation === 'blocked') badges.appendChild(badge('Blocked'));
     if (badges.children.length) card.appendChild(badges);
+    if (self) {
+      const edit = button('Edit profile', 'secondary-button small', () => setEditing(true));
+      edit.classList.add('player-edit');
+      card.appendChild(edit);
+    }
+    return card;
+  }
+
+  function setEditing(next) {
+    editing = next;
+    draft = { name: profile.state.displayName || '', user: profile.state.username || '' };
+    swapIn = true;
+    render();
+  }
+
+  function field(labelText, input) {
+    const wrap = document.createElement('label');
+    wrap.className = 'friend-field';
+    wrap.append(text('span', 'friend-label', labelText), input);
+    return wrap;
+  }
+
+  function textInput(value, placeholder, max, name) {
+    const input = document.createElement('input');
+    input.className = 'friend-input';
+    input.type = 'text';
+    input.maxLength = max;
+    input.placeholder = placeholder;
+    input.value = value || '';
+    input.autocapitalize = 'none';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.setAttribute('aria-label', name);
+    return input;
+  }
+
+  function editorCard() {
+    const { username, displayName, photoMode } = profile.state;
+    const card = document.createElement('div');
+    card.className = 'friend-card';
+    card.appendChild(text('p', 'friend-title', username ? 'Edit profile' : 'Set up your profile'));
+
+    const photoRow = document.createElement('div');
+    photoRow.className = 'friend-photo-row';
+    photoRow.appendChild(makeAvatar({ uid: profile.state.uid, username: username || displayName || '?', photo: profile.avatar }, 'lg'));
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = 'image/*';
+    picker.className = 'hidden';
+    picker.addEventListener('change', async () => {
+      const file = picker.files && picker.files[0];
+      picker.value = '';
+      if (!file) return;
+      let data;
+      try {
+        data = await resizePhoto(file);
+      } catch {
+        showToast('Could not read that image.');
+        return;
+      }
+      act(() => profile.api('setPhoto', { mode: 'custom', data }), 'Photo updated.');
+    });
+    const choices = document.createElement('div');
+    choices.className = 'friend-photo-actions';
+    choices.appendChild(button('Upload photo', 'secondary-button small', () => picker.click()));
+    if (profile.state.photo && photoMode !== 'google') {
+      choices.appendChild(button('Use Google photo', 'tertiary-button', () => act(() => profile.api('setPhoto', { mode: 'google' }))));
+    }
+    if (photoMode !== 'none') {
+      choices.appendChild(button('Remove photo', 'tertiary-button', () => act(() => profile.api('setPhoto', { mode: 'none' }))));
+    }
+    photoRow.append(choices, picker);
+    card.appendChild(photoRow);
+
+    const form = document.createElement('form');
+    form.className = 'friend-editor';
+    form.autocomplete = 'off';
+    const nameInput = textInput(draft.name, 'Display name (optional)', 24, 'Display name');
+    const userInput = textInput(draft.user, 'Username', 16, 'Username');
+    nameInput.addEventListener('input', () => {
+      draft.name = nameInput.value;
+    });
+    userInput.addEventListener('input', () => {
+      userInput.value = userInput.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+      draft.user = userInput.value;
+    });
+    const hint = text('p', 'friend-hint', 'Usernames are lowercase letters, numbers and underscores. You can change yours once a day.');
+    const save = document.createElement('button');
+    save.type = 'submit';
+    save.className = 'button small';
+    save.textContent = 'Save';
+    const row = document.createElement('div');
+    row.className = 'friend-form';
+    row.appendChild(save);
+    if (username) row.appendChild(button('Cancel', 'secondary-button small', () => setEditing(false)));
+    form.append(field('Display name', nameInput), field('Username', userInput), hint, row);
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const nextName = nameInput.value.trim().replace(/\s+/g, ' ');
+      const nextUser = userInput.value.trim();
+      let ok = true;
+      if (nextUser !== (username || '')) ok = await act(() => profile.api('setUsername', { username: nextUser }));
+      if (ok && nextName !== (displayName || '')) ok = await act(() => profile.api('setDisplayName', { displayName: nextName }));
+      if (ok) {
+        showToast('Profile saved.');
+        await load();
+        setEditing(false);
+      }
+    });
+    card.appendChild(form);
     return card;
   }
 
@@ -201,58 +315,65 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function actionsRow() {
-    const row = document.createElement('div');
-    row.className = 'player-actions';
-    const add = (label, className, onClick) => {
-      const el = button(label, className, onClick);
-      row.appendChild(el);
-      return el;
-    };
+    const stack = document.createElement('div');
+    stack.className = 'player-actions';
     const who = `@${person.username}`;
+    const group = (...items) => {
+      const el = document.createElement('div');
+      el.className = 'player-actions-group';
+      items.forEach(item => el.appendChild(item));
+      stack.appendChild(el);
+    };
     const blockBtn = () =>
-      add('Block', 'tertiary-button danger', confirmAction(`Block ${who}? They will be removed from your friends and won't be able to find you or send you requests.`, () => profile.api('block', { uid: person.uid }), `${who} blocked.`));
+      button('Block', 'tertiary-button danger', confirmAction(`Block ${who}? They will be removed from your friends and won't be able to find you or send you requests.`, () => profile.api('block', { uid: person.uid }), `${who} blocked.`));
 
     switch (person.relation) {
       case 'friend': {
-        const fav = add(person.favourite ? '★ Favourited' : '☆ Favourite', `secondary-button${person.favourite ? ' on' : ''}`, async () => {
+        const fav = button(person.favourite ? '★ Favourited' : '☆ Favourite', `secondary-button${person.favourite ? ' on' : ''}`, async () => {
           const next = !person.favourite;
           const ok = await act(() => profile.api('favourite', { uid: person.uid, on: next }), next ? `${who} added to favourites.` : `${who} removed from favourites.`);
           if (ok) reload();
         });
         fav.setAttribute('aria-pressed', String(!!person.favourite));
-        add('Gift', 'button', () => openGift({ uid: person.uid, username: person.username }, reload));
-        add('Unfriend', 'tertiary-button', confirmAction(`Remove ${who} from your friends?`, () => profile.api('removeFriend', { uid: person.uid }), 'Friend removed.'));
-        blockBtn();
+        group(button('Gift', 'button', () => openGift({ uid: person.uid, username: person.username }, reload)));
+        group(fav, button('Unfriend', 'secondary-button', confirmAction(`Remove ${who} from your friends?`, () => profile.api('removeFriend', { uid: person.uid }), 'Friend removed.')));
+        group(blockBtn());
         break;
       }
       case 'in':
-        add('Accept', 'button', async () => {
-          const ok = await act(() => profile.api('respond', { uid: person.uid, accept: true }), `You and ${who} are friends.`, 'claim');
-          if (ok) reload();
-        });
-        add('Decline', 'secondary-button', async () => {
-          const ok = await act(() => profile.api('respond', { uid: person.uid, accept: false }));
-          if (ok) reload();
-        });
-        blockBtn();
+        group(
+          button('Accept', 'button', async () => {
+            const ok = await act(() => profile.api('respond', { uid: person.uid, accept: true }), `You and ${who} are friends.`, 'claim');
+            if (ok) reload();
+          }),
+          button('Decline', 'secondary-button', async () => {
+            const ok = await act(() => profile.api('respond', { uid: person.uid, accept: false }));
+            if (ok) reload();
+          })
+        );
+        group(blockBtn());
         break;
       case 'out':
-        add('Cancel request', 'secondary-button', async () => {
-          const ok = await act(() => profile.api('removeFriend', { uid: person.uid }), 'Request cancelled.');
-          if (ok) reload();
-        });
-        blockBtn();
+        group(
+          button('Cancel request', 'secondary-button', async () => {
+            const ok = await act(() => profile.api('removeFriend', { uid: person.uid }), 'Request cancelled.');
+            if (ok) reload();
+          })
+        );
+        group(blockBtn());
         break;
       case 'blocked':
-        add('Unblock', 'button', async () => {
-          const ok = await act(() => profile.api('unblock', { uid: person.uid }), `${who} unblocked.`);
-          if (ok) reload();
-        });
+        group(
+          button('Unblock', 'button', async () => {
+            const ok = await act(() => profile.api('unblock', { uid: person.uid }), `${who} unblocked.`);
+            if (ok) reload();
+          })
+        );
         break;
       case 'self':
         break;
       default: {
-        const request = add(person.canRequest ? 'Add friend' : 'Not accepting requests', 'button', async () => {
+        const request = button(person.canRequest ? 'Add friend' : 'Not accepting requests', 'button', async () => {
           const ok = await act(
             () => profile.api('request', { username: person.username }),
             out => (out.accepted ? 'You are now friends.' : 'Friend request sent.'),
@@ -261,10 +382,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (ok) reload();
         });
         request.disabled = !person.canRequest;
-        blockBtn();
+        group(request);
+        group(blockBtn());
       }
     }
-    return row;
+    return stack;
   }
 
   function switchRow(title, desc, on, onChange) {
@@ -330,11 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     cards.push(privacy);
 
-    const edit = document.createElement('div');
-    edit.className = 'player-actions';
-    edit.appendChild(button('Edit name, username and photo', 'secondary-button', () => navigateTo('../friends/?edit=1')));
-    cards.push(edit);
-
     const blocked = document.createElement('div');
     blocked.className = 'friend-card setting-card';
     blocked.appendChild(text('p', 'setting-heading', 'Blocked players'));
@@ -365,6 +482,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return box;
   }
 
+  function finishSwap() {
+    if (!swapIn) return;
+    swapIn = false;
+    const first = content.firstElementChild;
+    if (!first || reducedMotion()) return;
+    first.classList.add('entering');
+    setTimeout(() => first.classList.remove('entering'), 480);
+  }
+
   function render() {
     const signedIn = profile.session.status === 'in' && !!profile.state.uid;
     note.classList.toggle('hidden', profile.session.status !== 'out');
@@ -379,8 +505,9 @@ document.addEventListener('DOMContentLoaded', () => {
       content.appendChild(text('p', 'quest-empty', 'Loading'));
       return;
     }
-    if (status === 'setup') {
-      content.appendChild(emptyState('Choose a username to set up your profile.', 'Set up profile', () => navigateTo('../friends/?edit=1')));
+    if (status === 'setup' || (editing && status === 'ready' && person && person.relation === 'self')) {
+      content.appendChild(editorCard());
+      finishSwap();
       return;
     }
     if (status === 'missing') {
@@ -396,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     content.appendChild(heroCard());
+    finishSwap();
     if (person.relation !== 'blocked') {
       if (person.stats) content.appendChild(statsGrid());
       if (person.look) content.appendChild(lookCard());

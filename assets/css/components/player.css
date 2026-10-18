@@ -119,14 +119,29 @@
 
 .player-actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding-top: 4px;
 }
 
-.player-actions .button,
-.player-actions .secondary-button {
-  flex: 0 1 auto;
+.player-actions-group {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.player-actions-group .button,
+.player-actions-group .secondary-button {
+  width: 100%;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+}
+
+.player-actions-group .tertiary-button {
+  justify-self: center;
+  padding: 0.6rem 1.2rem;
 }
 
 .player-actions .danger {
@@ -154,6 +169,10 @@
 .player-actions button:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+.player-edit {
+  margin-top: 12px;
 }
 
 .player-empty {
@@ -224,10 +243,10 @@ button.setting-row {
 .setting-select {
   flex-shrink: 0;
   height: 36px;
-  padding: 0 12px;
+  max-width: 100%;
   border: 2px solid var(--border);
   border-radius: 999px;
-  background: var(--card-bg);
+  background-color: var(--card-bg);
   color: var(--text);
   font-family: var(--font-family);
   font-size: 0.86rem;
