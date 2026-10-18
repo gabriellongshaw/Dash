@@ -42,7 +42,7 @@ Dash has an original theme and sound effects, all generated in the browser with 
 - **Theme:** A 16-bar loop at 138 BPM in the style of Geometry Dash and Subway Surfers. It has a four-on-the-floor kick, snare and hats, a rolling saw bass, fast arpeggios and a bright lead. The second half is a bigger drop with a supersaw lead and chord stabs, and each 8-bar phrase ends in a snare roll and a riser. A sidechain pump makes everything duck on each kick. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
 - **Effects:** Jump, double jump, slide, coin, crash, new best, buttons, buying, equipping, quest claims, gifts and friend requests.
 - **Controls:** The speaker button opens sound settings with separate switches for music and sound effects, and the choices are remembered on the device.
-- **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first interaction on a page. Music pauses while the tab is hidden.
+- **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first tap or key press on a fresh visit or reload. Pages open inside a small wrapper (`shell.html`) that keeps the audio engine alive, so moving between pages never restarts the music or asks for another tap. The wrapper keeps the address bar and Back button in step with the page. If the wrapper can't be used (for example after the Google sign-in redirect fallback), the pages fall back to running on their own, as before. Music pauses while the tab is hidden.
 - **Editing:** The tune is the `SCORE` list in `assets/js/core/music.js` and the effects are in `assets/js/core/audio.js`.
 
 ## Quests
