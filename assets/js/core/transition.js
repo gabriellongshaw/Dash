@@ -26,3 +26,14 @@ export function navigateTo(url) {
     window.location.href = url;
   }, 200);
 }
+
+export function navigateBack(fallback) {
+  if (window.history.length <= 1) {
+    navigateTo(fallback);
+    return;
+  }
+  document.body.classList.add('leaving');
+  document.body.style.opacity = '0';
+  if (!hosted) audio.fadeOut(0.18);
+  setTimeout(() => window.history.back(), 200);
+}
