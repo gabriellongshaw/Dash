@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   profile.init();
   initAudio(1);
   mountSound(document.querySelector('.home-nav'));
-  mountAccount(document.getElementById('account'));
+  mountAccount(document.getElementById('account'), './');
 
   const bestEl = document.getElementById('home-best');
   const showStats = () => {
