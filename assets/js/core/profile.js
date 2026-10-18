@@ -1,4 +1,5 @@
 import { loadFirebase } from './firebase.js';
+import { cleanPrivacy, defaultPrivacy } from './privacy.js';
 import { findItem, kindOf } from './cosmetics.js';
 import {
   freshQuests,
@@ -37,7 +38,8 @@ const defaults = () => ({
   displayName: null,
   searchable: true,
   photoMode: 'google',
-  photoData: null
+  photoData: null,
+  privacy: defaultPrivacy()
 });
 
 const cleanName = v => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60) : '') || null;
@@ -75,7 +77,8 @@ function sanitize(raw) {
     displayName: typeof data.displayName === 'string' && data.displayName ? data.displayName : null,
     searchable: data.searchable !== false,
     photoMode: PHOTO_MODES.includes(data.photoMode) ? data.photoMode : data.photoOn === false ? 'none' : 'google',
-    photoData: typeof data.photoData === 'string' && data.photoData.startsWith('data:image/jpeg;base64,') ? data.photoData : null
+    photoData: typeof data.photoData === 'string' && data.photoData.startsWith('data:image/jpeg;base64,') ? data.photoData : null,
+    privacy: cleanPrivacy(data.privacy)
   };
 }
 

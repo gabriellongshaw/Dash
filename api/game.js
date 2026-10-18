@@ -4,6 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
 import { distanceAt } from '../assets/js/core/difficulty.js';
+import { cleanPrivacy, defaultPrivacy } from '../assets/js/core/privacy.js';
 import { createSocial, profileFixups } from '../server/social.js';
 import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
@@ -56,7 +57,8 @@ const defaults = () => ({
   displayName: null,
   searchable: true,
   photoMode: 'google',
-  photoData: null
+  photoData: null,
+  privacy: defaultPrivacy()
 });
 
 function sanitize(raw) {
@@ -85,7 +87,8 @@ function sanitize(raw) {
     displayName: typeof data.displayName === 'string' && data.displayName ? data.displayName : null,
     searchable: data.searchable !== false,
     photoMode: PHOTO_MODES.includes(data.photoMode) ? data.photoMode : data.photoOn === false ? 'none' : 'google',
-    photoData: typeof data.photoData === 'string' && data.photoData ? data.photoData : null
+    photoData: typeof data.photoData === 'string' && data.photoData ? data.photoData : null,
+    privacy: cleanPrivacy(data.privacy)
   };
 }
 
@@ -101,7 +104,8 @@ const view = p => ({
   displayName: p.displayName,
   searchable: p.searchable,
   photoMode: p.photoMode,
-  photoData: p.photoData
+  photoData: p.photoData,
+  privacy: p.privacy
 });
 
 const cleanPhoto = v => {
