@@ -347,3 +347,22 @@
 .friend-avatar {
   transition: background 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
 }
+
+.friend-row.link,
+.friend-card .friend-row.plain.link {
+  cursor: pointer;
+}
+
+.friend-row.link {
+  transition: border-color 0.2s ease;
+}
+
+.friend-row.link:hover,
+.friend-row.link:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.friend-actions .round-button.star.on {
+  color: var(--coin-dark);
+}
