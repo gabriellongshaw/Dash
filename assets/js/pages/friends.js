@@ -1,5 +1,5 @@
 import { profile } from '../core/profile.js';
-import { SKINS, CHARACTERS, HATS, WORLDS, findItem } from '../core/cosmetics.js';
+import { findItem } from '../core/cosmetics.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { makeAvatar } from '../components/avatar.js';
 import { detectTouch } from '../core/theme.js';
@@ -7,40 +7,20 @@ import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { exitRow, reducedMotion, reveal, setCoins } from '../core/motion.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
+import { openGift } from '../components/gift.js';
+import { button, messageFor } from '../components/ui.js';
 
 const $ = id => document.getElementById(id);
 
-const MAX_GIFT_COINS = 1000;
-const QUICK_COINS = [50, 100, 250, 500];
-const GROUPS = [
-  ['Colours', SKINS],
-  ['Characters', CHARACTERS],
-  ['Hats', HATS],
-  ['Worlds', WORLDS]
-];
-
-const MESSAGES = {
-  taken: 'That username is taken.',
-  username: 'Use 3 to 16 lowercase letters, numbers or underscores.',
-  cooldown: 'You can only change your username once a day.',
-  'no-user': 'No player has that username.',
-  self: 'That is your own username.',
-  already: 'You are already friends.',
-  pending: 'You already sent them a request.',
-  full: 'Your friends list is full.',
-  'target-full': 'Their friends list is full.',
-  'too-many': 'You have too many pending requests.',
-  'target-busy': 'They have too many pending requests.',
-  'no-username': 'Choose a username first.',
-  coins: 'Not enough coins.',
-  owned: 'They already own that item.',
-  'not-friends': 'You are not friends yet.',
-  amount: `Gifts can be up to ${MAX_GIFT_COINS} coins.`,
-  empty: 'Choose coins or an item to send.'
-};
-
 const PENCIL =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+
+const STAR =
+  '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2l1.1-6.2L3 9.6l6.2-.9Z"/></svg>';
+
+const STAR_ON = STAR.replace('fill="none"', 'fill="currentColor"');
+
+const profileUrl = person => `../profile/?u=${encodeURIComponent(person.username)}`;
 
 const CROSS =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
@@ -83,17 +63,6 @@ function resizePhoto(file) {
   });
 }
 
-const messageFor = e => MESSAGES[e && e.code] || `Something went wrong${e && e.code ? ` (${e.code})` : ''}. Try again.`;
-
-function button(label, className, onClick) {
-  const el = document.createElement('button');
-  el.type = 'button';
-  el.className = className;
-  el.textContent = label;
-  el.addEventListener('click', onClick);
-  return el;
-}
-
 function describeGift(gift) {
   const parts = [];
   if (gift.coins) parts.push(`${gift.coins} coins`);
@@ -122,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let editing = false;
   let busy = false;
   let draft = { name: '', user: '' };
+  let wantEdit = new URLSearchParams(window.location.search).has('edit');
   const seen = new Set();
   const shown = { content: false, social: false, requests: false };
 
@@ -303,6 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
     edit.setAttribute('aria-label', 'Edit profile');
     edit.innerHTML = PENCIL;
     row.append(makeAvatar({ uid: profile.state.uid, username, photo: profile.avatar }, 'lg'), names, edit);
+    row.classList.add('link');
+    row.addEventListener('click', e => {
+      if (!e.target.closest('.round-button')) navigateTo('../profile/');
+    });
     me.appendChild(row);
   }
 
@@ -321,8 +295,19 @@ document.addEventListener('DOMContentLoaded', () => {
     handle.textContent = person.displayName || `@${person.username}`;
     const sub = document.createElement('span');
     sub.className = 'friend-sub';
-    sub.textContent = person.displayName ? `@${person.username} · Best ${person.best}` : `Best ${person.best}`;
+    const best = person.best === null || person.best === undefined ? '' : `Best ${person.best}`;
+    sub.textContent = [person.displayName ? `@${person.username}` : '', best].filter(Boolean).join(' · ') || `@${person.username}`;
     names.append(handle, sub);
+    row.classList.add('link');
+    row.tabIndex = 0;
+    row.setAttribute('role', 'link');
+    row.setAttribute('aria-label', `Open ${person.displayName || '@' + person.username}'s profile`);
+    row.addEventListener('click', e => {
+      if (!e.target.closest('.friend-actions')) navigateTo(profileUrl(person));
+    });
+    row.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target === row) navigateTo(profileUrl(person));
+    });
     const side = document.createElement('div');
     side.className = 'friend-actions';
     actions.forEach(el => side.appendChild(el));
@@ -407,6 +392,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     data.friends.forEach((person, index) => {
+      const star = button('', `round-button star${person.favourite ? ' on' : ''}`, async () => {
+        const ok = await act(() => profile.api('favourite', { uid: person.uid, on: !person.favourite }), person.favourite ? `@${person.username} removed from favourites.` : `@${person.username} added to favourites.`);
+        if (ok) load();
+      });
+      star.setAttribute('aria-label', person.favourite ? `Unfavourite @${person.username}` : `Favourite @${person.username}`);
+      star.setAttribute('aria-pressed', String(!!person.favourite));
+      star.innerHTML = person.favourite ? STAR_ON : STAR;
       const gift = button('Gift', 'secondary-button small', () => openGift(person));
       const remove = button('', 'round-button', () => {
         if (!confirm(`Remove @${person.username} from your friends?`)) return;
@@ -414,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       remove.setAttribute('aria-label', `Remove @${person.username}`);
       remove.innerHTML = CROSS;
-      list.appendChild(personRow(person, index, [gift, remove], 'friend'));
+      list.appendChild(personRow(person, index, [star, gift, remove], 'friend'));
     });
   }
 
@@ -427,6 +419,11 @@ document.addEventListener('DOMContentLoaded', () => {
     shown.content = signedIn;
     setCoins($('wallet'), profile.state.coins);
     if (!signedIn) return;
+    if (wantEdit) {
+      wantEdit = false;
+      setEditing(true);
+      return;
+    }
     renderMe();
     const hasName = !!profile.state.username;
     socialBox.classList.toggle('hidden', !hasName);
@@ -436,112 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderInbox();
     renderRequests();
     renderFriends();
-  }
-
-  function openGift(person) {
-    const overlay = document.createElement('div');
-    overlay.className = 'overlay';
-    const modal = document.createElement('div');
-    modal.className = 'modal gift-modal';
-    const title = document.createElement('h2');
-    title.textContent = `Gift to @${person.username}`;
-    const balance = document.createElement('p');
-    balance.className = 'modal-note';
-
-    let coins = 0;
-    const quick = document.createElement('div');
-    quick.className = 'gift-quick';
-    const custom = document.createElement('input');
-    custom.className = 'friend-input';
-    custom.type = 'number';
-    custom.inputMode = 'numeric';
-    custom.min = '0';
-    custom.max = String(MAX_GIFT_COINS);
-    custom.placeholder = 'Coins';
-    custom.setAttribute('aria-label', 'Coins to send');
-    const chips = QUICK_COINS.map(amount => {
-      const chip = button(String(amount), 'gift-chip', () => {
-        coins = coins === amount ? 0 : amount;
-        custom.value = coins ? String(coins) : '';
-        update();
-      });
-      quick.appendChild(chip);
-      return [amount, chip];
-    });
-
-    const select = document.createElement('select');
-    select.className = 'friend-input';
-    select.setAttribute('aria-label', 'Item to send');
-    const none = document.createElement('option');
-    none.value = '';
-    none.textContent = 'No item';
-    select.appendChild(none);
-    GROUPS.forEach(([label, list]) => {
-      const group = document.createElement('optgroup');
-      group.label = label;
-      list
-        .filter(item => item.price > 0)
-        .forEach(item => {
-          const option = document.createElement('option');
-          option.value = item.id;
-          option.textContent = `${item.name} · ${item.price} coins`;
-          group.appendChild(option);
-        });
-      select.appendChild(group);
-    });
-
-    const total = document.createElement('p');
-    total.className = 'gift-total';
-    const send = button('Send gift', 'button', async () => {
-      send.blur();
-      const item = select.value || null;
-      const ok = await act(
-        () => profile.api('gift', { uid: person.uid, coins, item }),
-        () => `Gift sent to @${person.username}.`,
-        'gift'
-      );
-      if (ok) close();
-    });
-    const close = () => {
-      if (overlay.classList.contains('closing')) return;
-      if (reducedMotion()) {
-        overlay.remove();
-        return;
-      }
-      overlay.classList.add('closing');
-      setTimeout(() => overlay.remove(), 200);
-    };
-    const cancel = button('Cancel', 'secondary-button', close);
-
-    function cost() {
-      const item = select.value ? findItem(select.value) : null;
-      return coins + (item ? item.price : 0);
-    }
-
-    function update() {
-      chips.forEach(([amount, chip]) => chip.classList.toggle('active', amount === coins));
-      const spend = cost();
-      const have = profile.state.coins;
-      balance.textContent = `You have ${have} coins`;
-      total.textContent = spend ? `Total: ${spend} coins` : 'Choose coins or an item';
-      send.disabled = spend === 0 || spend > have;
-      if (spend > have) total.textContent = `Total: ${spend} coins. You need ${spend - have} more.`;
-    }
-
-    custom.addEventListener('input', () => {
-      const value = Math.floor(Number(custom.value));
-      coins = Number.isFinite(value) ? Math.min(Math.max(value, 0), MAX_GIFT_COINS) : 0;
-      update();
-    });
-    select.addEventListener('change', update);
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) close();
-    });
-
-    modal.append(title, balance, quick, custom, select, total, send, cancel);
-    overlay.appendChild(modal);
-    document.querySelector('.page').appendChild(overlay);
-    update();
   }
 
   const resultsBox = $('results');
