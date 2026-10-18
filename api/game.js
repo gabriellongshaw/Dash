@@ -3,15 +3,13 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
+import { distanceAt } from '../assets/js/core/difficulty.js';
 import { createSocial, profileFixups } from '../server/social.js';
 import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
 const ORIGINS = ['https://gabriellongshaw.co.uk', 'https://www.gabriellongshaw.co.uk'];
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
-const BASE_SPEED = 300;
-const MAX_SPEED = 860;
-const SPEED_GAIN = 0.011;
 const PX_PER_METER = 30;
 const LEAD_SECONDS = 4;
 const SPEED_SLACK = 1.12;
@@ -115,13 +113,7 @@ const cleanPhoto = v => {
 };
 
 export function maxMeters(seconds) {
-  const rampEnd = Math.log(MAX_SPEED / BASE_SPEED) / SPEED_GAIN;
-  const t = Math.max(0, seconds);
-  const px =
-    t <= rampEnd
-      ? (BASE_SPEED / SPEED_GAIN) * (Math.exp(SPEED_GAIN * t) - 1)
-      : (MAX_SPEED - BASE_SPEED) / SPEED_GAIN + MAX_SPEED * (t - rampEnd);
-  return Math.floor(px / PX_PER_METER);
+  return Math.floor(distanceAt(seconds) / PX_PER_METER);
 }
 
 export function cleanRun(data) {

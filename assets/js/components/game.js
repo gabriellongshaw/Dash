@@ -6,9 +6,8 @@ import { fitStage } from './stage.js';
 import { readPalette, isDark } from '../core/theme.js';
 import { clamp, overlaps } from '../core/utils.js';
 import { audio } from '../core/audio.js';
+import { speedAt } from '../core/difficulty.js';
 
-const BASE_SPEED = 300;
-const MAX_SPEED = 860;
 const STEP = 1 / 90;
 
 export class Game {
@@ -84,7 +83,7 @@ export class Game {
     this.slides = 0;
     this.dodged = 0;
     this.score = -1;
-    this.speed = BASE_SPEED;
+    this.speed = speedAt(0);
     this.coast = 0;
     this.shake = 0;
     this.particles.clear();
@@ -229,7 +228,7 @@ export class Game {
     }
     if (this.state !== 'playing') return;
 
-    this.speed = Math.min(MAX_SPEED, BASE_SPEED + this.dist * 0.011);
+    this.speed = speedAt(this.dist);
     this.dist += this.speed * h;
     this.world.update(h, this.speed);
 
