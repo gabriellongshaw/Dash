@@ -32,6 +32,17 @@ function loadSettings() {
   }
 }
 
+function findHost() {
+  try {
+    if (window.parent !== window && window.parent.__dashAudio) return window.parent.__dashAudio;
+  } catch {}
+  return null;
+}
+
+const host = findHost();
+
+export const hosted = host !== null;
+
 let settings = loadSettings();
 
 function saveSettings() {
@@ -143,17 +154,20 @@ function prime(c) {
   src.start(0);
 }
 
+function unlock() {
+  const c = ensure();
+  if (!c) return;
+  if (!unlocked) prime(c);
+  if (c.state === 'running') tryStart();
+  else c.resume().then(tryStart, () => {});
+}
+
+const UNLOCK_EVENTS = ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'];
+
 function bindUnlock() {
   if (unlockBound) return;
   unlockBound = true;
-  const unlock = () => {
-    const c = ensure();
-    if (!c) return;
-    if (!unlocked) prime(c);
-    if (c.state === 'running') tryStart();
-    else c.resume().then(tryStart, () => {});
-  };
-  ['pointerdown', 'pointerup', 'touchend', 'keydown', 'click'].forEach(type => window.addEventListener(type, unlock, true));
+  UNLOCK_EVENTS.forEach(type => window.addEventListener(type, unlock, true));
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) endMusic(0.1);
     else tryStart();
@@ -229,7 +243,7 @@ const EFFECTS = {
 
 const MIN_GAP = { coin: 0.04, click: 0.03, jump: 0.05, double: 0.05 };
 
-export const audio = {
+const local = {
   get settings() {
     return settings;
   },
@@ -281,8 +295,26 @@ export const audio = {
 
   fadeOut(seconds = 0.18) {
     endMusic(seconds);
-  }
+  },
+
+  unlock
 };
+
+function wrapHost() {
+  return Object.create(host, {
+    subscribe: {
+      value(fn) {
+        const off = host.subscribe(fn);
+        window.addEventListener('pagehide', off, { once: true });
+        return off;
+      }
+    }
+  });
+}
+
+export const audio = host ? wrapHost() : local;
+
+if (host) UNLOCK_EVENTS.forEach(type => window.addEventListener(type, () => host.unlock(), true));
 
 export function initAudio(volume = 1) {
   audio.music(volume);

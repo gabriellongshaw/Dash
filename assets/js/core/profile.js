@@ -231,6 +231,13 @@ export const profile = {
       await authMod.signInWithPopup(auth, provider);
     } catch (e) {
       if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
+        if (window.top !== window.self) {
+          try {
+            sessionStorage.setItem('dash:bare', '1');
+            window.top.location.replace(window.location.href);
+          } catch {}
+          return;
+        }
         await authMod.signInWithRedirect(auth, provider);
         return;
       }
