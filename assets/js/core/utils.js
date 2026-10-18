@@ -31,6 +31,15 @@ export function parseColor(str) {
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1];
   }
   const m = s.match(/[\d.]+/g).map(Number);
+  if (/^hsl/i.test(s)) {
+    const sat = m[1] / 100;
+    const light = m[2] / 100;
+    const channel = n => {
+      const k = (n + m[0] / 30) % 12;
+      return (light - sat * Math.min(light, 1 - light) * Math.max(-1, Math.min(k - 3, 9 - k, 1))) * 255;
+    };
+    return [channel(0), channel(8), channel(4), m.length > 3 ? m[3] : 1];
+  }
   return [m[0], m[1], m[2], m.length > 3 ? m[3] : 1];
 }
 
