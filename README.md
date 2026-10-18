@@ -71,6 +71,16 @@ Open **Friends** from the home screen. Everything here needs a signed-in account
 - **Adding friends:** Search by display name or username (the start of either, at least two letters) and tap Add on a result. You can switch **Show me in search** off in your profile editor to stay out of results. They accept or decline from their Friends page. If you both request each other you become friends straight away. Each player can have 50 friends and 30 pending requests.
 - **Gifts:** Send a friend up to 1000 coins, an item, or both. The gift comes out of your coins, and an item costs its shop price. They cannot be sent to someone who already owns the item. The player sees what they were sent the next time they open Friends, and a badge on the home screen shows waiting requests and gifts.
 
+### Profiles and privacy
+
+Tap anyone in your friends list, search results or the leaderboard to open their profile (`profile/?u=username`). Tap yourself, or your row on the leaderboard, to open your own profile and settings.
+
+- **Profile:** Photo, name and username, stats (best score, runs, items collected and friend count) and a preview of their character, colour and hat.
+- **Friend actions:** Add or cancel a request, accept or decline, **favourite** a friend (up to 10, they float to the top of your list with a star), gift, unfriend and **block**. Favourites are private to you.
+- **Blocking:** Blocking removes the friendship or any pending request. The person you blocked can no longer find you in search, open your profile or send you requests, and is never told. Manage your blocked list at the bottom of your own profile and unblock from there. You can block up to 100 players.
+- **Privacy settings:** Choose who can see your **profile photo**, **stats** and **appearance** (Everyone, Friends only or Only me), who can send you **friend requests** (Everyone or Nobody), and whether you appear in **search** and on the **leaderboards**. Settings apply to profiles, search results and friends lists alike. They are enforced by the API, not just hidden on the page.
+- **Editing:** Name, username and photo are edited from **Edit name, username and photo** on your profile, which opens the friends page editor.
+
 Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes, so `firestore.rules` needs no changes. The API code is in `server/social.js`.
 
 ### Server checks
@@ -117,9 +127,10 @@ The game uses ES modules, so serve the folder over HTTP (for example `python3 -m
 - `shop/` — the shop page
 - `quests/` — daily and weekly quests
 - `friends/` — usernames, friends and gifting
+- `profile/` — player profiles, friend actions and your privacy settings
 - `leaderboard/` — weekly and all-time rankings
 - `assets/js/core/` — audio and music, difficulty curve, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
-- `server/` — friends and gifting logic used by the API
+- `server/` — friends, gifting, privacy and blocking logic used by the API
 - `scripts/` — developer tools, such as gifting coins and items
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
 - `firestore.rules` — Firestore security rules
