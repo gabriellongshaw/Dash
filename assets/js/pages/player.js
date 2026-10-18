@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let busy = false;
   let shownContent = false;
   let editing = false;
-  let swapIn = false;
+  let built = false;
   let draft = { name: '', user: '' };
   let palette = readPalette();
   let lookCanvas = null;
@@ -158,8 +158,29 @@ document.addEventListener('DOMContentLoaded', () => {
   function setEditing(next) {
     editing = next;
     draft = { name: profile.state.displayName || '', user: profile.state.username || '' };
-    swapIn = true;
+    if (built && status === 'ready') {
+      popIn(swapTop());
+      return;
+    }
     render();
+  }
+
+  function topCard() {
+    return editing && person && person.relation === 'self' ? editorCard() : heroCard();
+  }
+
+  function swapTop() {
+    const card = topCard();
+    const old = content.firstElementChild;
+    if (old) old.replaceWith(card);
+    else content.prepend(card);
+    return card;
+  }
+
+  function popIn(card) {
+    if (reducedMotion()) return;
+    card.classList.add('entering');
+    setTimeout(() => card.classList.remove('entering'), 480);
   }
 
   function field(labelText, input) {
@@ -482,15 +503,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return box;
   }
 
-  function finishSwap() {
-    if (!swapIn) return;
-    swapIn = false;
-    const first = content.firstElementChild;
-    if (!first || reducedMotion()) return;
-    first.classList.add('entering');
-    setTimeout(() => first.classList.remove('entering'), 480);
-  }
-
   function render() {
     const signedIn = profile.session.status === 'in' && !!profile.state.uid;
     note.classList.toggle('hidden', profile.session.status !== 'out');
@@ -499,15 +511,19 @@ document.addEventListener('DOMContentLoaded', () => {
     shownContent = signedIn;
     setCoins($('wallet'), profile.state.coins);
     if (!signedIn) return;
+    if (editing && built && status === 'ready' && content.firstElementChild) {
+      swapTop();
+      return;
+    }
+    built = false;
     lookCanvas = null;
     content.innerHTML = '';
     if (status === 'loading') {
       content.appendChild(text('p', 'quest-empty', 'Loading'));
       return;
     }
-    if (status === 'setup' || (editing && status === 'ready' && person && person.relation === 'self')) {
+    if (status === 'setup') {
       content.appendChild(editorCard());
-      finishSwap();
       return;
     }
     if (status === 'missing') {
@@ -522,8 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
       return;
     }
-    content.appendChild(heroCard());
-    finishSwap();
+    content.appendChild(topCard());
     if (person.relation !== 'blocked') {
       if (person.stats) content.appendChild(statsGrid());
       if (person.look) content.appendChild(lookCard());
@@ -532,6 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (person.relation !== 'self') content.appendChild(actionsRow());
     else settingsCards().forEach(card => content.appendChild(card));
+    built = true;
   }
 
   $('note-signin').addEventListener('click', () => signInFlow());
