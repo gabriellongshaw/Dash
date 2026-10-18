@@ -1,11 +1,15 @@
 import { FieldPath, FieldValue } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
+import { FIELDS, LEVELS, REQUEST_LEVELS, canSee, cleanPrivacy } from '../assets/js/core/privacy.js';
 
 export const USERNAME = /^[a-z0-9_]{3,16}$/;
 
 const RESERVED = new Set(['admin', 'administrator', 'dash', 'dev', 'developer', 'gabriel', 'moderator', 'mod', 'official', 'staff', 'support', 'system', 'owner']);
 const MAX_FRIENDS = 50;
 const MAX_PENDING = 30;
+const MAX_FAVOURITES = 10;
+const MAX_BLOCKED = 100;
+const MAX_UID = 128;
 const MAX_GIFT_COINS = 1000;
 const NAME_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const GIFT_PAGE = 20;
@@ -61,25 +65,28 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
   const entryRef = (uid, other) => db.doc(`dashFriends/${uid}/entries/${other}`);
   const gifts = uid => db.collection(`dashGifts/${uid}/items`);
 
-  const card = (uid, snap) => {
+  const card = (uid, snap, relation = null) => {
     const data = snap && snap.exists ? snap.data() : {};
+    const privacy = cleanPrivacy(data.privacy);
     return {
       uid,
       username: typeof data.username === 'string' ? data.username.toLowerCase() : null,
       displayName: cleanDisplayName(data.displayName),
       searchable: data.searchable !== false,
-      photo: pickPhoto(data),
-      best: whole(data.best)
+      photo: canSee(privacy.photo, relation) ? pickPhoto(data) : null,
+      best: canSee(privacy.stats, relation) ? whole(data.best) : null
     };
   };
 
   const countState = (docs, state) => docs.filter(doc => doc.data().state === state).length;
 
-  async function cards(uids) {
+  async function cards(uids, relationOf = () => null) {
     if (!uids.length) return new Map();
     const snaps = await db.getAll(...uids.map(profileRef));
-    return new Map(snaps.map((snap, i) => [uids[i], card(uids[i], snap)]));
+    return new Map(snaps.map((snap, i) => [uids[i], card(uids[i], snap, relationOf(uids[i]))]));
   }
+
+  const validUid = value => typeof value === 'string' && value.length > 0 && value.length <= MAX_UID && !value.includes('/');
 
   async function findUid(username) {
     const key = typeof username === 'string' ? username.trim().toLowerCase() : '';
@@ -158,9 +165,11 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
         db.collection('dashProfiles').where('displayLower', '>=', q).where('displayLower', '<', end).limit(SEARCH_FETCH).get(),
         entries(user.uid).get()
       ]);
-      const uids = [...new Set([...byUser.docs.map(doc => doc.data().uid), ...byName.docs.map(doc => doc.id)])].filter(uid => uid && uid !== user.uid);
-      const people = await cards(uids);
       const states = new Map(mine.docs.map(doc => [doc.id, doc.data().state]));
+      const found = [...new Set([...byUser.docs.map(doc => doc.data().uid), ...byName.docs.map(doc => doc.id)])].filter(uid => validUid(uid) && uid !== user.uid && states.get(uid) !== 'blocked');
+      const theirs = found.length ? await db.getAll(...found.map(uid => entryRef(uid, user.uid))) : [];
+      const uids = found.filter((uid, i) => !(theirs[i].exists && theirs[i].data().state === 'blocked'));
+      const people = await cards(uids, uid => states.get(uid) || null);
       const rank = person => {
         const name = (person.displayName || '').toLowerCase();
         if (person.username === q || name === q) return 0;
@@ -178,36 +187,43 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
     async social(user) {
       const [mine, unseen] = await Promise.all([entries(user.uid).get(), gifts(user.uid).where('seen', '==', false).limit(GIFT_PAGE).get()]);
       const uids = mine.docs.map(doc => doc.id);
-      const people = await cards(uids);
+      const states = new Map(mine.docs.map(doc => [doc.id, doc.data()]));
+      const people = await cards(uids, uid => states.get(uid).state);
       const group = state =>
         mine.docs
           .filter(doc => doc.data().state === state)
-          .map(doc => people.get(doc.id))
-          .filter(person => person && person.username)
-          .sort((a, b) => a.username.localeCompare(b.username));
+          .map(doc => ({ ...people.get(doc.id), favourite: state === 'friend' && doc.data().favourite === true }))
+          .filter(person => person.username)
+          .sort((a, b) => Number(b.favourite) - Number(a.favourite) || a.username.localeCompare(b.username));
       const received = unseen.docs
         .map(doc => {
           const data = doc.data();
           return { id: doc.id, from: typeof data.fromName === 'string' ? data.fromName.toLowerCase() : 'someone', coins: whole(data.coins), item: typeof data.item === 'string' ? data.item : null, at: whole(data.at) };
         })
         .sort((a, b) => b.at - a.at);
-      return { friends: group('friend'), incoming: group('in'), outgoing: group('out'), gifts: received };
+      return { friends: group('friend'), incoming: group('in'), outgoing: group('out'), blocked: group('blocked').map(({ uid, username, displayName }) => ({ uid, username, displayName })), gifts: received };
     },
 
     async request(user, body) {
       const target = await findUid(body.username);
       if (target === user.uid) throw new Fail(400, 'self');
       const accepted = await db.runTransaction(async tx => {
-        const [me, mineSnap, theirsSnap, existing] = await Promise.all([
+        const [me, mineSnap, theirsSnap, existing, theirProfile] = await Promise.all([
           load(tx, user.uid),
           tx.get(entries(user.uid)),
           tx.get(entries(target)),
-          tx.get(entryRef(user.uid, target))
+          tx.get(entryRef(user.uid, target)),
+          tx.get(profileRef(target))
         ]);
         if (!me.username) throw new Fail(409, 'no-username');
+        if (!theirProfile.exists) throw new Fail(404, 'no-user');
+        const theirEntry = theirsSnap.docs.find(doc => doc.id === user.uid);
+        if (theirEntry && theirEntry.data().state === 'blocked') throw new Fail(404, 'no-user');
         const state = existing.exists ? existing.data().state : null;
+        if (state === 'blocked') throw new Fail(409, 'you-blocked');
         if (state === 'friend') throw new Fail(409, 'already');
         if (state === 'out') throw new Fail(409, 'pending');
+        if (state !== 'in' && cleanPrivacy(theirProfile.data().privacy).requests === 'nobody') throw new Fail(403, 'requests-off');
         const at = now();
         if (state === 'in') {
           if (countState(mineSnap.docs, 'friend') >= MAX_FRIENDS) throw new Fail(409, 'full');
@@ -249,11 +265,111 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
     async removeFriend(user, body) {
       const other = typeof body.uid === 'string' ? body.uid : '';
       if (!other || other === user.uid) throw new Fail(400, 'uid');
-      const batch = db.batch();
-      batch.delete(entryRef(user.uid, other));
-      batch.delete(entryRef(other, user.uid));
-      await batch.commit();
+      await db.runTransaction(async tx => {
+        const [mine, theirs] = await Promise.all([tx.get(entryRef(user.uid, other)), tx.get(entryRef(other, user.uid))]);
+        if (mine.exists && mine.data().state === 'blocked') return;
+        if (mine.exists) tx.delete(entryRef(user.uid, other));
+        if (theirs.exists && theirs.data().state !== 'blocked') tx.delete(entryRef(other, user.uid));
+      });
       return { ok: true };
+    },
+
+    async favourite(user, body) {
+      const other = typeof body.uid === 'string' ? body.uid : '';
+      if (!validUid(other) || other === user.uid) throw new Fail(400, 'uid');
+      const on = !!body.on;
+      await db.runTransaction(async tx => {
+        const [mine, all] = await Promise.all([tx.get(entryRef(user.uid, other)), tx.get(entries(user.uid))]);
+        if (!mine.exists || mine.data().state !== 'friend') throw new Fail(403, 'not-friends');
+        if (on && mine.data().favourite !== true && all.docs.filter(doc => doc.data().favourite === true).length >= MAX_FAVOURITES) throw new Fail(409, 'too-many-favourites');
+        tx.update(entryRef(user.uid, other), { favourite: on });
+      });
+      return { ok: true, favourite: on };
+    },
+
+    async block(user, body) {
+      const other = typeof body.uid === 'string' ? body.uid : '';
+      if (!validUid(other) || other === user.uid) throw new Fail(400, 'uid');
+      await db.runTransaction(async tx => {
+        const [target, mine, theirs, all] = await Promise.all([
+          tx.get(profileRef(other)),
+          tx.get(entryRef(user.uid, other)),
+          tx.get(entryRef(other, user.uid)),
+          tx.get(entries(user.uid))
+        ]);
+        if (!target.exists) throw new Fail(404, 'no-user');
+        const already = mine.exists && mine.data().state === 'blocked';
+        if (!already && countState(all.docs, 'blocked') >= MAX_BLOCKED) throw new Fail(409, 'too-many-blocked');
+        tx.set(entryRef(user.uid, other), { state: 'blocked', at: now() });
+        if (theirs.exists && theirs.data().state !== 'blocked') tx.delete(entryRef(other, user.uid));
+      });
+      return { ok: true };
+    },
+
+    async unblock(user, body) {
+      const other = typeof body.uid === 'string' ? body.uid : '';
+      if (!validUid(other) || other === user.uid) throw new Fail(400, 'uid');
+      await db.runTransaction(async tx => {
+        const mine = await tx.get(entryRef(user.uid, other));
+        if (mine.exists && mine.data().state === 'blocked') tx.delete(entryRef(user.uid, other));
+      });
+      return { ok: true };
+    },
+
+    async setPrivacy(user, body) {
+      const change = {};
+      for (const key of FIELDS) {
+        if (body[key] === undefined) continue;
+        if (!LEVELS.includes(body[key])) throw new Fail(400, 'privacy');
+        change[key] = body[key];
+      }
+      if (body.requests !== undefined) {
+        if (!REQUEST_LEVELS.includes(body.requests)) throw new Fail(400, 'privacy');
+        change.requests = body.requests;
+      }
+      if (!Object.keys(change).length) throw new Fail(400, 'privacy');
+      return db.runTransaction(async tx => {
+        const profile = await load(tx, user.uid);
+        const privacy = { ...profile.privacy, ...change };
+        tx.update(profileRef(user.uid), { privacy, updatedAt: FieldValue.serverTimestamp() });
+        return { profile: view({ ...profile, privacy }) };
+      });
+    },
+
+    async viewProfile(user, body) {
+      const target = validUid(body.uid) ? body.uid : await findUid(body.username);
+      const self = target === user.uid;
+      const [snap, mine, theirs, theirFriends] = await Promise.all([
+        profileRef(target).get(),
+        self ? null : entryRef(user.uid, target).get(),
+        self ? null : entryRef(target, user.uid).get(),
+        entries(target).get()
+      ]);
+      const raw = snap.exists ? snap.data() : null;
+      const username = raw && typeof raw.username === 'string' ? raw.username.toLowerCase() : null;
+      if (!raw || !username) throw new Fail(404, 'no-user');
+      if (theirs && theirs.exists && theirs.data().state === 'blocked') throw new Fail(404, 'no-user');
+      const entry = mine && mine.exists ? mine.data() : null;
+      const relation = self ? 'self' : entry ? entry.state : null;
+      const displayName = cleanDisplayName(raw.displayName);
+      if (relation === 'blocked') return { person: { uid: target, username, displayName, relation, favourite: false, photo: null, canRequest: false, stats: null, look: null, hidden: { photo: false, stats: false, look: false } } };
+      const data = sanitize(raw);
+      const privacy = data.privacy;
+      const see = field => canSee(privacy[field], relation);
+      return {
+        person: {
+          uid: target,
+          username,
+          displayName,
+          relation,
+          favourite: relation === 'friend' && entry.favourite === true,
+          photo: see('photo') ? pickPhoto(raw) : null,
+          canRequest: self ? false : privacy.requests !== 'nobody',
+          stats: see('stats') ? { best: data.best, runs: data.runs, items: data.owned.length, friends: countState(theirFriends.docs, 'friend') } : null,
+          look: see('look') ? { equipped: data.equipped } : null,
+          hidden: { photo: !see('photo'), stats: !see('stats'), look: !see('look') }
+        }
+      };
     },
 
     async gift(user, body) {
