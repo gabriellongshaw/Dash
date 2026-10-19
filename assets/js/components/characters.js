@@ -50,13 +50,13 @@ const HEAD_RADIUS = {
 
 const MAX_SINK = 4;
 
-export function hatFit(id, w, pose, reach, clock) {
+export function hatFit(id, w, pose, reach, clock, sink = 1) {
   const range = HEAD_RADIUS[id] || HEAD_RADIUS['char:bot'];
   const r = lerp(range[0], range[1], pose);
   const edge = Math.max(0, reach - (w / 2 - r));
   const drop = r - Math.sqrt(Math.max(0, r * r - edge * edge));
   const bob = id === 'char:slime' ? Math.sin(clock * 2) * 1.6 * (1 - pose) : 0;
-  return { x: w / 2 - 17, y: Math.min(MAX_SINK, drop * 0.9 + 0.5) + bob };
+  return { x: w / 2 - 17, y: Math.min(MAX_SINK, drop * 0.9 + 0.5) * sink + bob };
 }
 
 function bodyPath(ctx, g, radius) {

@@ -71,15 +71,15 @@ const hats = {
   },
   'hat:headphones'(ctx) {
     ctx.strokeStyle = '#1f2937';
-    ctx.lineWidth = 3.6;
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(0, 14.5, 16, Math.PI, 0);
+    ctx.arc(0, 12, 16, Math.PI, 0);
     ctx.stroke();
     ctx.fillStyle = '#34d399';
     ctx.beginPath();
-    ctx.roundRect(-20, 8, 6.5, 13, 3.2);
-    ctx.roundRect(13.5, 8, 6.5, 13, 3.2);
+    ctx.roundRect(-20, 5, 7, 14, 3.5);
+    ctx.roundRect(13, 5, 7, 14, 3.5);
     ctx.fill();
   },
   'hat:halo'(ctx, info) {
@@ -547,7 +547,7 @@ const SPEC = {
   'hat:cap': [0.82, 14],
   'hat:party': [0.85, 10],
   'hat:catears': [0.85, 14],
-  'hat:headphones': [1, 17],
+  'hat:headphones': [1, 17, 0],
   'hat:chef': [0.8, 15.7],
   'hat:halo': [0.85, 12.5],
   'hat:tophat': [0.8, 17],
@@ -575,7 +575,7 @@ const SPEC = {
 
 export function hatSpec(id) {
   const spec = SPEC[id] || [0.85, 14];
-  return { scale: spec[0], reach: Math.min(14, Math.max(6, spec[0] * spec[1])) };
+  return { scale: spec[0], reach: Math.min(14, Math.max(6, spec[0] * spec[1])), sink: spec[2] === undefined ? 1 : spec[2] };
 }
 
 export function drawHat(ctx, id, info) {

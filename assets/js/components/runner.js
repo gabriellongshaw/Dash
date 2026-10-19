@@ -221,7 +221,8 @@ export class Runner {
     });
 
     if (look.hat && look.hat !== 'hat:none') {
-      const fit = hatFit(look.char, w, pose, hatSpec(look.hat).reach, this.clock);
+      const spec = hatSpec(look.hat);
+      const fit = hatFit(look.char, w, pose, spec.reach, this.clock, spec.sink);
       ctx.save();
       ctx.translate(fit.x, -h / 2 + fit.y);
       drawHat(ctx, look.hat, { time, body: bodyColor, dark: darkColor });

@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setScene();
 
   function drawCards() {
+    if (grid.dataset.kind !== kind) return;
     const base = lookFor();
     grid.querySelectorAll('.item-card').forEach(card => {
       const item = findItem(card.dataset.id);
@@ -65,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderGrid() {
     grid.innerHTML = '';
+    grid.dataset.kind = kind;
     LISTS[kind].forEach((item, index) => {
       const card = document.createElement('button');
       card.className = 'item-card';
@@ -90,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function refresh() {
+    if (grid.dataset.kind !== kind) return;
     const { coins, equipped } = profile.state;
     setCoins($('wallet'), coins);
     grid.querySelectorAll('.item-card').forEach(card => {
@@ -157,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const tabButtons = [...document.querySelectorAll('.tab')];
+  let renderToken = 0;
   tabButtons.forEach(tab => {
     tab.addEventListener('click', () => {
       if (kind === tab.dataset.kind) return;
@@ -167,7 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
         t.classList.toggle('active', active);
         t.setAttribute('aria-selected', active);
       });
-      renderGrid();
+      const token = ++renderToken;
+      requestAnimationFrame(() =>
+        setTimeout(() => {
+          if (token === renderToken) renderGrid();
+        }, 0)
+      );
     });
   });
 
