@@ -23,12 +23,9 @@ const DODGED_PER_METER = 0.2;
 const ACTIONS_BASE = 6;
 const ACTIONS_PER_SECOND = 6;
 
-const IMPORT_PER_RUN = 80;
-const IMPORT_CAP = 5000;
-const IMPORT_BEST_CAP = 5000;
-const IMPORT_RUNS_CAP = 5000;
-
 const PHOTO_MODES = ['google', 'custom', 'none'];
+
+const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'claimQuest', 'buyItem']);
 
 const DEFAULT_OWNED = ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'];
 
@@ -147,27 +144,6 @@ export function checkRun(run, elapsed) {
   return null;
 }
 
-export function importGuest(guest) {
-  const src = guest && typeof guest === 'object' ? guest : {};
-  const runs = Math.min(whole(src.runs), IMPORT_RUNS_CAP);
-  const budget = Math.min(IMPORT_CAP, runs * IMPORT_PER_RUN);
-  const known = new Set(DEFAULT_OWNED);
-  const wanted = Array.isArray(src.owned) ? [...new Set(src.owned)] : [];
-  const items = wanted
-    .filter(id => typeof id === 'string' && !known.has(id))
-    .map(id => findItem(id))
-    .filter(Boolean)
-    .sort((a, b) => a.price - b.price);
-  let left = budget;
-  const owned = [];
-  for (const item of items) {
-    if (item.price > left) continue;
-    left -= item.price;
-    owned.push(item.id);
-  }
-  return { coins: Math.min(whole(src.coins), left), owned, runs, best: Math.min(whole(src.best), IMPORT_BEST_CAP) };
-}
-
 const shortName = full => {
   const parts = typeof full === 'string' ? full.replace(/[\u0000-\u001f\u007f]/g, '').trim().split(/\s+/).filter(Boolean) : [];
   if (!parts.length) return 'Player';
@@ -201,7 +177,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
   }
 
   async function publish(user, profile) {
-    if (!profile.publicBoard) return true;
+    if (user.anon || !profile.publicBoard) return true;
     const week = rollQuests(profile.quests);
     const writes = [];
     if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(profile.username || user.name, profile.vBest)));
@@ -217,7 +193,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
   const actions = {
     ...social,
 
-    async syncProfile(user, body) {
+    async syncProfile(user) {
       const profile = await db.runTransaction(async tx => {
         const ref = profileRef(user.uid);
         const snap = await tx.get(ref);
@@ -234,15 +210,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
           tx.update(ref, { vBest, legacyTrusted: true, ...fix, updatedAt: FieldValue.serverTimestamp() });
           return { ...current, vBest };
         }
-        const gift = body.guest ? importGuest(body.guest) : { coins: 0, owned: [], runs: 0, best: 0 };
-        const next = {
-          ...current,
-          coins: current.coins + gift.coins,
-          owned: [...new Set([...current.owned, ...gift.owned])],
-          runs: current.runs + gift.runs,
-          best: Math.max(current.best, gift.best),
-          vBest: raw ? Math.max(current.vBest, current.best) : current.vBest
-        };
+        const next = { ...current, vBest: raw ? Math.max(current.vBest, current.best) : current.vBest };
         const data = { ...next, imported: true, legacyTrusted: true, name: shortName(user.name), photo, ...fix, updatedAt: FieldValue.serverTimestamp() };
         if (snap.exists) tx.update(ref, data);
         else tx.set(ref, data);
@@ -342,6 +310,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
     if (!user) throw new Fail(401, 'auth');
     const run = body && typeof body.action === 'string' ? actions[body.action] : null;
     if (!run) throw new Fail(400, 'action');
+    if (user.anon && !ANON_ACTIONS.has(body.action)) throw new Fail(403, 'signin');
     return run(user, body);
   };
 }
@@ -359,7 +328,7 @@ function setup() {
     verify: async token => {
       try {
         const decoded = await getAuth().verifyIdToken(token);
-        return { uid: decoded.uid, name: decoded.name || null, photo: decoded.picture || null };
+        return { uid: decoded.uid, name: decoded.name || null, photo: decoded.picture || null, anon: !!decoded.firebase && decoded.firebase.sign_in_provider === 'anonymous' };
       } catch {
         return null;
       }
