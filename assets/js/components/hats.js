@@ -69,18 +69,17 @@ const hats = {
     ctx.arc(8, -3, 1.6, 0, TAU);
     ctx.fill();
   },
-  'hat:headphones'(ctx, info) {
-    const half = info.w / 2;
+  'hat:headphones'(ctx) {
     ctx.strokeStyle = '#1f2937';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3.6;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(0, 12, half - 1, Math.PI, 0);
+    ctx.arc(0, 14.5, 16, Math.PI, 0);
     ctx.stroke();
     ctx.fillStyle = '#34d399';
     ctx.beginPath();
-    ctx.roundRect(-half - 3, 5, 7, 14, 3.5);
-    ctx.roundRect(half - 4, 5, 7, 14, 3.5);
+    ctx.roundRect(-20, 8, 6.5, 13, 3.2);
+    ctx.roundRect(13.5, 8, 6.5, 13, 3.2);
     ctx.fill();
   },
   'hat:halo'(ctx, info) {
@@ -542,7 +541,49 @@ const hats = {
   }
 };
 
+const SPEC = {
+  'hat:sprout': [0.9, 11.7],
+  'hat:beanie': [0.85, 16],
+  'hat:cap': [0.82, 14],
+  'hat:party': [0.85, 10],
+  'hat:catears': [0.85, 14],
+  'hat:headphones': [1, 17],
+  'hat:chef': [0.8, 15.7],
+  'hat:halo': [0.85, 12.5],
+  'hat:tophat': [0.8, 17],
+  'hat:cowboy': [0.7, 20],
+  'hat:viking': [0.7, 21],
+  'hat:wizard': [0.75, 18],
+  'hat:pirate': [0.72, 19],
+  'hat:flames': [0.85, 13],
+  'hat:crown': [0.85, 14],
+  'hat:bow': [0.8, 15],
+  'hat:flower': [0.9, 12.5],
+  'hat:bunny': [0.9, 13],
+  'hat:antennae': [0.9, 14],
+  'hat:propeller': [0.85, 13.5],
+  'hat:graduate': [0.72, 19],
+  'hat:horns': [0.85, 13],
+  'hat:mushroom': [0.75, 18],
+  'hat:fedora': [0.7, 20],
+  'hat:antlers': [0.78, 17.5],
+  'hat:santa': [0.8, 17],
+  'hat:sombrero': [0.58, 25],
+  'hat:knight': [0.85, 16],
+  'hat:unicorn': [0.85, 14]
+};
+
+export function hatSpec(id) {
+  const spec = SPEC[id] || [0.85, 14];
+  return { scale: spec[0], reach: Math.min(14, Math.max(6, spec[0] * spec[1])) };
+}
+
 export function drawHat(ctx, id, info) {
   const draw = hats[id];
-  if (draw) draw(ctx, info);
+  if (!draw) return;
+  const { scale } = hatSpec(id);
+  ctx.save();
+  ctx.scale(scale, scale);
+  draw(ctx, info);
+  ctx.restore();
 }

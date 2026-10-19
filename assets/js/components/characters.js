@@ -26,6 +26,39 @@ export const TRAITS = {
 
 export const traitsOf = id => TRAITS[id] || TRAITS['char:bot'];
 
+const HEAD_RADIUS = {
+  'char:bot': [11, 13],
+  'char:ninja': [11, 13],
+  'char:slime': [17, 14],
+  'char:fox': [11, 13],
+  'char:ghost': [17, 15],
+  'char:astronaut': [12, 13],
+  'char:frog': [13, 13],
+  'char:cat': [12, 13],
+  'char:dino': [11, 13],
+  'char:alien': [15, 13],
+  'char:penguin': [15, 13],
+  'char:duck': [15, 13],
+  'char:pig': [14, 13],
+  'char:bear': [14, 13],
+  'char:bunny': [14, 13],
+  'char:panda': [14, 13],
+  'char:owl': [15, 13],
+  'char:cyclops': [13, 13],
+  'char:snowman': [16, 14]
+};
+
+const MAX_SINK = 4;
+
+export function hatFit(id, w, pose, reach, clock) {
+  const range = HEAD_RADIUS[id] || HEAD_RADIUS['char:bot'];
+  const r = lerp(range[0], range[1], pose);
+  const edge = Math.max(0, reach - (w / 2 - r));
+  const drop = r - Math.sqrt(Math.max(0, r * r - edge * edge));
+  const bob = id === 'char:slime' ? Math.sin(clock * 2) * 1.6 * (1 - pose) : 0;
+  return { x: w / 2 - 17, y: Math.min(MAX_SINK, drop * 0.9 + 0.5) + bob };
+}
+
 function bodyPath(ctx, g, radius) {
   ctx.beginPath();
   ctx.roundRect(-g.w / 2, -g.h / 2, g.w, g.bodyH, radius);
@@ -263,7 +296,7 @@ const drawers = {
     ctx.ellipse(w / 2 - 12, -h / 2 + g.bodyH - 8, 12, 5.5, 0, 0, TAU);
     ctx.fill();
     ctx.globalAlpha = 1;
-    const ey = -h / 2 + lerp(3, 2, pose);
+    const ey = -h / 2 + lerp(3, 2, pose) + (g.hat ? 4 : 0);
     eye(ctx, w / 2 - 17, ey, 6, g.visor);
     eye(ctx, w / 2 - 5, ey, 6, g.visor);
     ctx.strokeStyle = g.visor;
@@ -348,7 +381,7 @@ const drawers = {
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = g.dark;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 3 && !g.hat; i++) {
       const sx = -w / 2 + 6 + i * 8;
       ctx.beginPath();
       ctx.moveTo(sx, -h / 2 + 1);
@@ -809,7 +842,7 @@ const drawers = {
     ctx.fillStyle = '#111827';
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
-      ctx.arc(w / 2 - 8, top + lerp(30, 24, pose) + i * 3.4 * (1 - pose * 0.6), 1.3, 0, TAU);
+      ctx.arc(w / 2 - 9, top + lerp(26.5, 23, pose) + i * 3.4 * (1 - pose * 0.6), 1.3, 0, TAU);
       ctx.fill();
     }
   }

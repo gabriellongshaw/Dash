@@ -1,6 +1,6 @@
 import { clamp, lerp, parseColor, tintColor, toCss } from '../core/utils.js';
-import { drawHat } from './hats.js';
-import { drawCharacter, traitsOf } from './characters.js';
+import { drawHat, hatSpec } from './hats.js';
+import { drawCharacter, hatFit, traitsOf } from './characters.js';
 
 export const GRAVITY = 2700;
 export const JUMP_SPEED = 735;
@@ -221,9 +221,10 @@ export class Runner {
     });
 
     if (look.hat && look.hat !== 'hat:none') {
+      const fit = hatFit(look.char, w, pose, hatSpec(look.hat).reach, this.clock);
       ctx.save();
-      ctx.translate(lerp(2, 0, pose), -h / 2);
-      drawHat(ctx, look.hat, { w, h, time, body: bodyColor, dark: darkColor });
+      ctx.translate(fit.x, -h / 2 + fit.y);
+      drawHat(ctx, look.hat, { time, body: bodyColor, dark: darkColor });
       ctx.restore();
     }
 
