@@ -148,8 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
     }
-    audio.sfx(bought ? 'buy' : 'equip');
-    profile.equip(item.id);
+    if (profile.equip(item.id)) audio.sfx(bought ? 'buy' : 'equip');
+    else {
+      audio.sfx('error');
+      showToast('Could not reach cloud saves. Try again.');
+    }
     busy = false;
   });
 
