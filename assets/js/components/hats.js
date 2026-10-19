@@ -69,17 +69,25 @@ const hats = {
     ctx.arc(8, -3, 1.6, 0, TAU);
     ctx.fill();
   },
-  'hat:headphones'(ctx) {
+  'hat:headphones'(ctx, info) {
+    const p = Math.min(1, Math.max(0, info.pose || 0));
+    const mix = (a, b) => a + (b - a) * p;
+    const ear = mix(12, 10);
+    const cx = mix(0, -1);
+    const rx = mix(16, 3);
+    const ry = mix(16, ear + 3);
     ctx.strokeStyle = '#1f2937';
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(0, 12, 16, Math.PI, 0);
+    ctx.ellipse(cx, ear, rx, ry, 0, Math.PI, 0);
     ctx.stroke();
     ctx.fillStyle = '#34d399';
     ctx.beginPath();
-    ctx.roundRect(-20, 5, 7, 14, 3.5);
-    ctx.roundRect(13, 5, 7, 14, 3.5);
+    const cupW = mix(7, 8);
+    const cupH = mix(14, 14);
+    ctx.roundRect(cx - rx - cupW / 2, ear - cupH / 2, cupW, cupH, 3.5);
+    if (p < 0.98) ctx.roundRect(cx + rx - cupW / 2, ear - cupH / 2, cupW, cupH, 3.5);
     ctx.fill();
   },
   'hat:halo'(ctx, info) {

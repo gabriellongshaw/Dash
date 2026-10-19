@@ -225,7 +225,7 @@ export class Runner {
       const fit = hatFit(look.char, w, pose, spec.reach, this.clock, spec.sink);
       ctx.save();
       ctx.translate(fit.x, -h / 2 + fit.y);
-      drawHat(ctx, look.hat, { time, body: bodyColor, dark: darkColor });
+      drawHat(ctx, look.hat, { time, pose, body: bodyColor, dark: darkColor });
       ctx.restore();
     }
 
