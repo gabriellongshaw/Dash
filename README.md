@@ -33,7 +33,7 @@ Coins from every run go into your wallet. Spend them in the shop on colours, cha
 
 Backgrounds adapt as you run: the sky moves through day, dusk and night, stars and auroras fade in, and the score text switches colour to stay readable. A world starts at day in light mode and at night in dark mode.
 
-Progress is saved on the device as a guest. Signing in with Google saves it to the cloud so it follows you across devices. Any guest progress is merged into the account on first sign-in.
+Everyone plays on a real account saved on the server. Guests get an anonymous Firebase account that lives in their browser, and signing in with Google links that same account, so coins, items and quests carry over with nothing to import and follow you across devices.
 
 ## Sound
 
@@ -53,7 +53,7 @@ Quests are a second way to earn coins. Open **Quests** from the home screen.
 - **Weekly:** two bigger quests that reset on Monday, worth 125 to 250 coins each.
 - Quests are picked from a pool (collect coins, run a distance, score in one run, dodge obstacles, jump, double jump, slide and more). The same date always gives the same quests.
 - Progress counts automatically as you play. Tap **Claim** when a bar is full. A badge on the home screen and a note after each run show when something is ready.
-- Guests keep quests on the device. Signed-in players save them to the cloud, and a quest can only be claimed once across devices.
+- Quests are saved on the server for guests and signed-in players alike, and a quest can only be claimed once.
 
 ## Leaderboard
 
@@ -90,7 +90,8 @@ Coins, items, quests and scores for signed-in players are controlled by a small 
 - A run is timed by the server. `startRun` hands out a signed token, and `submitRun` checks distance, coins, obstacles and jumps against the time that really passed before paying anything. Each token works once. The score is worked out on the server.
 - Quest claims and shop purchases are checked against the server's own copy of the profile and prices.
 - Leaderboard entries come only from runs the server accepted.
-- A guest's progress is imported once when they first sign in. Their coins and the value of their items are accepted up to 80 coins per run played, capped at 5000. Their best score and run count are kept for display but never reach the leaderboard.
+- Guests are anonymous Firebase accounts, so their coins, items and quests are on the server too. Nothing in the browser's storage is trusted: prices come from the server's own copy of `cosmetics.js`, a purchase or quest claim that the server has not confirmed does not happen, and the cached copy in the browser is replaced by the server's copy on every sync and after any rejected action.
+- Anonymous accounts can play, earn, buy and claim quests. Leaderboards, usernames, friends and gifts need a Google sign-in, which also stops throwaway accounts from flooding them.
 - Firestore rules only let a player read their own profile and equip items they own.
 
 The game runs in the browser, so no server can prove a run was played by a person. A bot that plays for real is still accepted, but nobody can earn faster than real time or set numbers directly. Limits are at the top of `api/game.js`.
@@ -102,7 +103,8 @@ Vercel's Hobby plan and Firebase's Spark plan are both free and need no card.
 1. In the Firebase console open Project settings, Service accounts, and choose Generate new private key. Keep the file private.
 2. In Vercel add a new project from this repository. Under Environment Variables add `FIREBASE_SERVICE_ACCOUNT` and paste the whole contents of the key file. Deploy.
 3. Set `API_URL` at the top of `assets/js/core/profile.js` to the deployed address, for example `https://dash-api.vercel.app/api/game`. If the game is served from a different domain than the two in `ORIGINS` in `api/game.js`, add it there.
-4. Copy `firestore.rules` into the Firebase console under Firestore Database, Rules, and publish. If the project is shared with other sites, merge the Dash blocks into your existing rules instead of replacing them.
+4. In the Firebase console open Authentication, Sign-in method, and enable Anonymous next to Google. Guest accounts need it.
+5. Copy `firestore.rules` into the Firebase console under Firestore Database, Rules, and publish. If the project is shared with other sites, merge the Dash blocks into your existing rules instead of replacing them.
 
 ### Gifting coins and items
 
