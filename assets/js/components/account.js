@@ -53,10 +53,11 @@ export function mountAccount(el, root = '../') {
     const photo = profile.avatar;
     const name = displayName || username || profile.state.name;
     el.innerHTML = '';
-    el.classList.toggle('hidden', status === 'unavailable' && !uid);
+    const anon = profile.state.anon;
+    el.classList.toggle('hidden', status === 'unavailable' && (!uid || anon));
     el.classList.toggle('pending', status === 'loading' && !uid);
 
-    if (status === 'in' || ((status === 'unavailable' || status === 'loading') && uid)) {
+    if (status === 'in' || ((status === 'unavailable' || status === 'loading') && uid && !anon)) {
       const chip = document.createElement('button');
       chip.className = 'account-chip';
       chip.setAttribute('aria-label', 'Account');
@@ -119,7 +120,7 @@ export function mountAccount(el, root = '../') {
     }
 
     if (error && error !== lastError) {
-      showToast(error === 'rules' ? 'Cloud saves are not set up yet. Progress is saved on this device.' : 'Could not reach cloud saves. Progress is saved on this device.');
+      showToast(error === 'rules' ? 'Cloud saves are not set up yet.' : error === 'anon' ? 'Guest saves are not enabled yet. Sign in to play with a saved account.' : 'Could not reach cloud saves. Check your connection.');
     }
     lastError = error;
   }

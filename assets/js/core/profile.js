@@ -25,6 +25,7 @@ let cloud = null;
 let cloudReady = false;
 let started = false;
 let runPromise = null;
+let anonPending = false;
 
 const defaults = () => ({
   coins: 0,
@@ -96,6 +97,7 @@ function load() {
   return {
     ...base,
     uid: raw && typeof raw.uid === 'string' ? raw.uid : null,
+    anon: !!(raw && raw.anon === true),
     name: cleanName(raw && raw.name),
     photo: cleanPhoto(raw && raw.photo)
   };
@@ -118,7 +120,7 @@ function docRef() {
 }
 
 function guestState() {
-  return { ...defaults(), uid: null, name: null, photo: null };
+  return { ...defaults(), uid: null, anon: false, name: null, photo: null };
 }
 
 async function call(action, data) {
@@ -156,14 +158,28 @@ async function refresh() {
 }
 
 async function sync(user) {
-  const guest = state.uid ? null : { coins: state.coins, owned: state.owned, runs: state.runs, best: state.best };
-  const out = await call('syncProfile', { guest });
-  state = { ...sanitize(out.profile), uid: user.uid, name: cleanName(user.displayName), photo: cleanPhoto(user.photoURL) };
+  const out = await call('syncProfile', {});
+  state = { ...sanitize(out.profile), uid: user.uid, anon: user.isAnonymous, name: cleanName(user.displayName), photo: cleanPhoto(user.photoURL) };
   persist();
 }
 
+function startAnonymous() {
+  if (anonPending || !cloud) return;
+  anonPending = true;
+  cloud.authMod
+    .signInAnonymously(cloud.auth)
+    .catch(e => {
+      const code = e && e.code;
+      session.error = code === 'auth/operation-not-allowed' || code === 'auth/admin-restricted-operation' ? 'anon' : 'offline';
+      emit();
+    })
+    .finally(() => {
+      anonPending = false;
+    });
+}
+
 async function handleUser(user) {
-  if (!user || user.isAnonymous) {
+  if (!user) {
     cloudReady = false;
     if (state.uid) {
       state = guestState();
@@ -172,9 +188,10 @@ async function handleUser(user) {
     session.status = 'out';
     session.syncing = false;
     emit();
+    startAnonymous();
     return;
   }
-  session.status = 'in';
+  session.status = user.isAnonymous ? 'out' : 'in';
   session.syncing = true;
   session.error = null;
   emit();
@@ -187,6 +204,20 @@ async function handleUser(user) {
   }
   session.syncing = false;
   emit();
+}
+
+async function finishLink() {
+  const user = cloud.auth.currentUser;
+  if (!user) return;
+  await user.getIdToken(true);
+  await user.reload();
+  await handleUser(cloud.auth.currentUser);
+}
+
+async function resolveClash(e) {
+  const credential = cloud.authMod.GoogleAuthProvider.credentialFromError(e);
+  if (!credential) throw e;
+  await cloud.authMod.signInWithCredential(cloud.auth, credential);
 }
 
 export const profile = {
@@ -220,6 +251,15 @@ export const profile = {
     cloud.authMod.onAuthStateChanged(cloud.auth, user => {
       handleUser(user);
     });
+    cloud.authMod
+      .getRedirectResult(cloud.auth)
+      .then(result => result && result.user && finishLink())
+      .catch(e => {
+        if (e && e.code === 'auth/credential-already-in-use') resolveClash(e).catch(() => {});
+      });
+    window.addEventListener('online', () => {
+      if (!cloud.auth.currentUser) startAnonymous();
+    });
   },
 
   async signIn() {
@@ -230,9 +270,19 @@ export const profile = {
     }
     const { authMod, auth } = cloud;
     const provider = new authMod.GoogleAuthProvider();
+    const guest = auth.currentUser && auth.currentUser.isAnonymous ? auth.currentUser : null;
     try {
-      await authMod.signInWithPopup(auth, provider);
+      if (guest) {
+        await authMod.linkWithPopup(guest, provider);
+        await finishLink();
+      } else {
+        await authMod.signInWithPopup(auth, provider);
+      }
     } catch (e) {
+      if (guest && e.code === 'auth/credential-already-in-use') {
+        await resolveClash(e);
+        return;
+      }
       if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
         if (window.top !== window.self) {
           try {
@@ -241,7 +291,8 @@ export const profile = {
           } catch {}
           return;
         }
-        await authMod.signInWithRedirect(auth, provider);
+        if (guest) await authMod.linkWithRedirect(guest, provider);
+        else await authMod.signInWithRedirect(auth, provider);
         return;
       }
       throw e;
@@ -261,6 +312,7 @@ export const profile = {
 
   recordRun(run) {
     const { coins, score } = run;
+    if (!cloudReady || !state.uid) return;
     state = {
       ...state,
       coins: state.coins + coins,
@@ -272,7 +324,6 @@ export const profile = {
     emit();
     const pending = runPromise;
     runPromise = null;
-    if (!cloudReady || !state.uid) return;
     const uid = state.uid;
     Promise.resolve(pending)
       .then(runId => {
@@ -311,19 +362,15 @@ export const profile = {
     if (!quest) return { ok: false, reason: 'unknown' };
     if (isClaimed(local, quest)) return { ok: true, reward: 0 };
     if (progressOf(local, quest) < quest.target) return { ok: false, reason: 'progress' };
-    if (cloudReady && state.uid) {
-      try {
-        const out = await call('claimQuest', { id });
-        applyServer(out.profile);
-        return { ok: true, reward: out.reward };
-      } catch {
-        return { ok: false, reason: 'offline' };
-      }
+    if (!cloudReady || !state.uid) return { ok: false, reason: 'offline' };
+    try {
+      const out = await call('claimQuest', { id });
+      applyServer(out.profile);
+      return { ok: true, reward: out.reward };
+    } catch {
+      await refresh();
+      return { ok: false, reason: 'offline' };
     }
-    state = { ...state, coins: state.coins + quest.reward, quests: markClaimed(local, quest) };
-    persist();
-    emit();
-    return { ok: true, reward: quest.reward };
   },
 
   get avatar() {
@@ -333,7 +380,7 @@ export const profile = {
   },
 
   get social() {
-    return cloudReady && !!state.uid;
+    return cloudReady && !!state.uid && !state.anon;
   },
 
   async api(action, data) {
@@ -349,10 +396,10 @@ export const profile = {
   },
 
   setPublicBoard(on) {
+    if (!cloudReady || !state.uid || state.anon) return;
     state = { ...state, publicBoard: !!on };
     persist();
     emit();
-    if (!cloudReady || !state.uid) return;
     call('setPublicBoard', { on: !!on })
       .then(out => applyServer(out.profile))
       .catch(() => refresh());
@@ -362,32 +409,26 @@ export const profile = {
     const item = findItem(id);
     if (!item) return { ok: false, reason: 'unknown' };
     if (state.owned.includes(id)) return { ok: true };
-    if (state.coins < item.price) return { ok: false, reason: 'coins' };
-    if (cloudReady && state.uid) {
-      try {
-        const out = await call('buyItem', { id });
-        applyServer(out.profile);
-        return { ok: true };
-      } catch (e) {
-        return { ok: false, reason: e && e.code === 'coins' ? 'coins' : 'offline' };
-      }
+    if (!cloudReady || !state.uid) return { ok: false, reason: 'offline' };
+    try {
+      const out = await call('buyItem', { id });
+      applyServer(out.profile);
+      return { ok: true };
+    } catch (e) {
+      if (e && e.code === 'coins') await refresh();
+      return { ok: false, reason: e && e.code === 'coins' ? 'coins' : 'offline' };
     }
-    state = { ...state, coins: state.coins - item.price, owned: [...state.owned, id] };
-    persist();
-    emit();
-    return { ok: true };
   },
 
   equip(id) {
     const item = findItem(id);
     if (!item || !state.owned.includes(id)) return false;
+    if (!cloudReady || !state.uid) return false;
     const kind = kindOf(id);
     state = { ...state, equipped: { ...state.equipped, [kind]: id } };
     persist();
     emit();
-    if (cloudReady && state.uid) {
-      cloud.fsMod.updateDoc(docRef(), { ['equipped.' + kind]: id }).catch(() => {});
-    }
+    cloud.fsMod.updateDoc(docRef(), { ['equipped.' + kind]: id }).catch(() => refresh());
     return true;
   }
 };
