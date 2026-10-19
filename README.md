@@ -26,10 +26,10 @@ The game keeps getting harder as you go. Speed climbs until about 5,000 m, and f
 
 Coins from every run go into your wallet. Spend them in the shop on colours, characters, hats and worlds.
 
-- **Colours:** 14 colours, including an animated rainbow Prism.
-- **Characters:** Bot, Slime, Frog, Ninja, Fox, Cat, Ghost, Dino, Alien, Astronaut and Penguin. Every character can be combined with any colour and hat.
-- **Hats:** 15 hats, from a sprout to flames.
-- **Worlds:** Skyline, Desert, Arctic, Neon, Volcano, Forest, Ocean, Candy and Space. Each has its own scenery, weather and obstacle colours.
+- **Colours:** 34 colours, from Emerald to an animated rainbow Prism.
+- **Characters:** Bot, Slime, Frog, Ninja, Fox, Cat, Ghost, Dino, Alien, Astronaut, Penguin, Duck, Pig, Bear, Bunny, Panda, Owl, Cyclops and Snowman. Every character can be combined with any colour and hat.
+- **Hats:** 29 hats, from a sprout to a unicorn horn.
+- **Worlds:** Skyline, Desert, Arctic, Neon, Volcano, Forest, Ocean, Candy, Space, Sunset Coast, Canyon, Swamp, Matrix, Lavender, Storm, Savanna and Crystal Cave. Each has its own scenery, weather and obstacle colours.
 
 Backgrounds adapt as you run: the sky moves through day, dusk and night, stars and auroras fade in, and the score text switches colour to stay readable. A world starts at day in light mode and at night in dark mode.
 
