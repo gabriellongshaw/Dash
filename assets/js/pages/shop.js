@@ -1,7 +1,7 @@
 import { profile } from '../core/profile.js';
 import { SKINS, CHARACTERS, HATS, WORLDS, findItem, resolveLook, resolveWorld } from '../core/cosmetics.js';
 import { readPalette, onThemeChange, detectTouch, isDark } from '../core/theme.js';
-import { drawRunnerTo, drawWorldTo, createScene } from '../components/preview.js';
+import { drawRunnerTo, drawWorldTo, createScene, measureCanvas } from '../components/preview.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { setCoins } from '../core/motion.js';
@@ -46,28 +46,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setScene();
 
-  function drawCards() {
-    if (grid.dataset.kind !== kind) return;
-    const base = lookFor();
-    grid.querySelectorAll('.item-card').forEach(card => {
-      const item = findItem(card.dataset.id);
-      const canvas = card.querySelector('canvas');
-      if (kind === 'world') {
-        drawWorldTo(canvas, item, isDark());
-        return;
-      }
-      const look = { ...base, hat: 'hat:none' };
-      if (kind === 'skin') look.skin = item;
-      else if (kind === 'char') look.char = item.id;
-      else look.hat = item.id;
-      drawRunnerTo(canvas, palette, look, { scale: 1 });
-    });
+  const panes = {};
+  const paneOf = () => panes[kind];
+  let drawToken = 0;
+  let cardSize = null;
+
+  function drawCard(card, k, base, size) {
+    const item = findItem(card.dataset.id);
+    const canvas = card.querySelector('canvas');
+    if (k === 'world') {
+      drawWorldTo(canvas, item, isDark(), size);
+      return;
+    }
+    const look = { ...base, hat: 'hat:none' };
+    if (k === 'skin') look.skin = item;
+    else if (k === 'char') look.char = item.id;
+    else look.hat = item.id;
+    drawRunnerTo(canvas, palette, look, { scale: 1, size });
   }
 
-  function renderGrid() {
-    grid.innerHTML = '';
-    grid.dataset.kind = kind;
-    LISTS[kind].forEach((item, index) => {
+  function markDirty() {
+    for (const k in panes) panes[k].dirty = true;
+  }
+
+  function paintPane(pane, shouldContinue, schedule) {
+    pane.dirty = false;
+    const base = lookFor();
+    const cards = [...pane.el.querySelectorAll('.item-card')];
+    let i = 0;
+    const step = () => {
+      if (!shouldContinue()) return;
+      const end = Math.min(i + 5, cards.length);
+      for (; i < end; i++) drawCard(cards[i], pane.kind, base, cardSize);
+      if (i < cards.length) schedule(step);
+    };
+    step();
+  }
+
+  function drawCards() {
+    const pane = paneOf();
+    if (!pane || !pane.dirty) return;
+    const first = pane.el.querySelector('.item-canvas');
+    if (!cardSize) cardSize = measureCanvas(first);
+    const token = ++drawToken;
+    paintPane(pane, () => token === drawToken && paneOf() === pane, requestAnimationFrame);
+  }
+
+  function buildPane(k) {
+    const el = document.createElement('div');
+    el.className = 'item-pane';
+    LISTS[k].forEach((item, index) => {
       const card = document.createElement('button');
       card.className = 'item-card';
       card.dataset.id = item.id;
@@ -81,21 +109,48 @@ document.addEventListener('DOMContentLoaded', () => {
       tag.className = 'item-tag';
       card.append(canvas, name, tag);
       card.addEventListener('click', () => {
-        const before = selected[kind];
-        selected[kind] = item.id;
-        if (kind === 'world' && before !== item.id) setScene();
+        const k = item.id.split(':')[0];
+        const before = selected[k];
+        selected[k] = item.id;
+        if (k === 'world' && before !== item.id) setScene();
+        markDirty();
         refresh();
       });
-      grid.appendChild(card);
+      el.appendChild(card);
     });
+    grid.appendChild(el);
+    return { el, kind: k, dirty: true };
+  }
+
+  function renderGrid() {
+    for (const k in panes) panes[k].el.hidden = k !== kind;
+    if (!panes[kind]) panes[kind] = buildPane(kind);
+    panes[kind].el.hidden = false;
+    grid.dataset.kind = kind;
     refresh();
   }
 
+  function prebuildNext() {
+    const k = KINDS.find(x => !panes[x]);
+    if (!k) return;
+    const idle = window.requestIdleCallback || (fn => setTimeout(fn, 300));
+    idle(() => {
+      if (!panes[k]) {
+        const pane = buildPane(k);
+        pane.el.hidden = k !== kind;
+        panes[k] = pane;
+        if (cardSize) paintPane(pane, () => true, idle);
+      }
+      prebuildNext();
+    });
+  }
+
   function refresh() {
-    if (grid.dataset.kind !== kind) return;
+    const pane = paneOf();
+    if (!pane || grid.dataset.kind !== kind) return;
     const { coins, equipped } = profile.state;
     setCoins($('wallet'), coins);
-    grid.querySelectorAll('.item-card').forEach(card => {
+    pane.el.querySelectorAll('.item-card').forEach(card => {
       const item = findItem(card.dataset.id);
       const owned = profile.owns(item.id);
       const isEquipped = equipped[kind] === item.id;
@@ -193,12 +248,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     if (worldChanged) setScene();
+    markDirty();
     refresh();
   });
 
   onThemeChange(() => {
     palette = readPalette();
     setScene();
+    markDirty();
     drawCards();
   });
 
@@ -209,7 +266,11 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('touchcancel', remove, { passive: true });
   });
 
-  window.addEventListener('resize', drawCards);
+  window.addEventListener('resize', () => {
+    cardSize = null;
+    markDirty();
+    drawCards();
+  });
 
   let last = performance.now();
   let time = 0;
@@ -224,4 +285,5 @@ document.addEventListener('DOMContentLoaded', () => {
   requestAnimationFrame(loop);
 
   renderGrid();
+  prebuildNext();
 });

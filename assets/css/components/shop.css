@@ -153,6 +153,7 @@
   box-shadow: 0 1px 4px rgba(16, 38, 27, 0.12);
   transform: translateX(calc(var(--i) * 100%));
   transition: transform 0.38s cubic-bezier(0.34, 1.3, 0.5, 1);
+  will-change: transform;
 }
 
 .tab {
@@ -186,6 +187,14 @@
   width: 100%;
 }
 
+.item-pane {
+  display: contents;
+}
+
+.item-pane[hidden] {
+  display: none;
+}
+
 .item-card {
   display: flex;
   flex-direction: column;
@@ -201,7 +210,7 @@
   touch-action: manipulation;
   transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.25s ease;
   animation: cardIn 0.32s ease backwards;
-  animation-delay: calc(var(--n, 0) * 28ms);
+  animation-delay: calc(min(var(--n, 0), 10) * 28ms);
 }
 
 .item-card.selected {

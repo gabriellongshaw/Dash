@@ -3,10 +3,13 @@ import { World } from './world.js';
 
 const cards = new Map();
 
-function setup(canvas) {
+export function measureCanvas(canvas) {
+  return { w: canvas.clientWidth, h: canvas.clientHeight };
+}
+
+function setup(canvas, size) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
+  const { w, h } = size || measureCanvas(canvas);
   if (!w || !h) return null;
   if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
     canvas.width = Math.round(w * dpr);
@@ -25,8 +28,8 @@ export function createScene(theme, dark, cycle) {
   return world;
 }
 
-export function drawRunnerTo(canvas, palette, look, { scale = 1, time = 0, clock = 0.6, scene = null, sceneScale = 0.7 } = {}) {
-  const view = setup(canvas);
+export function drawRunnerTo(canvas, palette, look, { scale = 1, time = 0, clock = 0.6, scene = null, sceneScale = 0.7, size = null } = {}) {
+  const view = setup(canvas, size);
   if (!view) return;
   const { ctx, w, h } = view;
   const baseY = h * 0.84;
@@ -49,8 +52,8 @@ export function drawRunnerTo(canvas, palette, look, { scale = 1, time = 0, clock
   ctx.restore();
 }
 
-export function drawWorldTo(canvas, theme, dark) {
-  const view = setup(canvas);
+export function drawWorldTo(canvas, theme, dark, size = null) {
+  const view = setup(canvas, size);
   if (!view) return;
   const { ctx, w, h } = view;
   const id = theme.id + (dark ? ':d' : ':l');
