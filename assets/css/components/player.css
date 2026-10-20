@@ -253,10 +253,20 @@ button.setting-row {
   font-weight: 700;
   outline: none;
   cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.setting-select:hover {
+  border-color: var(--accent-soft);
 }
 
 .setting-select:focus-visible {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.setting-select:active {
+  transform: scale(0.98);
 }
 
 .setting-switch {
