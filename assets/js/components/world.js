@@ -3,6 +3,7 @@ import { WORLDS } from '../core/worlds.js';
 
 const PERIOD = 1600;
 const CYCLE = 24000;
+const COMET_SLOPE = 0.3;
 const WARM = parseColor('#fb923c');
 const KEYS = ['skyTop', 'skyBottom', 'sun', 'cloud', 'far', 'mid', 'ground', 'groundLine', 'dust', 'cap', 'glow', 'mote'];
 
@@ -201,9 +202,10 @@ export class World {
         m.y = clamp(m.y + Math.cos(this.clock * 0.9 + m.ph) * 8 * dt, this.g * 0.4, this.g - 10);
         if (m.x < -10) m.x = this.w + 10;
       } else if (kind === 'comet') {
-        m.x -= (speed * 0.3 + 240 * m.v) * dt;
-        m.y += 110 * m.v * dt;
-        if (m.x < -30 || m.y > this.g * 0.7) {
+        const vx = speed * 0.3 + 240 * m.v;
+        m.x -= vx * dt;
+        m.y += vx * COMET_SLOPE * dt;
+        if (m.x < -60 || m.y > this.g) {
           m.x = this.w + rand(0, this.w);
           m.y = rand(0, this.g * 0.3);
         }
@@ -364,7 +366,8 @@ export class World {
       } else if (kind === 'comet') {
         ctx.beginPath();
         ctx.moveTo(m.x, m.y);
-        ctx.lineTo(m.x + 22 + m.v * 14, m.y - 9 - m.v * 4);
+        const tail = 22 + m.v * 14;
+        ctx.lineTo(m.x + tail, m.y - tail * COMET_SLOPE);
         ctx.stroke();
       } else {
         ctx.beginPath();
