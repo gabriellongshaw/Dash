@@ -5,6 +5,18 @@ const ALL_TIME = 'dashBoard';
 const WEEKS = 'dashWeeks';
 const PAGE = 25;
 
+const PHOTO_DATA = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
+
+const cleanPhoto = v => {
+  if (typeof v !== 'string' || v.length > 30000) return null;
+  if (PHOTO_DATA.test(v)) return v;
+  try {
+    return new URL(v).protocol === 'https:' ? v : null;
+  } catch {
+    return null;
+  }
+};
+
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
 export function shortName(full) {
@@ -29,7 +41,8 @@ async function fetchRaw(scope) {
     return {
       id: d.id,
       name: typeof data.name === 'string' && data.name ? data.name.slice(0, 24) : 'Player',
-      score: whole(data.score)
+      score: whole(data.score),
+      photo: cleanPhoto(data.photo)
     };
   });
 }

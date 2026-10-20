@@ -50,10 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const pos = document.createElement('span');
     pos.className = 'rank-pos';
     pos.textContent = rank;
-    const avatar = document.createElement('span');
-    avatar.className = 'rank-avatar';
-    avatar.style.background = colourFor(entry.id);
-    avatar.textContent = entry.name.charAt(0).toUpperCase();
+    const initial = () => {
+      const fallback = document.createElement('span');
+      fallback.className = 'rank-avatar';
+      fallback.style.background = colourFor(entry.id);
+      fallback.textContent = entry.name.charAt(0).toUpperCase();
+      return fallback;
+    };
+    let avatar = initial();
+    if (entry.photo) {
+      avatar = document.createElement('img');
+      avatar.className = 'rank-avatar';
+      avatar.src = entry.photo;
+      avatar.alt = '';
+      avatar.referrerPolicy = 'no-referrer';
+      avatar.addEventListener('error', () => avatar.replaceWith(initial()));
+    }
     const name = document.createElement('span');
     name.className = 'rank-name';
     name.textContent = entry.name;
@@ -120,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
       gap.className = 'rank-gap';
       gap.textContent = '···';
       list.appendChild(gap);
-      list.appendChild(row({ id: uid, name: shortName(profile.state.name), score: myScore() }, myRank, 0, true));
+      list.appendChild(row({ id: uid, name: shortName(profile.state.name), score: myScore(), photo: profile.state.privacy.photo === 'public' ? profile.avatar : null }, myRank, 0, true));
     }
   }
 
@@ -138,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return { entries, rank };
   }
 
-  const signature = (key, result) => JSON.stringify([key, profile.state.uid, profile.social, result.entries.map(entry => [entry.id, entry.score]), result.rank]);
+  const signature = (key, result) => JSON.stringify([key, profile.state.uid, profile.social, result.entries.map(entry => [entry.id, entry.score, entry.photo]), result.rank]);
 
   async function load(force, quiet) {
     const name = scope;

@@ -5,7 +5,7 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
 import { distanceAt } from '../assets/js/core/difficulty.js';
 import { cleanPrivacy, defaultPrivacy } from '../assets/js/core/privacy.js';
-import { createSocial, profileFixups } from '../server/social.js';
+import { createSocial, pickPhoto, profileFixups } from '../server/social.js';
 import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
 const ORIGINS = ['https://gabriellongshaw.co.uk', 'https://www.gabriellongshaw.co.uk'];
@@ -155,7 +155,8 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
   const profileRef = uid => db.doc(`dashProfiles/${uid}`);
   const allTimeRef = uid => db.doc(`dashBoard/${uid}`);
   const weekRef = (week, uid) => db.doc(`dashWeeks/${week}/entries/${uid}`);
-  const entry = (name, score) => ({ name: shortName(name), score, updatedAt: FieldValue.serverTimestamp() });
+  const entry = (name, score, photo) => ({ name: shortName(name), score, photo, updatedAt: FieldValue.serverTimestamp() });
+  const boardPhoto = (user, profile) => (profile.privacy.photo === 'public' ? pickPhoto({ photoMode: profile.photoMode, photoData: profile.photoData, photo: cleanPhoto(user.photo) }) : null);
 
   const sign = (uid, started) => createHmac('sha256', secret()).update(`${uid}.${started}`).digest('hex');
 
@@ -179,10 +180,11 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
   async function publish(user, profile) {
     if (user.anon || !profile.publicBoard) return true;
     const week = rollQuests(profile.quests);
+    const photo = boardPhoto(user, profile);
     const writes = [];
-    if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(profile.username || user.name, profile.vBest)));
+    if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(profile.username || user.name, profile.vBest, photo)));
     const weekScore = weekBoardScore(week, profile.vBest);
-    if (weekScore > 0) writes.push(weekRef(week.week, user.uid).set(entry(profile.username || user.name, weekScore)));
+    if (weekScore > 0) writes.push(weekRef(week.week, user.uid).set(entry(profile.username || user.name, weekScore, photo)));
     const results = await Promise.allSettled(writes);
     results.forEach(result => result.status === 'rejected' && console.error('board write failed', result.reason));
     return results.every(result => result.status === 'fulfilled');
@@ -190,8 +192,17 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
 
   const social = createSocial({ db, profileRef, load, sanitize, view, Fail, publish, now });
 
+  const republish = run => async (user, body) => {
+    const out = await run(user, body);
+    const profile = await db.runTransaction(tx => load(tx, user.uid));
+    await publish(user, profile);
+    return out;
+  };
+
   const actions = {
     ...social,
+    setPhoto: republish(social.setPhoto),
+    setPrivacy: republish(social.setPrivacy),
 
     async syncProfile(user) {
       const profile = await db.runTransaction(async tx => {
