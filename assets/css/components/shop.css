@@ -12,33 +12,31 @@
   align-items: center;
   justify-content: space-between;
   padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
-  background: var(--bg);
 }
 
-.shop-bar::after {
+.shop-bar::before {
   content: "";
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 30px;
+  inset: 0 0 -42px 0;
+  z-index: -1;
   pointer-events: none;
-  background: linear-gradient(var(--bg), transparent);
-  background: linear-gradient(to bottom, var(--bg) 0.0%,
-    color-mix(in srgb, var(--bg) 98.5%, transparent) 7.1%,
-    color-mix(in srgb, var(--bg) 94.5%, transparent) 14.3%,
-    color-mix(in srgb, var(--bg) 88.2%, transparent) 21.4%,
-    color-mix(in srgb, var(--bg) 80.2%, transparent) 28.6%,
-    color-mix(in srgb, var(--bg) 70.8%, transparent) 35.7%,
-    color-mix(in srgb, var(--bg) 60.6%, transparent) 42.9%,
-    color-mix(in srgb, var(--bg) 50.0%, transparent) 50.0%,
-    color-mix(in srgb, var(--bg) 39.4%, transparent) 57.1%,
-    color-mix(in srgb, var(--bg) 29.2%, transparent) 64.3%,
-    color-mix(in srgb, var(--bg) 19.8%, transparent) 71.4%,
-    color-mix(in srgb, var(--bg) 11.8%, transparent) 78.6%,
-    color-mix(in srgb, var(--bg) 5.5%, transparent) 85.7%,
-    color-mix(in srgb, var(--bg) 1.5%, transparent) 92.9%,
-    transparent 100.0%);
+  background: linear-gradient(to bottom, var(--bg) calc(100% - 56px),
+    color-mix(in srgb, var(--bg) 99.8%, transparent) calc(100% - 56px + 3.5px),
+    color-mix(in srgb, var(--bg) 98.4%, transparent) calc(100% - 56px + 7.0px),
+    color-mix(in srgb, var(--bg) 95.1%, transparent) calc(100% - 56px + 10.5px),
+    color-mix(in srgb, var(--bg) 89.6%, transparent) calc(100% - 56px + 14.0px),
+    color-mix(in srgb, var(--bg) 82.0%, transparent) calc(100% - 56px + 17.5px),
+    color-mix(in srgb, var(--bg) 72.5%, transparent) calc(100% - 56px + 21.0px),
+    color-mix(in srgb, var(--bg) 61.6%, transparent) calc(100% - 56px + 24.5px),
+    color-mix(in srgb, var(--bg) 50.0%, transparent) calc(100% - 56px + 28.0px),
+    color-mix(in srgb, var(--bg) 38.4%, transparent) calc(100% - 56px + 31.5px),
+    color-mix(in srgb, var(--bg) 27.5%, transparent) calc(100% - 56px + 35.0px),
+    color-mix(in srgb, var(--bg) 18.0%, transparent) calc(100% - 56px + 38.5px),
+    color-mix(in srgb, var(--bg) 10.4%, transparent) calc(100% - 56px + 42.0px),
+    color-mix(in srgb, var(--bg) 4.9%, transparent) calc(100% - 56px + 45.5px),
+    color-mix(in srgb, var(--bg) 1.6%, transparent) calc(100% - 56px + 49.0px),
+    color-mix(in srgb, var(--bg) 0.2%, transparent) calc(100% - 56px + 52.5px),
+    transparent 100%);
 }
 
 .shop-bar-right {
