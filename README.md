@@ -11,7 +11,7 @@ Run as far as you can. Coins add 5 points each, and distance adds the rest. The 
 - **Ceiling gates:** unjumpable, so you must slide underneath.
 - **Drones:** hover low, so slide under them or jump over. Some bob up and down.
 - **Rollers:** fast-moving wheels that arrive sooner than they look.
-- **Buzzsaws:** spinning blades on the ground, so jump over them.
+- **Buzzsaws:** spinning blades that roll toward you along the ground from the moment they appear, so jump over them. They roll faster and spin quicker the further you run.
 - **Bouncing orbs:** spiked balls that hop along the ground. Jump over them when low or slip underneath when they are high.
 - **Missiles:** fast rockets announced by a warning triangle at the edge of the screen. Low ones must be jumped, higher ones can be slid under.
 - **Force fields:** wide barriers between two pylons that need one long jump.
@@ -59,7 +59,7 @@ Quests are a second way to earn coins. Open **Quests** from the home screen.
 
 Open **Leaderboard** from the home screen to see the top 25 runners **This week** and **All time**, ranked by best score. Anyone can view it. Signing in puts your best score on it, and your rank is shown if you are outside the top 25.
 
-Players appear as their first name and last initial. Signed-in players can hide themselves from the leaderboard at any time with the button under the list, which also removes their entries.
+Players appear as their first name and last initial. If their profile photo is set to **Public** (the default), it shows beside their name. Signed-in players can hide themselves from the leaderboard at any time with the button under the list, which also removes their entries.
 
 ## Friends
 
@@ -78,7 +78,7 @@ Tap anyone in your friends list, search results or the leaderboard to open their
 - **Profile:** Photo, name and username, stats (best score, runs, items collected and friend count) and a preview of their character, colour and hat.
 - **Friend actions:** Add or cancel a request, accept or decline, **favourite** a friend (up to 10, they float to the top of your list with a star), gift, unfriend and **block**. Favourites are private to you.
 - **Blocking:** Blocking removes the friendship or any pending request. The person you blocked can no longer find you in search, open your profile or send you requests, and is never told. Manage your blocked list at the bottom of your own profile and unblock from there. You can block up to 100 players.
-- **Privacy settings:** Choose who can see your **profile photo**, **stats** and **appearance** (Everyone, Friends only or Only me), who can send you **friend requests** (Everyone or Nobody), and whether you appear in **search** and on the **leaderboards**. Settings apply to profiles, search results and friends lists alike. They are enforced by the API, not just hidden on the page.
+- **Privacy settings:** Choose who can see your **profile photo** (Public, Signed-in players, Friends only or Only me), and your **stats** and **appearance** (Everyone, Friends only or Only me), who can send you **friend requests** (Everyone or Nobody), and whether you appear in **search** and on the **leaderboards**. Settings apply to profiles, search results and friends lists alike. They are enforced by the API, not just hidden on the page.
 - **Editing:** Tap **Edit profile** on your own profile to change your name, username and photo. New players are asked to choose a username there.
 
 Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes, so `firestore.rules` needs no changes. The API code is in `server/social.js`.
