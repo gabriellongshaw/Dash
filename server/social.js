@@ -1,6 +1,6 @@
 import { FieldPath, FieldValue } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
-import { FIELDS, LEVELS, REQUEST_LEVELS, canSee, cleanPrivacy } from '../assets/js/core/privacy.js';
+import { FIELDS, LEVELS, PHOTO_LEVELS, REQUEST_LEVELS, canSee, cleanPrivacy } from '../assets/js/core/privacy.js';
 
 export const USERNAME = /^[a-z0-9_]{3,16}$/;
 
@@ -320,7 +320,7 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
       const change = {};
       for (const key of FIELDS) {
         if (body[key] === undefined) continue;
-        if (!LEVELS.includes(body[key])) throw new Fail(400, 'privacy');
+        if (!(key === 'photo' ? PHOTO_LEVELS : LEVELS).includes(body[key])) throw new Fail(400, 'privacy');
         change[key] = body[key];
       }
       if (body.requests !== undefined) {

@@ -14,10 +14,11 @@ import { button, messageFor, resizePhoto } from '../components/ui.js';
 const $ = id => document.getElementById(id);
 
 const LEVEL_LABELS = { everyone: 'Everyone', friends: 'Friends only', nobody: 'Only me' };
+const PHOTO_LABELS = { public: 'Public', everyone: 'Signed-in players', friends: 'Friends only', nobody: 'Only me' };
 const REQUEST_LABELS = { everyone: 'Everyone', nobody: 'Nobody' };
 
 const PRIVACY_ROWS = [
-  { key: 'photo', title: 'Profile photo', desc: 'Who can see your photo', labels: LEVEL_LABELS },
+  { key: 'photo', title: 'Profile photo', desc: 'Public also shows it on the leaderboards', labels: PHOTO_LABELS },
   { key: 'stats', title: 'Stats', desc: 'Best score, runs, items and friend count', labels: LEVEL_LABELS },
   { key: 'look', title: 'Appearance', desc: 'Your character, colour and hat', labels: LEVEL_LABELS },
   { key: 'requests', title: 'Friend requests', desc: 'Who can send you a request', labels: REQUEST_LABELS }
