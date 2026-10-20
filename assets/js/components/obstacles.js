@@ -15,6 +15,11 @@ const DRONE_HIGH = 92;
 const ROLLER_R = 17;
 const ROLLER_EXTRA = 130;
 const SAW_R = 24;
+const SAW_EXTRA_BASE = 30;
+const SAW_EXTRA_RATE = 0.28;
+const SAW_BASE_SPEED = 300;
+const SAW_SPIN = 14;
+const SAW_SPIN_RATE = 0.06;
 const BOUNCER_R = 15;
 const BOUNCER_EXTRA = 70;
 const BOUNCER_PERIOD = 0.85;
@@ -260,18 +265,22 @@ class Roller {
   }
 }
 
+const sawExtra = speed => SAW_EXTRA_BASE + Math.max(0, speed - SAW_BASE_SPEED) * SAW_EXTRA_RATE;
+
 class Saw {
-  constructor(x) {
+  constructor(x, extra) {
     this.kind = 'saw';
     this.x = x;
     this.w = SAW_R * 2;
     this.h = SAW_R * 2 - 8;
+    this.extra = extra;
     this.spin = rand(0, 6);
     this.hint = null;
   }
 
   tick(dt) {
-    this.spin += dt * 14;
+    this.x -= this.extra * dt;
+    this.spin += dt * (SAW_SPIN + this.extra * SAW_SPIN_RATE);
   }
 
   box(g) {
@@ -622,8 +631,7 @@ const builders = {
     return x - x0 - gap;
   },
   saw(s, x0, speed) {
-    s.obstacles.push(new Saw(x0));
-    s.jumpCoins(x0 + SAW_R, speed);
+    s.obstacles.push(new Saw(x0, sawExtra(speed)));
     return SAW_R * 2;
   },
   bouncer(s, x0) {
@@ -643,14 +651,15 @@ const builders = {
   },
   sawPair(s, x0, speed) {
     const gap = speed * 0.62 + 50;
-    s.obstacles.push(new Saw(x0), new Saw(x0 + SAW_R * 2 + gap));
+    const extra = sawExtra(speed);
+    s.obstacles.push(new Saw(x0, extra), new Saw(x0 + SAW_R * 2 + gap, extra));
     return SAW_R * 4 + gap;
   },
   sawGate(s, x0, speed) {
-    const gap = speed * 0.95 + 90;
-    s.obstacles.push(new Saw(x0), new Gate(x0 + SAW_R * 2 + gap, s.hint('gate')));
-    s.jumpCoins(x0 + SAW_R, speed);
-    return SAW_R * 2 + gap + GATE_W;
+    const extra = sawExtra(speed);
+    const x = atTime(arrival(x0, speed, extra) + 0.95, speed);
+    s.obstacles.push(new Saw(x0, extra), new Gate(x, s.hint('gate')));
+    return x - x0 + GATE_W;
   },
   fieldGate(s, x0, speed) {
     const span = randInt(110, 150);
@@ -685,7 +694,7 @@ const builders = {
   },
   marathon(s, x0, speed) {
     const gap = speed * 0.72 + 60;
-    const parts = ['crate', 'spikes', 'saw', 'drone', 'gate', 'double', 'field'];
+    const parts = ['crate', 'spikes', 'drone', 'gate', 'double', 'field'];
     const count = randInt(4, 5);
     let x = x0;
     for (let i = 0; i < count; i++) x += builders[pick(parts)](s, x, speed) + gap;
