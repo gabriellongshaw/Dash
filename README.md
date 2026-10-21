@@ -1,143 +1,72 @@
 # Dash
 
-A fast, modern 2D endless runner. Jump, slide, double jump, collect coins and spend them in the shop.
+A fast, modern 2D endless runner. Jump, slide and double jump through obstacles, collect coins, and spend them on colours, characters, hats and worlds.
 
-## How to Play
+## How to play
 
-Run as far as you can. Coins add 5 points each, and distance adds the rest. The jump is a short hop, so coin arcs follow the real jump path and are easy to collect.
+Run as far as you can. Coins add 5 points each and distance adds the rest. The game keeps getting harder the further you go.
+
+**Desktop:** `Space`, `↑` or `W` to jump (press again in the air to double jump). Hold `↓` or `S` to slide, or to fast-fall in the air. `P` or `Esc` pauses.
+
+**Touch:** tap the screen or the jump button to jump, and hold the slide button to slide.
+
+### Obstacles
 
 - **Crates and spikes:** jump over them.
-- **Tall walls:** too high for one jump, so you must double jump.
-- **Ceiling gates:** unjumpable, so you must slide underneath.
-- **Drones:** hover low, so slide under them or jump over. Some bob up and down.
-- **Rollers:** fast-moving wheels that arrive sooner than they look.
-- **Buzzsaws:** spinning blades that roll toward you along the ground from the moment they appear, so jump over them. They roll faster and spin quicker the further you run.
-- **Bouncing orbs:** spiked balls that hop along the ground. Jump over them when low or slip underneath when they are high.
-- **Missiles:** fast rockets announced by a warning triangle at the edge of the screen. Low ones must be jumped, higher ones can be slid under.
-- **Force fields:** wide barriers between two pylons that need one long jump.
+- **Tall walls:** too high for one jump, so double jump.
+- **Ceiling gates:** slide underneath.
+- **Drones:** hover low. Slide under them or jump over. Some bob up and down.
+- **Rollers:** fast wheels that arrive sooner than they look.
+- **Buzzsaws:** blades that roll toward you along the ground and get faster the further you run. Jump over them.
+- **Bouncing orbs:** spiked balls that hop along the ground. Jump when they are low, slip underneath when they are high.
+- **Missiles:** fast rockets announced by a warning triangle at the edge of the screen. Jump low ones and slide under higher ones.
+- **Force fields:** wide barriers that need one long jump.
 
-The game keeps getting harder as you go. Speed climbs until about 5,000 m, and from there the gaps between obstacles keep shrinking while longer back-to-back gauntlets and mixed combinations take over, up to about 9,400 m.
+## Customise
 
-**Desktop:** `Space` / `↑` / `W` to jump (press again in the air to double jump), hold `↓` / `S` to slide (hold in the air to fast-fall), `P` / `Esc` to pause.
+Coins from every run go into your wallet. Spend them in the shop on:
 
-**Touch:** tap the screen or the jump button to jump, hold the slide button to slide.
+- **Colours:** 34, from Emerald to an animated rainbow Prism.
+- **Characters:** 19, including Bot, Slime, Frog, Ninja, Fox, Ghost, Dino, Alien and Snowman. Any character works with any colour and hat.
+- **Hats:** 29, from a sprout to a unicorn horn.
+- **Worlds:** 17, including Skyline, Desert, Arctic, Neon, Volcano, Space, Matrix and Crystal Cave. Each has its own scenery, weather and obstacle colours.
 
-## Shop and Accounts
-
-Coins from every run go into your wallet. Spend them in the shop on colours, characters, hats and worlds.
-
-- **Colours:** 34 colours, from Emerald to an animated rainbow Prism.
-- **Characters:** Bot, Slime, Frog, Ninja, Fox, Cat, Ghost, Dino, Alien, Astronaut, Penguin, Duck, Pig, Bear, Bunny, Panda, Owl, Cyclops and Snowman. Every character can be combined with any colour and hat.
-- **Hats:** 29 hats, from a sprout to a unicorn horn.
-- **Worlds:** Skyline, Desert, Arctic, Neon, Volcano, Forest, Ocean, Candy, Space, Sunset Coast, Canyon, Swamp, Matrix, Lavender, Storm, Savanna and Crystal Cave. Each has its own scenery, weather and obstacle colours.
-
-Backgrounds adapt as you run: the sky moves through day, dusk and night, stars and auroras fade in, and the score text switches colour to stay readable. A world starts at day in light mode and at night in dark mode.
-
-Everyone plays on a real account saved on the server. Guests get an anonymous Firebase account that lives in their browser, and signing in with Google links that same account, so coins, items and quests carry over with nothing to import and follow you across devices.
-
-## Sound
-
-Dash has an original theme and sound effects, all generated in the browser with the Web Audio API, so there are no audio files to load or license.
-
-- **Theme:** A 16-bar loop at 138 BPM in the style of Geometry Dash and Subway Surfers. It has a four-on-the-floor kick, snare and hats, a rolling saw bass, fast arpeggios and a bright lead. The second half is a bigger drop with a supersaw lead and chord stabs, and each 8-bar phrase ends in a snare roll and a riser. A sidechain pump makes everything duck on each kick. It plays on every page and carries on from the same point when you move between pages. It plays quieter during a run and ducks further on pause and game over.
-- **Effects:** Jump, double jump, slide, coin, crash, new best, buttons, buying, equipping, quest claims, gifts and friend requests.
-- **Controls:** The speaker button opens sound settings with separate switches for music and sound effects, and the choices are remembered on the device.
-- **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first tap or key press on a fresh visit or reload. Pages open inside a small wrapper (`shell.html`) that keeps the audio engine alive, so moving between pages never restarts the music or asks for another tap. The wrapper keeps the address bar and Back button in step with the page. If the wrapper can't be used (for example after the Google sign-in redirect fallback), the pages fall back to running on their own, as before. Music pauses while the tab is hidden.
-- **Editing:** The tune is the `SCORE` list in `assets/js/core/music.js` and the effects are in `assets/js/core/audio.js`.
+Backgrounds change as you run. The sky moves through day, dusk and night, and stars and auroras fade in.
 
 ## Quests
 
-Quests are a second way to earn coins. Open **Quests** from the home screen.
+Quests are another way to earn coins. Open **Quests** from the home screen.
 
-- **Daily:** three quests that reset at local midnight, worth 25, 45 and 75 coins as they get harder.
-- **Weekly:** two bigger quests that reset on Monday, worth 125 to 250 coins each.
-- Quests are picked from a pool (collect coins, run a distance, score in one run, dodge obstacles, jump, double jump, slide and more). The same date always gives the same quests.
-- Progress counts automatically as you play. Tap **Claim** when a bar is full. A badge on the home screen and a note after each run show when something is ready.
-- Quests are saved on the server for guests and signed-in players alike, and a quest can only be claimed once.
+- **Daily:** four quests that reset every day, worth 25, 45, 75 and 110 coins as they get harder.
+- **Weekly:** three bigger quests that reset on Monday, worth 125 to 250 coins each.
+- Progress counts automatically as you play. Tap **Claim** when a bar is full.
 
 ## Leaderboard
 
-Open **Leaderboard** from the home screen to see the top 25 runners **This week** and **All time**, ranked by best score. Anyone can view it. Signing in puts your best score on it, and your rank is shown if you are outside the top 25.
+See the top 25 runners **This week** and **All time**, ranked by best score. Anyone can view it. Sign in with Google to put your score on it. You appear as your first name and last initial, and your profile photo shows beside it if you keep your photo set to **Public**. You can hide yourself from the leaderboard at any time, which also removes your entries.
 
-Players appear as their first name and last initial. If their profile photo is set to **Public** (the default), it shows beside their name. Signed-in players can hide themselves from the leaderboard at any time with the button under the list, which also removes their entries.
+## Friends and profiles
 
-## Friends
+Sign in with Google to use Friends.
 
-Open **Friends** from the home screen. Everything here needs a signed-in account.
+- **Username and photo:** pick a unique username, add an optional display name, and use your Google photo, upload your own, or have none.
+- **Add friends:** search by name or username, send a request, and they accept from their Friends page. You can have up to 50 friends.
+- **Gifts:** send a friend coins, an item, or both.
+- **Favourites and blocking:** favourite up to 10 friends so they sit at the top of your list. Blocking someone hides you from them completely, and they are never told.
 
-- **Username:** Pick a unique username of 3 to 16 lowercase letters, numbers or underscores. Capitals are turned into lowercase, and older usernames are lowercased the next time that player opens the game. It replaces your name on the leaderboard and can be changed once a day.
-- **Display name:** An optional name of up to 24 characters that shows above your username on your friends' lists. Both are searchable.
-- **Photo:** Use your Google photo, upload your own (it is cropped to a small square in the browser), or have none. Tap the pencil on your profile card to change it.
-- **Adding friends:** Search by display name or username (the start of either, at least two letters) and tap Add on a result. You can switch **Show me in search** off in your profile settings to stay out of results. They accept or decline from their Friends page. If you both request each other you become friends straight away. Each player can have 50 friends and 30 pending requests.
-- **Gifts:** Send a friend up to 1000 coins, an item, or both. The gift comes out of your coins, and an item costs its shop price. They cannot be sent to someone who already owns the item. The player sees what they were sent the next time they open Friends, and a badge on the home screen shows waiting requests and gifts.
+## Privacy and your account
 
-### Profiles and privacy
+- **Guests:** you can play straight away as a guest. Your coins, items and quests are saved to an anonymous account in your browser. Signing in with Google keeps all of it and lets you carry on across devices.
+- **What others can see:** from your profile you choose who can see your **photo** (Public, Signed-in players, Friends only or Only me), and who can see your **stats** and **appearance** (Everyone, Friends only or Only me). You also choose who can send you friend requests, and whether you appear in search and on the leaderboard.
+- **Fair play:** runs are checked by the game's server, so coins, scores and quest rewards can't be edited from the browser.
 
-Tap anyone in your friends list, search results or the leaderboard to open their profile (`profile/?u=username`). Open your own profile and settings from **Profile** in the account menu (the same menu as Sign out), or tap your row on the leaderboard.
+## Sound
 
-- **Profile:** Photo, name and username, stats (best score, runs, items collected and friend count) and a preview of their character, colour and hat.
-- **Friend actions:** Add or cancel a request, accept or decline, **favourite** a friend (up to 10, they float to the top of your list with a star), gift, unfriend and **block**. Favourites are private to you.
-- **Blocking:** Blocking removes the friendship or any pending request. The person you blocked can no longer find you in search, open your profile or send you requests, and is never told. Manage your blocked list at the bottom of your own profile and unblock from there. You can block up to 100 players.
-- **Privacy settings:** Choose who can see your **profile photo** (Public, Signed-in players, Friends only or Only me), and your **stats** and **appearance** (Everyone, Friends only or Only me), who can send you **friend requests** (Everyone or Nobody), and whether you appear in **search** and on the **leaderboards**. Settings apply to profiles, search results and friends lists alike. They are enforced by the API, not just hidden on the page.
-- **Editing:** Tap **Edit profile** on your own profile to change your name, username and photo. New players are asked to choose a username there.
+The music and sound effects are made in your browser, so there is nothing to download. Use the speaker button to switch music and effects on or off separately. Browsers only allow sound after a tap or key press, so music starts once you first tap or press a key.
 
-Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes, so `firestore.rules` needs no changes. The API code is in `server/social.js`.
+## For developers
 
-### Server checks
-
-Coins, items, quests and scores for signed-in players are controlled by a small API in `api/game.js`, which runs on Vercel and talks to Firestore with the Admin SDK. The browser can no longer write any of them.
-
-- A run is timed by the server. `startRun` hands out a signed token, and `submitRun` checks distance, coins, obstacles and jumps against the time that really passed before paying anything. Each token works once. The score is worked out on the server.
-- Quest claims and shop purchases are checked against the server's own copy of the profile and prices.
-- Leaderboard entries come only from runs the server accepted.
-- Guests are anonymous Firebase accounts, so their coins, items and quests are on the server too. Nothing in the browser's storage is trusted: prices come from the server's own copy of `cosmetics.js`, a purchase or quest claim that the server has not confirmed does not happen, and the cached copy in the browser is replaced by the server's copy on every sync and after any rejected action.
-- Anonymous accounts can play, earn, buy and claim quests. Leaderboards, usernames, friends and gifts need a Google sign-in, which also stops throwaway accounts from flooding them.
-- Firestore rules only let a player read their own profile and equip items they own.
-
-The game runs in the browser, so no server can prove a run was played by a person. A bot that plays for real is still accepted, but nobody can earn faster than real time or set numbers directly. Limits are at the top of `api/game.js`.
-
-### Setup
-
-Vercel's Hobby plan and Firebase's Spark plan are both free and need no card.
-
-1. In the Firebase console open Project settings, Service accounts, and choose Generate new private key. Keep the file private.
-2. In Vercel add a new project from this repository. Under Environment Variables add `FIREBASE_SERVICE_ACCOUNT` and paste the whole contents of the key file. Deploy.
-3. Set `API_URL` at the top of `assets/js/core/profile.js` to the deployed address, for example `https://dash-api.vercel.app/api/game`. If the game is served from a different domain than the two in `ORIGINS` in `api/game.js`, add it there.
-4. In the Firebase console open Authentication, Sign-in method, and enable Anonymous next to Google. Guest accounts need it.
-5. Copy `firestore.rules` into the Firebase console under Firestore Database, Rules, and publish. If the project is shared with other sites, merge the Dash blocks into your existing rules instead of replacing them.
-
-### Gifting coins and items
-
-Run `scripts/gift.js` on your own machine to give a player coins or items. It uses the service account key from Setup, so it never runs on the website and players cannot call it. The player must have signed in once, and they see the gift next time the game loads.
-
-```
-npm install
-node scripts/gift.js friend@gmail.com --coins 500 --key serviceAccount.json
-node scripts/gift.js friend@gmail.com --items hat:crown,skin:prism --key serviceAccount.json
-```
-
-Use an email or a Firebase uid. Item ids are the ones in `assets/js/core/cosmetics.js` and `assets/js/core/worlds.js`, such as `hat:crown`. Items a player already owns are skipped. Keep the key file out of git.
-
-## Running Locally
-
-The game uses ES modules, so serve the folder over HTTP (for example `python3 -m http.server`) rather than opening `index.html` directly.
-
-## Structure
-
-- `index.html` — home screen with an animated background and quick links to quests, leaderboard and friends
-- `play/` — the game page
-- `shop/` — the shop page
-- `quests/` — daily and weekly quests
-- `friends/` — usernames, friends and gifting
-- `profile/` — player profiles, friend actions and your privacy settings
-- `leaderboard/` — weekly and all-time rankings
-- `assets/js/core/` — audio and music, difficulty curve, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
-- `server/` — friends, gifting, privacy and blocking logic used by the API
-- `scripts/` — developer tools, such as gifting coins and items
-- `api/` — Vercel API that validates runs and owns coins, items, quests and scores
-- `firestore.rules` — Firestore security rules
-- `assets/js/components/` — game engine, runner, characters, hats, obstacles, world, particles, account UI
-- `assets/js/pages/` — page entry points
+See [DEVELOPMENT.md](DEVELOPMENT.md) for running, deploying and changing the game.
 
 ## Credits
 
