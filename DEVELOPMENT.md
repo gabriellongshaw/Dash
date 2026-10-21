@@ -14,7 +14,6 @@ Vercel's Hobby plan and Firebase's Spark plan are both free and need no card.
 2. In Vercel add a new project from this repository. Under Environment Variables add `FIREBASE_SERVICE_ACCOUNT` and paste the whole contents of the key file. Deploy.
 3. Set `API_URL` at the top of `assets/js/core/profile.js` to the deployed address, for example `https://dash-api.vercel.app/api/game`. If the game is served from a different domain than the two in `ORIGINS` in `api/game.js`, add it there.
 4. In the Firebase console open Authentication, Sign-in method, and enable Anonymous next to Google. Guest accounts need it.
-5. Copy `firestore.rules` into the Firebase console under Firestore Database, Rules, and publish. If the project is shared with other sites, merge the Dash blocks into your existing rules instead of replacing them.
 
 ## Server checks
 
@@ -31,19 +30,7 @@ The game runs in the browser, so no server can prove a run was played by a perso
 
 ## Friends data
 
-Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes, so `firestore.rules` needs no changes. The API code is in `server/social.js`. Leaderboard entries (`dashBoard` collections) are written only by the API and are publicly readable, so anything stored on them, such as a player's public photo, is visible to anyone.
-
-## Gifting coins and items
-
-Run `scripts/gift.js` on your own machine to give a player coins or items. It uses the service account key from Setup, so it never runs on the website and players cannot call it. The player must have signed in once, and they see the gift next time the game loads.
-
-```
-npm install
-node scripts/gift.js friend@gmail.com --coins 500 --key serviceAccount.json
-node scripts/gift.js friend@gmail.com --items hat:crown,skin:prism --key serviceAccount.json
-```
-
-Use an email or a Firebase uid. Item ids are the ones in `assets/js/core/cosmetics.js` and `assets/js/core/worlds.js`, such as `hat:crown`. Items a player already owns are skipped. Keep the key file out of git.
+Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes. The API code is in `server/social.js`. Leaderboard entries (`dashBoard` collections) are written only by the API and are publicly readable, so anything stored on them, such as a player's public photo, is visible to anyone.
 
 ## Sound
 
@@ -63,8 +50,6 @@ All music and effects are generated in the browser with the Web Audio API.
 - `leaderboard/` — weekly and all-time rankings
 - `assets/js/core/` — audio and music, difficulty curve, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
 - `server/` — friends, gifting, privacy and blocking logic used by the API
-- `scripts/` — developer tools, such as gifting coins and items
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
-- `firestore.rules` — Firestore security rules
 - `assets/js/components/` — game engine, runner, characters, hats, obstacles, world, particles, account UI
 - `assets/js/pages/` — page entry points
