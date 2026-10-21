@@ -17,26 +17,93 @@
 .shop-bar::before {
   content: "";
   position: absolute;
-  inset: 0 0 -42px 0;
+  inset: 0 0 -18px 0;
+  z-index: -2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 85%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 85.0%, transparent) 30.0%,
+    color-mix(in srgb, var(--bg) 83.9%, transparent) 35.0%,
+    color-mix(in srgb, var(--bg) 80.8%, transparent) 40.0%,
+    color-mix(in srgb, var(--bg) 75.7%, transparent) 45.0%,
+    color-mix(in srgb, var(--bg) 69.0%, transparent) 50.0%,
+    color-mix(in srgb, var(--bg) 60.9%, transparent) 55.0%,
+    color-mix(in srgb, var(--bg) 51.9%, transparent) 60.0%,
+    color-mix(in srgb, var(--bg) 42.5%, transparent) 65.0%,
+    color-mix(in srgb, var(--bg) 33.1%, transparent) 70.0%,
+    color-mix(in srgb, var(--bg) 24.1%, transparent) 75.0%,
+    color-mix(in srgb, var(--bg) 16.0%, transparent) 80.0%,
+    color-mix(in srgb, var(--bg) 9.3%, transparent) 85.0%,
+    color-mix(in srgb, var(--bg) 4.2%, transparent) 90.0%,
+    color-mix(in srgb, var(--bg) 1.1%, transparent) 95.0%,
+    color-mix(in srgb, var(--bg) 0.0%, transparent) 100.0%);
+}
+
+.shop-blur {
+  position: absolute;
+  inset: 0 0 -18px 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(to bottom, var(--bg) calc(100% - 56px),
-    color-mix(in srgb, var(--bg) 99.8%, transparent) calc(100% - 56px + 3.5px),
-    color-mix(in srgb, var(--bg) 98.4%, transparent) calc(100% - 56px + 7.0px),
-    color-mix(in srgb, var(--bg) 95.1%, transparent) calc(100% - 56px + 10.5px),
-    color-mix(in srgb, var(--bg) 89.6%, transparent) calc(100% - 56px + 14.0px),
-    color-mix(in srgb, var(--bg) 82.0%, transparent) calc(100% - 56px + 17.5px),
-    color-mix(in srgb, var(--bg) 72.5%, transparent) calc(100% - 56px + 21.0px),
-    color-mix(in srgb, var(--bg) 61.6%, transparent) calc(100% - 56px + 24.5px),
-    color-mix(in srgb, var(--bg) 50.0%, transparent) calc(100% - 56px + 28.0px),
-    color-mix(in srgb, var(--bg) 38.4%, transparent) calc(100% - 56px + 31.5px),
-    color-mix(in srgb, var(--bg) 27.5%, transparent) calc(100% - 56px + 35.0px),
-    color-mix(in srgb, var(--bg) 18.0%, transparent) calc(100% - 56px + 38.5px),
-    color-mix(in srgb, var(--bg) 10.4%, transparent) calc(100% - 56px + 42.0px),
-    color-mix(in srgb, var(--bg) 4.9%, transparent) calc(100% - 56px + 45.5px),
-    color-mix(in srgb, var(--bg) 1.6%, transparent) calc(100% - 56px + 49.0px),
-    color-mix(in srgb, var(--bg) 0.2%, transparent) calc(100% - 56px + 52.5px),
-    transparent 100%);
+  overflow: hidden;
+}
+
+.shop-blur i {
+  position: absolute;
+  inset: 0;
+  font-style: normal;
+  -webkit-backdrop-filter: blur(var(--gblur, 1px));
+  backdrop-filter: blur(var(--gblur, 1px));
+  -webkit-mask-image: var(--gmask);
+  mask-image: var(--gmask);
+}
+
+.shop-blur i:nth-child(1) {
+  --gblur: 0.2px;
+  --gmask: linear-gradient(to bottom, #000 85.42%, rgba(0,0,0,0.84) 89.06%, rgba(0,0,0,0.5) 92.71%, rgba(0,0,0,0.16) 96.35%, transparent 100%);
+}
+
+.shop-blur i:nth-child(2) {
+  --gblur: 0.36px;
+  --gmask: linear-gradient(to bottom, #000 78.12%, rgba(0,0,0,0.84) 82.29%, rgba(0,0,0,0.5) 86.46%, rgba(0,0,0,0.16) 90.62%, transparent 94.79%);
+}
+
+.shop-blur i:nth-child(3) {
+  --gblur: 0.47px;
+  --gmask: linear-gradient(to bottom, #000 70.83%, rgba(0,0,0,0.84) 75.26%, rgba(0,0,0,0.5) 79.69%, rgba(0,0,0,0.16) 84.11%, transparent 88.54%);
+}
+
+.shop-blur i:nth-child(4) {
+  --gblur: 0.85px;
+  --gmask: linear-gradient(to bottom, #000 64.58%, rgba(0,0,0,0.84) 68.75%, rgba(0,0,0,0.5) 72.92%, rgba(0,0,0,0.16) 77.08%, transparent 81.25%);
+}
+
+.shop-blur i:nth-child(5) {
+  --gblur: 1.44px;
+  --gmask: linear-gradient(to bottom, #000 57.29%, rgba(0,0,0,0.84) 61.46%, rgba(0,0,0,0.5) 65.62%, rgba(0,0,0,0.16) 69.79%, transparent 73.96%);
+}
+
+.shop-blur i:nth-child(6) {
+  --gblur: 2.07px;
+  --gmask: linear-gradient(to bottom, #000 47.92%, rgba(0,0,0,0.84) 52.6%, rgba(0,0,0,0.5) 57.29%, rgba(0,0,0,0.16) 61.98%, transparent 66.67%);
+}
+
+.shop-blur i:nth-child(7) {
+  --gblur: 2.88px;
+  --gmask: linear-gradient(to bottom, #000 35.42%, rgba(0,0,0,0.84) 40.62%, rgba(0,0,0,0.5) 45.83%, rgba(0,0,0,0.16) 51.04%, transparent 56.25%);
+}
+
+.shop-blur i:nth-child(8) {
+  --gblur: 3.83px;
+  --gmask: linear-gradient(to bottom, #000 22.92%, rgba(0,0,0,0.84) 28.12%, rgba(0,0,0,0.5) 33.33%, rgba(0,0,0,0.16) 38.54%, transparent 43.75%);
+}
+
+.shop-blur i:nth-child(9) {
+  --gblur: 4.95px;
+  --gmask: linear-gradient(to bottom, #000 10.42%, rgba(0,0,0,0.84) 15.62%, rgba(0,0,0,0.5) 20.83%, rgba(0,0,0,0.16) 26.04%, transparent 31.25%);
+}
+
+.shop-blur i:nth-child(10) {
+  --gblur: 6.75px;
+  --gmask: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.84) 4.69%, rgba(0,0,0,0.5) 9.38%, rgba(0,0,0,0.16) 14.06%, transparent 18.75%);
 }
 
 .shop-bar-right {
