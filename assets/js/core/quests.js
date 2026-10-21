@@ -2,18 +2,20 @@ const SUM_STATS = ['coins', 'runs', 'dodged', 'jumps', 'doubles', 'slides', 'dis
 const MAX_STATS = ['meters', 'score', 'runCoins'];
 const CAP = 10000000;
 
-const DAILY_REWARDS = [25, 45, 75];
+const DAILY_COUNT = 4;
+const WEEKLY_COUNT = 3;
+const DAILY_REWARDS = [25, 45, 75, 110];
 
 const DAILY_POOL = [
-  { key: 'coins', stat: 'coins', text: n => `Collect ${n} coins`, tiers: [25, 50, 90] },
-  { key: 'meters', stat: 'meters', text: n => `Run ${n} m in one run`, tiers: [250, 500, 900] },
-  { key: 'score', stat: 'score', text: n => `Score ${n} in one run`, tiers: [150, 300, 600] },
-  { key: 'runs', stat: 'runs', text: n => `Play ${n} runs`, tiers: [3, 5, 8] },
-  { key: 'dodged', stat: 'dodged', text: n => `Dodge ${n} obstacles`, tiers: [25, 50, 90] },
-  { key: 'jumps', stat: 'jumps', text: n => `Jump ${n} times`, tiers: [40, 80, 140] },
-  { key: 'doubles', stat: 'doubles', text: n => `Double jump ${n} times`, tiers: [10, 20, 35] },
-  { key: 'slides', stat: 'slides', text: n => `Slide ${n} times`, tiers: [10, 20, 35] },
-  { key: 'runCoins', stat: 'runCoins', text: n => `Collect ${n} coins in one run`, tiers: [8, 15, 25] }
+  { key: 'coins', stat: 'coins', text: n => `Collect ${n} coins`, tiers: [25, 50, 90, 140] },
+  { key: 'meters', stat: 'meters', text: n => `Run ${n} m in one run`, tiers: [250, 500, 900, 1300] },
+  { key: 'score', stat: 'score', text: n => `Score ${n} in one run`, tiers: [150, 300, 600, 1000] },
+  { key: 'runs', stat: 'runs', text: n => `Play ${n} runs`, tiers: [3, 5, 8, 12] },
+  { key: 'dodged', stat: 'dodged', text: n => `Dodge ${n} obstacles`, tiers: [25, 50, 90, 140] },
+  { key: 'jumps', stat: 'jumps', text: n => `Jump ${n} times`, tiers: [40, 80, 140, 210] },
+  { key: 'doubles', stat: 'doubles', text: n => `Double jump ${n} times`, tiers: [10, 20, 35, 55] },
+  { key: 'slides', stat: 'slides', text: n => `Slide ${n} times`, tiers: [10, 20, 35, 55] },
+  { key: 'runCoins', stat: 'runCoins', text: n => `Collect ${n} coins in one run`, tiers: [8, 15, 25, 35] }
 ];
 
 const WEEKLY_POOL = [
@@ -85,7 +87,7 @@ function shuffled(list, rand) {
 export function dailyQuests(day) {
   const rand = rng(hash('d:' + day));
   return shuffled(DAILY_POOL, rand)
-    .slice(0, 3)
+    .slice(0, DAILY_COUNT)
     .map((q, i) => ({
       id: `d:${q.key}:${i}`,
       scope: 'd',
@@ -99,7 +101,7 @@ export function dailyQuests(day) {
 export function weeklyQuests(week) {
   const rand = rng(hash('w:' + week));
   return shuffled(WEEKLY_POOL, rand)
-    .slice(0, 2)
+    .slice(0, WEEKLY_COUNT)
     .map(q => ({
       id: `w:${q.key}`,
       scope: 'w',
