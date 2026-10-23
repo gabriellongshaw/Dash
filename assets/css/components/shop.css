@@ -38,12 +38,38 @@
     color-mix(in srgb, var(--bg) 0.0%, transparent) 100.0%);
 }
 
+.no-blur .shop-bar::before {
+  inset: 0 0 -26px 0;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--bg) 96.0%, transparent) 0.0%,
+    color-mix(in srgb, var(--bg) 96.0%, transparent) 10.0%,
+    color-mix(in srgb, var(--bg) 96.0%, transparent) 20.0%,
+    color-mix(in srgb, var(--bg) 96.0%, transparent) 30.0%,
+    color-mix(in srgb, var(--bg) 96.0%, transparent) 40.0%,
+    color-mix(in srgb, var(--bg) 96.0%, transparent) 45.0%,
+    color-mix(in srgb, var(--bg) 93.8%, transparent) 50.0%,
+    color-mix(in srgb, var(--bg) 87.6%, transparent) 55.0%,
+    color-mix(in srgb, var(--bg) 78.5%, transparent) 60.0%,
+    color-mix(in srgb, var(--bg) 67.1%, transparent) 65.0%,
+    color-mix(in srgb, var(--bg) 54.5%, transparent) 70.0%,
+    color-mix(in srgb, var(--bg) 41.5%, transparent) 75.0%,
+    color-mix(in srgb, var(--bg) 28.9%, transparent) 80.0%,
+    color-mix(in srgb, var(--bg) 17.5%, transparent) 85.0%,
+    color-mix(in srgb, var(--bg) 8.4%, transparent) 90.0%,
+    color-mix(in srgb, var(--bg) 2.2%, transparent) 95.0%,
+    color-mix(in srgb, var(--bg) 0.0%, transparent) 100.0%);
+}
+
 .shop-blur {
   position: absolute;
   inset: 0 0 -18px 0;
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
+}
+
+.no-blur .shop-blur {
+  display: none;
 }
 
 .shop-blur i {

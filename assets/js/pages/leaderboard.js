@@ -6,6 +6,7 @@ import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { setCoins } from '../core/motion.js';
 import { colourFor } from '../components/avatar.js';
+import { initGraphics } from '../core/graphics.js';
 import { initAudio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 
@@ -24,6 +25,7 @@ function formatTime(ms) {
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
+  initGraphics();
   initPageFadeIn();
   profile.init();
   initAudio(1);

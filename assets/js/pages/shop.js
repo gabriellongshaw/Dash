@@ -5,6 +5,7 @@ import { drawRunnerTo, drawWorldTo, createScene, measureCanvas } from '../compon
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { setCoins } from '../core/motion.js';
+import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 
@@ -15,6 +16,7 @@ const LISTS = { skin: SKINS, char: CHARACTERS, hat: HATS, world: WORLDS };
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
+  initGraphics();
   initPageFadeIn();
   profile.init();
   initAudio(1);

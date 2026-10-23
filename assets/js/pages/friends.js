@@ -5,6 +5,7 @@ import { makeAvatar } from '../components/avatar.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { exitRow, reveal, setCoins } from '../core/motion.js';
+import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 import { openGift } from '../components/gift.js';
@@ -32,6 +33,7 @@ function describeGift(gift) {
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
+  initGraphics();
   initPageFadeIn();
   profile.init();
   initAudio(1);

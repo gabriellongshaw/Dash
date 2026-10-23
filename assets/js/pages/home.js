@@ -7,11 +7,13 @@ import { resolveLook, resolveWorld } from '../core/cosmetics.js';
 import { readPalette, onThemeChange, detectTouch, isDark } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
 import { clamp } from '../core/utils.js';
+import { initGraphics } from '../core/graphics.js';
 import { initAudio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
+  initGraphics();
   initPageFadeIn();
   profile.init();
   initAudio(1);

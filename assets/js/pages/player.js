@@ -6,6 +6,7 @@ import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { makeAvatar } from '../components/avatar.js';
 import { initPageFadeIn, navigateBack } from '../core/transition.js';
 import { reducedMotion, reveal, setCoins } from '../core/motion.js';
+import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 import { openGift } from '../components/gift.js';
@@ -35,6 +36,7 @@ const number = value => Number(value || 0).toLocaleString('en-GB');
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
+  initGraphics();
   initPageFadeIn();
   profile.init();
   initAudio(1);
