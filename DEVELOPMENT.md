@@ -39,6 +39,18 @@ All music and effects are generated in the browser with the Web Audio API.
 - **Autoplay:** Browsers only allow sound after a tap or key press, so music begins after the first tap or key press on a fresh visit or reload. Pages open inside a small wrapper (`shell.html`) that keeps the audio engine alive, so moving between pages never restarts the music or asks for another tap. The wrapper keeps the address bar and Back button in step with the page. If the wrapper can't be used (for example after the Google sign-in redirect fallback), the pages fall back to running on their own, as before. Music pauses while the tab is hidden.
 - **Editing:** The tune is the `SCORE` list in `assets/js/core/music.js` and the effects are in `assets/js/core/audio.js`.
 
+## Blur and performance
+
+The header fade on the shop, quests, leaderboard, friends and profile pages uses ten stacked `backdrop-filter` layers, and the game's modal backdrop uses one more. These are heavy on weaker devices, so `assets/js/core/graphics.js` switches them off by adding `no-blur` to the root element.
+
+- **Auto (default):** blur is skipped on data saver, reduced transparency, or devices reporting 2 or fewer cores or 2 GB or less memory. It also measures the frame rate for a moment after load and again on the first scroll, on every page, and if the median frame takes longer than 22 ms (under about 45 fps, as in iOS Low Power Mode) blur goes off. That verdict lasts 20 minutes and is renewed whenever a page measures slow again, so switching Low Power Mode off brings blur back. Browsers that expose the battery (Chrome on Android) also turn blur off at 20% or less when not charging. Without blur the header fade is made denser so it still covers the content scrolling under it.
+- **On and Off:** the Blur control in the settings menu overrides Auto. Choosing Auto again clears the saved verdict.
+- **Styling:** the `.no-blur` rules sit next to the blur styles in `shop.css` and `modal.css`.
+
+## Not found page
+
+`404.html` sends visitors to the not-found page on gabriellongshaw.co.uk, the same as the other sites.
+
 ## Structure
 
 - `index.html` — home screen with an animated background and quick links to quests, leaderboard and friends
