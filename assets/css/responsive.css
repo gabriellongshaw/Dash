@@ -136,6 +136,7 @@
     animation: none;
   }
   .tab-pill,
+  .sound-pill,
   .page,
   .toast,
   .button,
@@ -143,7 +144,8 @@
   .leave-button svg,
   .account-avatar,
   .sound-switch,
-  .sound-switch::after {
+  .sound-switch::after,
+  .sound-segment-btn {
     transition: none;
   }
 }

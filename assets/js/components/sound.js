@@ -1,11 +1,15 @@
 import { audio } from '../core/audio.js';
+import { graphics } from '../core/graphics.js';
 import { hideEl, showEl } from '../core/motion.js';
 
-const ON =
-  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const ICON =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9"/><path d="M17 7h3"/><circle cx="15" cy="7" r="2"/><path d="M4 17h3"/><path d="M11 17h9"/><circle cx="9" cy="17" r="2"/></svg>';
 
-const OFF =
-  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>';
+const BLUR_MODES = [
+  { key: 'auto', label: 'Auto' },
+  { key: 'on', label: 'On' },
+  { key: 'off', label: 'Off' }
+];
 
 const OPTIONS = [
   { key: 'music', label: 'Music' },
@@ -22,13 +26,14 @@ export function mountSound(parent, { className = 'sound-btn', first = false } = 
   btn.dataset.silent = '';
   btn.setAttribute('aria-haspopup', 'true');
   btn.setAttribute('aria-expanded', 'false');
-  btn.setAttribute('aria-label', 'Sound settings');
-  btn.title = 'Sound settings';
+  btn.innerHTML = ICON;
+  btn.setAttribute('aria-label', 'Settings');
+  btn.title = 'Settings';
 
   const menu = document.createElement('div');
   menu.className = 'sound-menu hidden';
   menu.setAttribute('role', 'group');
-  menu.setAttribute('aria-label', 'Sound settings');
+  menu.setAttribute('aria-label', 'Settings');
 
   const rows = OPTIONS.map(({ key, label }) => {
     const row = document.createElement('button');
@@ -52,10 +57,57 @@ export function mountSound(parent, { className = 'sound-btn', first = false } = 
     return { key, row };
   });
 
+  const divider = document.createElement('div');
+  divider.className = 'sound-divider';
+
+  const setting = document.createElement('div');
+  setting.className = 'sound-setting';
+  const settingLabel = document.createElement('span');
+  settingLabel.textContent = 'Blur';
+  const segment = document.createElement('div');
+  segment.className = 'sound-segment';
+  const pill = document.createElement('span');
+  pill.className = 'sound-pill';
+  pill.setAttribute('aria-hidden', 'true');
+  segment.appendChild(pill);
+  segment.setAttribute('role', 'radiogroup');
+  segment.setAttribute('aria-label', 'Blur effects');
+
+  const modeBtns = BLUR_MODES.map(({ key, label }) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sound-segment-btn';
+    b.dataset.silent = '';
+    b.setAttribute('role', 'radio');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      b.blur();
+      graphics.setMode(key);
+    });
+    segment.appendChild(b);
+    return { key, b };
+  });
+
+  setting.append(settingLabel, segment);
+  menu.append(divider, setting);
+
   const isOpen = () => !menu.classList.contains('hidden') && !menu.classList.contains('closing');
+
+  const place = () => {
+    const room = 8;
+    const width = menu.offsetWidth;
+    const box = btn.getBoundingClientRect();
+    const left = box.right - width;
+    const shift = left < room ? room - left : Math.min(0, window.innerWidth - room - box.right);
+    menu.style.right = 'auto';
+    menu.style.left = `${box.right - width - box.left + shift}px`;
+    const origin = box.left + box.width / 2 - (box.right - width + shift);
+    menu.style.transformOrigin = `${Math.round(origin)}px top`;
+  };
 
   const open = () => {
     showEl(menu);
+    place();
     btn.setAttribute('aria-expanded', 'true');
   };
 
@@ -65,8 +117,12 @@ export function mountSound(parent, { className = 'sound-btn', first = false } = 
   };
 
   const render = () => {
-    btn.innerHTML = audio.enabled ? ON : OFF;
     rows.forEach(({ key, row }) => row.setAttribute('aria-checked', String(audio.settings[key])));
+    modeBtns.forEach(({ key, b }, i) => {
+      const on = graphics.mode === key;
+      b.setAttribute('aria-checked', String(on));
+      if (on) segment.style.setProperty('--i', i);
+    });
   };
 
   btn.addEventListener('click', () => {
@@ -84,6 +140,7 @@ export function mountSound(parent, { className = 'sound-btn', first = false } = 
   );
 
   audio.subscribe(render);
+  graphics.subscribe(render);
   render();
   root.append(btn, menu);
   if (first) parent.prepend(root);
