@@ -25,7 +25,7 @@ const ACTIONS_PER_SECOND = 6;
 
 const PHOTO_MODES = ['google', 'custom', 'none'];
 
-const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'claimQuest', 'buyItem']);
+const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'doubleCoins', 'claimQuest', 'buyItem']);
 
 const DEFAULT_OWNED = ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'];
 
@@ -79,6 +79,8 @@ function sanitize(raw) {
     quests: cleanQuests(data.quests),
     publicBoard: data.publicBoard !== false,
     lastRun: whole(data.lastRun),
+    lastCoins: whole(data.lastCoins),
+    bonusRun: whole(data.bonusRun),
     username: typeof data.username === 'string' ? data.username.toLowerCase() : null,
     usernameAt: whole(data.usernameAt),
     displayName: typeof data.displayName === 'string' && data.displayName ? data.displayName : null,
@@ -244,7 +246,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
         const profile = await load(tx, user.uid);
         if (started <= profile.lastRun) return { profile, rejected: 'replay' };
         const problem = checkRun(run, (now() - started) / 1000);
-        const base = { lastRun: started, updatedAt: FieldValue.serverTimestamp() };
+        const base = { lastRun: started, lastCoins: 0, updatedAt: FieldValue.serverTimestamp() };
         if (problem) {
           tx.update(profileRef(user.uid), base);
           return { profile, rejected: problem };
@@ -265,12 +267,25 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
           best: next.best,
           vBest: next.vBest,
           quests,
-          ...base
+          ...base,
+          lastCoins: run.coins
         });
         return { profile: next, rejected: null };
       });
       if (!out.rejected && !(await publish(user, out.profile))) throw new Fail(503, 'board');
       return { rejected: out.rejected, profile: view(out.profile) };
+    },
+
+    async doubleCoins(user, body) {
+      const started = readToken(user.uid, body.runId);
+      if (!started) throw new Fail(400, 'run');
+      return db.runTransaction(async tx => {
+        const profile = await load(tx, user.uid);
+        if (profile.lastRun !== started || profile.bonusRun === started || profile.lastCoins < 1) throw new Fail(409, 'bonus');
+        const next = { ...profile, coins: profile.coins + profile.lastCoins, bonusRun: started };
+        tx.update(profileRef(user.uid), { coins: next.coins, bonusRun: started, updatedAt: FieldValue.serverTimestamp() });
+        return { coins: profile.lastCoins, profile: view(next) };
+      });
     },
 
     async claimQuest(user, body) {

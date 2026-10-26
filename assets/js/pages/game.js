@@ -8,6 +8,7 @@ import { countTo, hideEl, showEl } from '../core/motion.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
+import { ads } from '../core/ads.js';
 
 const $ = id => document.getElementById(id);
 
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPageFadeIn();
   profile.init();
   initAudio(0.6);
+  ads.init();
   $('pause-btn').before(mountSound(document.querySelector('.hud-right'), { className: 'icon-button' }));
 
   const scoreEl = $('score');
@@ -27,6 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const overOverlay = $('over-overlay');
   let overReady = false;
   let overTimer = 0;
+  let overToken = 0;
+  let restarts = 0;
+  let skipAd = false;
+  let adBusy = false;
+  let showDouble = null;
+  const doubleBtn = $('double-btn');
 
   bestEl.textContent = `Best ${profile.state.best}`;
 
@@ -56,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('over-distance').textContent = `${result.meters} m`;
       $('over-badge').classList.toggle('hidden', !result.isBest);
       overReady = false;
+      offerDouble(result);
       overTimer = setTimeout(() => {
         showEl(overOverlay);
         if (result.isBest) audio.sfx('best');
@@ -74,8 +83,53 @@ document.addEventListener('DOMContentLoaded', () => {
     $('over-quests-text').textContent = ready === 1 ? '1 quest ready to claim.' : `${ready} quests ready to claim.`;
   }
 
+  function offerDouble(result) {
+    overToken += 1;
+    const token = overToken;
+    showDouble = null;
+    doubleBtn.classList.add('hidden');
+    if (result.coins < 1 || !profile.canDouble) return;
+    ads.reward({
+      available(show) {
+        if (token !== overToken) return;
+        showDouble = show;
+        $('double-text').textContent = `Watch an ad for +${result.coins}`;
+        doubleBtn.classList.remove('hidden');
+      },
+      before: () => audio.duck(0),
+      after: () => audio.duck(0.2),
+      viewed() {
+        skipAd = true;
+        profile.doubleCoins().then(out => {
+          if (out.ok && token === overToken) countTo($('over-coins'), result.coins + out.coins, { duration: 700 });
+        });
+      }
+    });
+  }
+
+  function restart() {
+    if (adBusy) return;
+    restarts += 1;
+    if (restarts < 2 || skipAd) {
+      skipAd = false;
+      startRun();
+      return;
+    }
+    restarts = 0;
+    adBusy = true;
+    ads
+      .interstitial({ before: () => audio.duck(0), after: () => audio.duck(0.2) })
+      .then(() => {
+        adBusy = false;
+        startRun();
+      });
+  }
+
   function startRun() {
     clearTimeout(overTimer);
+    overToken += 1;
+    showDouble = null;
+    doubleBtn.classList.add('hidden');
     overReady = false;
     hint.classList.add('hidden');
     hideEl(pauseOverlay);
@@ -101,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function action() {
     if (game.state === 'ready') startRun();
     else if (game.state === 'playing') game.jump();
-    else if (game.state === 'over' && overReady) startRun();
+    else if (game.state === 'over' && overReady) restart();
   }
 
   $('game-canvas').addEventListener('pointerdown', e => {
@@ -123,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (game.state === 'paused') resumeGame();
       else pauseGame();
     } else if (e.code === 'Enter' && game.state === 'over' && overReady) {
-      startRun();
+      restart();
     }
   });
 
@@ -163,7 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('again-btn').addEventListener('click', e => {
     e.currentTarget.blur();
-    startRun();
+    restart();
+  });
+
+  doubleBtn.addEventListener('click', e => {
+    e.currentTarget.blur();
+    const show = showDouble;
+    showDouble = null;
+    doubleBtn.classList.add('hidden');
+    if (show) show();
   });
 
   ['menu-btn', 'quit-btn', 'over-menu-btn'].forEach(id => {

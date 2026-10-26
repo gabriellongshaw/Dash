@@ -25,6 +25,7 @@ let cloud = null;
 let cloudReady = false;
 let started = false;
 let runPromise = null;
+let lastSubmit = null;
 let anonPending = false;
 
 const defaults = () => ({
@@ -306,6 +307,7 @@ export const profile = {
 
   beginRun() {
     runPromise = null;
+    lastSubmit = null;
     if (!cloudReady || !state.uid) return;
     runPromise = call('startRun').then(out => out.runId).catch(() => null);
   },
@@ -325,9 +327,11 @@ export const profile = {
     const pending = runPromise;
     runPromise = null;
     const uid = state.uid;
-    Promise.resolve(pending)
-      .then(runId => {
-        if (!runId) throw new Error('no-run');
+    let runId = null;
+    lastSubmit = Promise.resolve(pending)
+      .then(id => {
+        if (!id) throw new Error('no-run');
+        runId = id;
         return call('submitRun', {
           runId,
           meters: run.meters,
@@ -340,8 +344,30 @@ export const profile = {
       })
       .then(out => {
         if (state.uid === uid) applyServer(out.profile);
+        return out.rejected ? null : runId;
       })
-      .catch(() => refresh());
+      .catch(() => {
+        refresh();
+        return null;
+      });
+  },
+
+  get canDouble() {
+    return cloudReady && !!state.uid && !!lastSubmit;
+  },
+
+  async doubleCoins() {
+    const submit = lastSubmit;
+    const id = submit ? await submit : null;
+    if (!id) return { ok: false };
+    try {
+      const out = await call('doubleCoins', { runId: id });
+      applyServer(out.profile);
+      return { ok: true, coins: out.coins };
+    } catch {
+      await refresh();
+      return { ok: false };
+    }
   },
 
   refreshQuests() {

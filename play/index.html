@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://*.firebaseio.com https://*.vercel.app; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://*.adtrafficquality.google; connect-src 'self' https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.gstatic.com https://*.googleapis.com https://*.firebaseapp.com https://*.firebaseio.com https://*.vercel.app; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src https://*.firebaseapp.com https://accounts.google.com https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
   <script src="../assets/js/core/shell.js"></script>
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -79,6 +79,7 @@
           <div class="stat"><span class="stat-value" id="over-coins">0</span><span class="stat-label">Coins</span></div>
           <div class="stat"><span class="stat-value" id="over-distance">0 m</span><span class="stat-label">Distance</span></div>
         </div>
+        <button class="secondary-button hidden" id="double-btn"><span class="coin-dot"></span><span id="double-text"></span></button>
         <button class="button" id="again-btn">Play again</button>
         <div class="modal-row">
           <button class="secondary-button" id="over-shop-btn">Shop</button>
