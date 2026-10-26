@@ -47,6 +47,18 @@ The header fade on the shop, quests, leaderboard, friends and profile pages uses
 - **On and Off:** the Blur control in the settings menu overrides Auto. Choosing Auto again clears the saved verdict.
 - **Styling:** the `.no-blur` rules sit next to the blur styles in `shop.css` and `modal.css`.
 
+## Ads
+
+Ads use Google AdSense's game ads (the Ad Placement API) and run only on the play page, from `assets/js/core/ads.js`.
+
+- **Placements:** a full-screen ad when pressing Play again (every second restart, skipped right after a rewarded ad), and an optional rewarded button on the game-over screen that doubles that run's coins.
+- **Turning on:** set `CLIENT` at the top of `ads.js` to the AdSense publisher ID (`ca-pub-...`). While it is empty no ad code loads at all. On localhost the ad tag runs in test mode, so test ads show without affecting the account.
+- **Approval:** the site must be added and approved in AdSense, and game ads enabled for it. Until then the game plays normally and no ads appear. `ads.txt` has to be served from the root of the domain, which is the portfolio site.
+- **Consent:** Google's own consent message for the UK, EEA and Switzerland is set up in the AdSense dashboard under Privacy and messaging. No code is needed.
+- **Blocked or slow ads:** if the ad script is blocked or does not answer within two seconds, the game carries on without an ad.
+- **Doubling coins:** `doubleCoins` in `api/game.js` pays the coins of the last accepted run once, matched to that run's signed token. The server cannot see whether the ad was watched, so the most anyone can gain from skipping the ad is the same coins again, once per run.
+- **Content security policy:** the play page allows Google's ad hosts and inline scripts. If ads fail to show on the live site, check the browser console for blocked requests and add the host to the policy in `play/index.html`.
+
 ## Not found page
 
 `404.html` sends visitors to the not-found page on gabriellongshaw.co.uk, the same as the other sites.
@@ -55,6 +67,7 @@ The header fade on the shop, quests, leaderboard, friends and profile pages uses
 
 - `index.html` — home screen with an animated background and quick links to quests, leaderboard and friends
 - `play/` — the game page
+- `privacy/` — privacy and advertising notice
 - `shop/` — the shop page
 - `quests/` — daily and weekly quests
 - `friends/` — usernames, friends and gifting

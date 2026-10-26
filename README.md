@@ -60,6 +60,10 @@ Sign in with Google to use Friends.
 - **What others can see:** from your profile you choose who can see your **photo** (Public, Signed-in players, Friends only or Only me), and who can see your **stats** and **appearance** (Everyone, Friends only or Only me). You also choose who can send you friend requests, and whether you appear in search and on the leaderboard.
 - **Fair play:** runs are checked by the game's server, so coins, scores and quest rewards can't be edited from the browser.
 
+## Ads
+
+Dash is free and supported by ads. A full-screen ad can appear when you press Play again, and you can optionally watch one on the game-over screen to double the coins from that run. See [privacy](privacy/index.html) for details.
+
 ## Sound
 
 The music and sound effects are made in your browser, so there is nothing to download. Use the speaker button to switch music and effects on or off separately. Browsers only allow sound after a tap or key press, so music starts once you first tap or press a key.
