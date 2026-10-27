@@ -409,6 +409,10 @@ export const profile = {
     return cloudReady && !!state.uid && !state.anon;
   },
 
+  get canView() {
+    return cloudReady && !!state.uid;
+  },
+
   async api(action, data) {
     if (!cloudReady || !state.uid) {
       const err = new Error('signed-out');

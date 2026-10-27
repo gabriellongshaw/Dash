@@ -25,7 +25,7 @@ const ACTIONS_PER_SECOND = 6;
 
 const PHOTO_MODES = ['google', 'custom', 'none'];
 
-const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'doubleCoins', 'claimQuest', 'buyItem']);
+const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'doubleCoins', 'claimQuest', 'buyItem', 'viewProfile']);
 
 const DEFAULT_OWNED = ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'];
 

@@ -15,10 +15,13 @@ import { button, messageFor, resizePhoto } from '../components/ui.js';
 const $ = id => document.getElementById(id);
 
 const LEVEL_LABELS = { everyone: 'Everyone', friends: 'Friends only', nobody: 'Only me' };
-const PHOTO_LABELS = { public: 'Public', everyone: 'Signed-in players', friends: 'Friends only', nobody: 'Only me' };
+const PHOTO_LABELS = { public: 'Public', signedin: 'Signed-in players', friends: 'Friends only', nobody: 'Only me' };
+const PROFILE_LABELS = { everyone: 'Everyone', signedin: 'Signed-in players', friends: 'Friends only' };
+const LOCKED_TEXT = { signedin: 'Only signed-in players can see this profile.', friends: 'Only friends can see this profile.' };
 const REQUEST_LABELS = { everyone: 'Everyone', nobody: 'Nobody' };
 
 const PRIVACY_ROWS = [
+  { key: 'profile', title: 'Profile', desc: 'Who can open your profile, including guests', labels: PROFILE_LABELS },
   { key: 'photo', title: 'Profile photo', desc: 'Public also shows it on the leaderboards', labels: PHOTO_LABELS },
   { key: 'stats', title: 'Stats', desc: 'Best score, runs, items and friend count', labels: LEVEL_LABELS },
   { key: 'look', title: 'Appearance', desc: 'Your character, colour and hat', labels: LEVEL_LABELS },
@@ -62,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let lookCanvas = null;
   let lookScene = null;
 
+  const backTarget = () => (targetsSelf() ? '../' : profile.session.status === 'in' ? '../friends/' : '../leaderboard/');
   const targetsSelf = () => (!wantedName && !wantedId) || (wantedName && wantedName === profile.state.username) || (wantedId && wantedId === profile.state.uid);
 
   async function act(fn, success, sound) {
@@ -100,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function load() {
-    if (loading || !profile.social) return;
+    if (loading || !profile.canView) return;
     if (targetsSelf() && !profile.state.username) {
       person = null;
       status = 'setup';
@@ -321,6 +325,14 @@ document.addEventListener('DOMContentLoaded', () => {
     drawRunnerTo(lookCanvas, palette, resolveLook(person.look.equipped), { scale: 1.7, time: 0, clock: 0.6, scene: lookScene });
   }
 
+  function lockedNote() {
+    const box = document.createElement('div');
+    box.className = 'player-empty';
+    box.appendChild(text('p', 'player-private', LOCKED_TEXT[person.locked] || 'This profile is private.'));
+    if (person.relation === 'guest') box.appendChild(button('Sign in', 'secondary-button', () => signInFlow()));
+    return box;
+  }
+
   function privateNote() {
     const hidden = [];
     if (person.hidden.stats) hidden.push('stats');
@@ -395,6 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         break;
       case 'self':
+        break;
+      case 'guest':
+        group(button('Sign in to add friends', 'button', () => signInFlow()));
         break;
       default: {
         const request = button(person.canRequest ? 'Add friend' : 'Not accepting requests', 'button', async () => {
@@ -508,12 +523,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function render() {
     const signedIn = profile.session.status === 'in' && !!profile.state.uid;
-    note.classList.toggle('hidden', profile.session.status !== 'out');
-    content.classList.toggle('hidden', !signedIn);
-    if (signedIn && !shownContent) reveal(content);
-    shownContent = signedIn;
+    const viewing = signedIn || !targetsSelf();
+    note.classList.toggle('hidden', viewing || profile.session.status !== 'out');
+    content.classList.toggle('hidden', !viewing);
+    if (viewing && !shownContent) reveal(content);
+    shownContent = viewing;
     setCoins($('wallet'), profile.state.coins);
-    if (!signedIn) return;
+    if (!viewing) return;
     if (editing && built && status === 'ready' && content.firstElementChild) {
       swapTop();
       return;
@@ -521,6 +537,10 @@ document.addEventListener('DOMContentLoaded', () => {
     built = false;
     lookCanvas = null;
     content.innerHTML = '';
+    if (status === 'loading' && !profile.canView && (profile.session.status === 'unavailable' || profile.session.error)) {
+      content.appendChild(emptyState('Could not load this profile.', 'Try again', () => window.location.reload()));
+      return;
+    }
     if (status === 'loading') {
       content.appendChild(text('p', 'quest-empty', 'Loading'));
       return;
@@ -530,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (status === 'missing') {
-      content.appendChild(emptyState("This profile isn't available.", 'Back', () => navigateBack('../friends/')));
+      content.appendChild(emptyState("This profile isn't available.", 'Back', () => navigateBack(backTarget())));
       return;
     }
     if (status === 'error' || !person) {
@@ -542,7 +562,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     content.appendChild(topCard());
-    if (person.relation !== 'blocked') {
+    if (person.locked && person.relation !== 'blocked') content.appendChild(lockedNote());
+    else if (person.relation !== 'blocked') {
       if (person.stats) content.appendChild(statsGrid());
       if (person.look) content.appendChild(lookCard());
       const hidden = privateNote();
@@ -554,11 +575,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   $('note-signin').addEventListener('click', () => signInFlow());
-  $('back-btn').addEventListener('click', () => navigateBack(targetsSelf() ? '../' : '../friends/'));
+  $('back-btn').addEventListener('click', () => navigateBack(backTarget()));
 
   let wasReady = false;
   profile.subscribe(() => {
-    const ready = profile.social && !profile.session.syncing;
+    const ready = profile.canView && !profile.session.syncing;
     if (ready && !wasReady) load();
     else render();
     wasReady = ready;
@@ -575,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', drawLook);
 
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && profile.social && status === 'ready') load();
+    if (!document.hidden && profile.canView && status === 'ready') load();
   });
 
   document.querySelectorAll('.button, .secondary-button, .leave-button').forEach(el => {

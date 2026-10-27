@@ -43,7 +43,7 @@ Quests are another way to earn coins. Open **Quests** from the home screen.
 
 ## Leaderboard
 
-See the top 25 runners **This week** and **All time**, ranked by best score. Anyone can view it. Sign in with Google to put your score on it. You appear as your first name and last initial, and your profile photo shows beside it if you keep your photo set to **Public**. You can hide yourself from the leaderboard at any time, which also removes your entries.
+See the top 25 runners **This week** and **All time**, ranked by best score. Anyone can view it, and guests can tap a name to open that player's profile (unless they have limited who can see it). Sign in with Google to put your score on it. You appear as your first name and last initial, and your profile photo shows beside it if you keep your photo set to **Public**. You can hide yourself from the leaderboard at any time, which also removes your entries.
 
 ## Friends and profiles
 
@@ -57,7 +57,7 @@ Sign in with Google to use Friends.
 ## Privacy and your account
 
 - **Guests:** you can play straight away as a guest. Your coins, items and quests are saved to an anonymous account in your browser. Signing in with Google keeps all of it and lets you carry on across devices.
-- **What others can see:** from your profile you choose who can see your **photo** (Public, Signed-in players, Friends only or Only me), and who can see your **stats** and **appearance** (Everyone, Friends only or Only me). You also choose who can send you friend requests, and whether you appear in search and on the leaderboard.
+- **What others can see:** from your profile you choose who can open your **profile** at all (Everyone including guests, which is the default, Signed-in players or Friends only), who can see your **photo** (Public, Signed-in players, Friends only or Only me), and who can see your **stats** and **appearance** (Everyone, Friends only or Only me). You also choose who can send you friend requests, and whether you appear in search and on the leaderboard.
 - **Fair play:** runs are checked by the game's server, so coins, scores and quest rewards can't be edited from the browser.
 
 ## Ads

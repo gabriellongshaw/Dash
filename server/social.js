@@ -1,6 +1,6 @@
 import { FieldPath, FieldValue } from 'firebase-admin/firestore';
 import { findItem } from '../assets/js/core/cosmetics.js';
-import { FIELDS, LEVELS, PHOTO_LEVELS, REQUEST_LEVELS, canSee, cleanPrivacy } from '../assets/js/core/privacy.js';
+import { FIELDS, REQUEST_LEVELS, canSee, cleanPrivacy, levelsFor } from '../assets/js/core/privacy.js';
 
 export const USERNAME = /^[a-z0-9_]{3,16}$/;
 
@@ -86,7 +86,7 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
     return new Map(snaps.map((snap, i) => [uids[i], card(uids[i], snap, relationOf(uids[i]))]));
   }
 
-  const validUid = value => typeof value === 'string' && value.length > 0 && value.length <= MAX_UID && !value.includes('/');
+  const validUid = value => typeof value === 'string' && value.length > 0 && value.length <= MAX_UID && !value.includes('/') && value !== '.' && value !== '..' && !/^__.*__$/.test(value);
 
   async function findUid(username) {
     const key = typeof username === 'string' ? username.trim().toLowerCase() : '';
@@ -320,7 +320,7 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
       const change = {};
       for (const key of FIELDS) {
         if (body[key] === undefined) continue;
-        if (!(key === 'photo' ? PHOTO_LEVELS : LEVELS).includes(body[key])) throw new Fail(400, 'privacy');
+        if (!levelsFor(key).includes(body[key])) throw new Fail(400, 'privacy');
         change[key] = body[key];
       }
       if (body.requests !== undefined) {
@@ -339,23 +339,25 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
     async viewProfile(user, body) {
       const target = validUid(body.uid) ? body.uid : await findUid(body.username);
       const self = target === user.uid;
-      const [snap, mine, theirs, theirFriends] = await Promise.all([
+      const guest = !!user.anon;
+      const [snap, mine, theirs] = await Promise.all([
         profileRef(target).get(),
-        self ? null : entryRef(user.uid, target).get(),
-        self ? null : entryRef(target, user.uid).get(),
-        entries(target).get()
+        self || guest ? null : entryRef(user.uid, target).get(),
+        self ? null : entryRef(target, user.uid).get()
       ]);
       const raw = snap.exists ? snap.data() : null;
       const username = raw && typeof raw.username === 'string' ? raw.username.toLowerCase() : null;
       if (!raw || !username) throw new Fail(404, 'no-user');
       if (theirs && theirs.exists && theirs.data().state === 'blocked') throw new Fail(404, 'no-user');
       const entry = mine && mine.exists ? mine.data() : null;
-      const relation = self ? 'self' : entry ? entry.state : null;
+      const relation = self ? 'self' : guest ? 'guest' : entry ? entry.state : null;
       const displayName = cleanDisplayName(raw.displayName);
-      if (relation === 'blocked') return { person: { uid: target, username, displayName, relation, favourite: false, photo: null, canRequest: false, stats: null, look: null, hidden: { photo: false, stats: false, look: false } } };
+      if (relation === 'blocked') return { person: { uid: target, username, displayName, relation, favourite: false, photo: null, canRequest: false, stats: null, look: null, locked: null, hidden: { photo: false, stats: false, look: false } } };
       const data = sanitize(raw);
       const privacy = data.privacy;
-      const see = field => canSee(privacy[field], relation);
+      const open = canSee(privacy.profile, relation);
+      const see = field => open && canSee(privacy[field], relation);
+      const stats = see('stats') ? { best: data.best, runs: data.runs, items: data.owned.length, friends: countState((await entries(target).get()).docs, 'friend') } : null;
       return {
         person: {
           uid: target,
@@ -364,9 +366,10 @@ export function createSocial({ db, profileRef, load, sanitize, view, Fail, publi
           relation,
           favourite: relation === 'friend' && entry.favourite === true,
           photo: see('photo') ? pickPhoto(raw) : null,
-          canRequest: self ? false : privacy.requests !== 'nobody',
-          stats: see('stats') ? { best: data.best, runs: data.runs, items: data.owned.length, friends: countState(theirFriends.docs, 'friend') } : null,
+          canRequest: self || guest ? false : privacy.requests !== 'nobody',
+          stats,
           look: see('look') ? { equipped: data.equipped } : null,
+          locked: open ? null : privacy.profile,
           hidden: { photo: !see('photo'), stats: !see('stats'), look: !see('look') }
         }
       };
