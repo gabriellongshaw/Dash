@@ -151,7 +151,7 @@ function buildStage() {
     'position:fixed;top:0;left:0;right:0;height:96px;z-index:2147483647;pointer-events:none;opacity:0.02;overflow:hidden';
   const field = document.createElement('div');
   field.style.cssText =
-    'position:absolute;top:0;left:0;width:200%;height:100%;will-change:transform;background:repeating-linear-gradient(90deg,#fff 0 12px,#000 12px 24px)';
+    'position:absolute;top:0;left:0;width:200%;height:100%;will-change:transform;background:repeating-linear-gradient(90deg,var(--bg,#808080) 0 12px,color-mix(in srgb,var(--bg,#808080) 88%,#808080) 12px 24px)';
   const glass = document.createElement('div');
   glass.style.cssText = 'position:absolute;inset:0';
   root.append(field, glass);
