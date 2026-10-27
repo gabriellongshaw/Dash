@@ -72,6 +72,10 @@
   display: none;
 }
 
+.lite-blur .shop-blur i:not(:nth-child(4)):not(:nth-child(7)):not(:nth-child(10)) {
+  display: none;
+}
+
 .shop-blur i {
   position: absolute;
   inset: 0;

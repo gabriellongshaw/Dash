@@ -12,7 +12,8 @@
   animation: fadeIn 0.25s ease both;
 }
 
-.no-blur .overlay {
+.no-blur .overlay,
+.lite-blur .overlay {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
