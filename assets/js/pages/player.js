@@ -64,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let palette = readPalette();
   let lookCanvas = null;
   let lookScene = null;
+  let controls = null;
+  let builtKey = '';
 
   const backTarget = () => (targetsSelf() ? '../' : profile.session.status === 'in' ? '../friends/' : '../leaderboard/');
   const targetsSelf = () => (!wantedName && !wantedId) || (wantedName && wantedName === profile.state.username) || (wantedId && wantedId === profile.state.uid);
@@ -443,7 +445,9 @@ document.addEventListener('DOMContentLoaded', () => {
     row.append(label, track);
     row.addEventListener('click', () => {
       row.blur();
-      onChange(!on);
+      const next = row.getAttribute('aria-checked') !== 'true';
+      row.setAttribute('aria-checked', String(next));
+      onChange(next);
     });
     return row;
   }
@@ -464,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
       select.appendChild(option);
     });
     select.value = profile.state.privacy[key];
+    if (controls) controls.selects[key] = select;
     select.addEventListener('change', async () => {
       const ok = await queued(() => profile.api('setPrivacy', { [key]: select.value }), 'Saved.');
       if (!ok) select.value = profile.state.privacy[key];
@@ -474,21 +479,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function settingsCards() {
     const cards = [];
+    controls = { selects: {}, searchable: null, board: null };
     const privacy = document.createElement('div');
     privacy.className = 'friend-card setting-card';
     privacy.appendChild(text('p', 'setting-heading', 'Privacy'));
     PRIVACY_ROWS.forEach(row => privacy.appendChild(selectRow(row)));
-    privacy.appendChild(
-      switchRow('Show me in search', 'Let players find you by name or username', profile.state.searchable, on => {
-        queued(() => profile.api('setSearchable', { on }), 'Saved.');
-      })
-    );
-    privacy.appendChild(
-      switchRow('Show me on leaderboards', 'Your score appears with your first name and last initial', profile.state.publicBoard, on => {
-        profile.setPublicBoard(on);
-        showToast('Saved.');
-      })
-    );
+    controls.searchable = switchRow('Show me in search', 'Let players find you by name or username', profile.state.searchable, on => {
+      queued(() => profile.api('setSearchable', { on }), 'Saved.').then(ok => ok || syncControls());
+    });
+    controls.board = switchRow('Show me on leaderboards', 'Your score appears with your first name and last initial', profile.state.publicBoard, on => {
+      profile.setPublicBoard(on);
+      showToast('Saved.');
+    });
+    privacy.append(controls.searchable, controls.board);
     cards.push(privacy);
 
     const blocked = document.createElement('div');
@@ -513,6 +516,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return cards;
   }
 
+  function syncControls() {
+    if (!controls) return;
+    Object.entries(controls.selects).forEach(([key, select]) => {
+      if (document.activeElement !== select && select.value !== profile.state.privacy[key]) select.value = profile.state.privacy[key];
+    });
+    controls.searchable.setAttribute('aria-checked', String(profile.state.searchable));
+    controls.board.setAttribute('aria-checked', String(profile.state.publicBoard));
+  }
+
+  const structureKey = () => JSON.stringify([status, person, social.blocked, editing, profile.state.username, profile.state.displayName, profile.avatar]);
+
   function emptyState(message, label, onClick) {
     const box = document.createElement('div');
     box.className = 'player-empty';
@@ -534,6 +548,13 @@ document.addEventListener('DOMContentLoaded', () => {
       swapTop();
       return;
     }
+    const key = structureKey();
+    if (built && key === builtKey && content.firstElementChild) {
+      syncControls();
+      return;
+    }
+    builtKey = key;
+    controls = null;
     built = false;
     lookCanvas = null;
     content.innerHTML = '';
