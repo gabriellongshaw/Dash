@@ -5,7 +5,7 @@ import { drawRunnerTo, createScene } from '../components/preview.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { makeAvatar } from '../components/avatar.js';
 import { initPageFadeIn, navigateBack } from '../core/transition.js';
-import { reducedMotion, reveal, setCoins } from '../core/motion.js';
+import { reducedMotion, setCoins, setShown } from '../core/motion.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
@@ -57,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let status = 'loading';
   let loading = false;
   let busy = false;
-  let shownContent = false;
   let editing = false;
   let built = false;
   let draft = { name: '', user: '' };
@@ -538,10 +537,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function render() {
     const signedIn = profile.session.status === 'in' && !!profile.state.uid;
     const viewing = signedIn || !targetsSelf();
-    note.classList.toggle('hidden', viewing || profile.session.status !== 'out');
-    content.classList.toggle('hidden', !viewing);
-    if (viewing && !shownContent) reveal(content);
-    shownContent = viewing;
+    setShown(note, !viewing && profile.session.status === 'out');
+    setShown(content, viewing);
     setCoins($('wallet'), profile.state.coins);
     if (!viewing) return;
     if (editing && built && status === 'ready' && content.firstElementChild) {

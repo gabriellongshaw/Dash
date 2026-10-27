@@ -4,7 +4,7 @@ import { msUntilReset, weekBoardScore } from '../core/quests.js';
 import { mountAccount, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { setCoins } from '../core/motion.js';
+import { setCoins, setShown } from '../core/motion.js';
 import { colourFor } from '../components/avatar.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio } from '../core/audio.js';
@@ -207,9 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderChrome() {
     const signedIn = profile.session.status === 'in';
-    note.classList.toggle('hidden', profile.session.status !== 'out');
+    setShown(note, profile.session.status === 'out');
     setCoins($('wallet'), profile.state.coins);
-    visibility.classList.toggle('hidden', !signedIn);
+    setShown(visibility, signedIn);
     visibility.textContent = profile.state.publicBoard ? 'Hide me from the leaderboard' : 'Show me on the leaderboard';
     renderMeta();
   }

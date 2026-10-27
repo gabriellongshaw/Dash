@@ -4,7 +4,7 @@ import { profile } from '../core/profile.js';
 import { resolveLook, resolveWorld } from '../core/cosmetics.js';
 import { signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { countTo, hideEl, showEl } from '../core/motion.js';
+import { countTo, hideEl, setShown, showEl } from '../core/motion.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     game.setWorld(resolveWorld(profile.state.equipped.world));
     game.best = Math.max(game.best, profile.state.best);
     if (game.state !== 'playing') bestEl.textContent = `Best ${profile.state.best}`;
-    $('over-note').classList.toggle('hidden', profile.session.status !== 'out' || overOverlay.classList.contains('hidden'));
+    setShown($('over-note'), profile.session.status === 'out' && !overOverlay.classList.contains('hidden'));
   });
 
   document.querySelectorAll('.button, .secondary-button, .leave-button, .icon-button').forEach(el => {

@@ -3,7 +3,7 @@ import { dailyQuests, weeklyQuests, progressOf, isClaimed, isReady, msUntilReset
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { setCoins } from '../core/motion.js';
+import { setCoins, setShown } from '../core/motion.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function render() {
     const q = profile.state.quests;
     setCoins(wallet, profile.state.coins);
-    note.classList.toggle('hidden', profile.session.status !== 'out');
+    setShown(note, profile.session.status === 'out');
     renderMeta();
     list.innerHTML = '';
     questsForScope(q).forEach((quest, index) => {

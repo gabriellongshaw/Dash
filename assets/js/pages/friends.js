@@ -4,7 +4,7 @@ import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { makeAvatar } from '../components/avatar.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { exitRow, reveal, setCoins } from '../core/motion.js';
+import { exitRow, reveal, setCoins, setShown } from '../core/motion.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let loading = false;
   let busy = false;
   const seen = new Set();
-  const shown = { content: false, social: false, requests: false };
+  const shown = { social: false, requests: false };
 
   async function act(fn, success, sound) {
     if (busy) return false;
@@ -230,10 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function render() {
     const status = profile.session.status;
     const signedIn = status === 'in' && !!profile.state.uid;
-    note.classList.toggle('hidden', status !== 'out');
-    content.classList.toggle('hidden', !signedIn);
-    if (signedIn && !shown.content) reveal(content);
-    shown.content = signedIn;
+    setShown(note, status === 'out');
+    setShown(content, signedIn);
     setCoins($('wallet'), profile.state.coins);
     if (!signedIn) return;
     renderMe();

@@ -4,7 +4,7 @@ import { readPalette, onThemeChange, detectTouch, isDark } from '../core/theme.j
 import { drawRunnerTo, drawWorldTo, createScene, measureCanvas } from '../components/preview.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { setCoins } from '../core/motion.js';
+import { setCoins, setShown } from '../core/motion.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
       actionBtn.textContent = 'Need ' + (item.price - coins) + ' more coins';
       actionBtn.disabled = true;
     }
-    note.classList.toggle('hidden', profile.session.status !== 'out');
+    setShown(note, profile.session.status === 'out');
     drawCards();
   }
 
