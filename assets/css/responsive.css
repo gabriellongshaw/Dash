@@ -132,7 +132,10 @@
   .rank-row::after,
   .shop-action .button,
   .shop-bar-right .coin-dot,
-  .coin-pill {
+  .coin-pill,
+  .countdown-num,
+  .account-entering,
+  .account-leaving {
     animation: none;
   }
   .tab-pill,

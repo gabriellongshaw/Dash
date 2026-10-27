@@ -1,5 +1,5 @@
 import { profile } from '../core/profile.js';
-import { hideEl, showEl } from '../core/motion.js';
+import { hideEl, reducedMotion, showEl } from '../core/motion.js';
 import { navigateTo } from '../core/transition.js';
 
 let toastEl = null;
@@ -45,78 +45,123 @@ const USER_ICON =
 
 export function mountAccount(el, root = '../') {
   let lastError = null;
+  let mode = null;
+  let chip = null;
   const onProfile = /\/profile\/?$/.test(window.location.pathname) && !window.location.search;
+
+  function makeAvatar(photo, name) {
+    const avatar = document.createElement(photo ? 'img' : 'span');
+    avatar.className = 'account-avatar';
+    if (photo) {
+      avatar.src = photo;
+      avatar.alt = '';
+      avatar.referrerPolicy = 'no-referrer';
+    } else if (name) {
+      avatar.textContent = name.charAt(0).toUpperCase();
+    } else {
+      avatar.innerHTML = USER_ICON;
+    }
+    return avatar;
+  }
+
+  function buildChip() {
+    const button = document.createElement('button');
+    button.className = 'account-chip';
+    button.setAttribute('aria-label', 'Account');
+    const avatar = makeAvatar(null, null);
+    const label = document.createElement('span');
+    label.className = 'account-name';
+    button.append(avatar, label);
+    const menu = document.createElement('div');
+    menu.className = 'account-menu hidden';
+    if (!onProfile) {
+      const mine = document.createElement('button');
+      mine.className = 'account-menu-item';
+      mine.textContent = 'Profile';
+      mine.addEventListener('click', e => {
+        e.stopPropagation();
+        hideEl(menu);
+        navigateTo(`${root}profile/`);
+      });
+      menu.appendChild(mine);
+    }
+    const out = document.createElement('button');
+    out.className = 'account-menu-item';
+    out.textContent = 'Sign out';
+    out.addEventListener('click', async e => {
+      e.stopPropagation();
+      hideEl(menu);
+      try {
+        await profile.signOut();
+      } catch {
+        showToast('Could not sign out. Try again.');
+      }
+    });
+    menu.appendChild(out);
+    button.addEventListener('click', e => {
+      e.stopPropagation();
+      if (menu.classList.contains('hidden') || menu.classList.contains('closing')) showEl(menu);
+      else hideEl(menu);
+    });
+    chip = { button, menu, avatar, label, key: '' };
+    return [button, menu];
+  }
+
+  function buildButton() {
+    chip = null;
+    const btn = document.createElement('button');
+    btn.className = 'secondary-button account-btn';
+    btn.innerHTML = GOOGLE_ICON + '<span class="account-btn-label">Sign in</span>';
+    btn.addEventListener('click', () => {
+      btn.blur();
+      signInFlow();
+    });
+    return [btn];
+  }
+
+  function swap(next) {
+    const animate = mode !== null && !reducedMotion();
+    [...el.children].forEach(node => {
+      if (!animate) {
+        node.remove();
+        return;
+      }
+      node.classList.add('account-leaving');
+      setTimeout(() => node.remove(), 220);
+    });
+    el.append(...next);
+    if (!animate) return;
+    next.forEach(node => node.classList.add('account-entering'));
+    setTimeout(() => next.forEach(node => node.classList.remove('account-entering')), 520);
+  }
 
   function render() {
     const { status, syncing, error } = profile.session;
     const { uid, username, displayName } = profile.state;
     const photo = profile.avatar;
     const name = displayName || username || profile.state.name;
-    el.innerHTML = '';
     const anon = profile.state.anon;
     el.classList.toggle('hidden', status === 'unavailable' && (!uid || anon));
     el.classList.toggle('pending', status === 'loading' && !uid);
 
-    if (status === 'in' || ((status === 'unavailable' || status === 'loading') && uid && !anon)) {
-      const chip = document.createElement('button');
-      chip.className = 'account-chip';
-      chip.setAttribute('aria-label', 'Account');
-      const avatar = document.createElement(photo ? 'img' : 'span');
-      avatar.className = 'account-avatar';
-      if (photo) {
-        avatar.src = photo;
-        avatar.alt = '';
-        avatar.referrerPolicy = 'no-referrer';
-      } else {
-        if (name) avatar.textContent = name.charAt(0).toUpperCase();
-        else avatar.innerHTML = USER_ICON;
+    const signedIn = status === 'in' || ((status === 'unavailable' || status === 'loading') && uid && !anon);
+    const next = signedIn ? 'chip' : 'button';
+    if (next !== mode) {
+      swap(signedIn ? buildChip() : buildButton());
+      mode = next;
+    }
+    if (signedIn) {
+      const key = `${photo || ''}|${name || ''}`;
+      if (chip.key !== key) {
+        const avatar = makeAvatar(photo, name);
+        chip.avatar.replaceWith(avatar);
+        chip.avatar = avatar;
+        chip.key = key;
       }
-      const label = document.createElement('span');
-      label.className = 'account-name';
-      label.textContent = syncing ? 'Syncing' : (name || 'Account').split(' ')[0];
-      chip.append(avatar, label);
-      const menu = document.createElement('div');
-      menu.className = 'account-menu hidden';
-      if (!onProfile) {
-        const mine = document.createElement('button');
-        mine.className = 'account-menu-item';
-        mine.textContent = 'Profile';
-        mine.addEventListener('click', e => {
-          e.stopPropagation();
-          hideEl(menu);
-          navigateTo(`${root}profile/`);
-        });
-        menu.appendChild(mine);
-      }
-      const out = document.createElement('button');
-      out.className = 'account-menu-item';
-      out.textContent = 'Sign out';
-      out.addEventListener('click', async e => {
-        e.stopPropagation();
-        hideEl(menu);
-        try {
-          await profile.signOut();
-        } catch {
-          showToast('Could not sign out. Try again.');
-        }
-      });
-      menu.appendChild(out);
-      chip.addEventListener('click', e => {
-        e.stopPropagation();
-        if (menu.classList.contains('hidden') || menu.classList.contains('closing')) showEl(menu);
-        else hideEl(menu);
-      });
-      el.append(chip, menu);
+      chip.label.textContent = syncing ? 'Syncing' : (name || 'Account').split(' ')[0];
     } else {
-      const btn = document.createElement('button');
-      btn.className = 'secondary-button account-btn';
-      btn.disabled = status === 'loading';
-      btn.innerHTML = GOOGLE_ICON + '<span class="account-btn-label">Sign in</span>';
-      btn.addEventListener('click', () => {
-        btn.blur();
-        signInFlow();
-      });
-      el.appendChild(btn);
+      const btn = el.querySelector('.account-btn:not(.account-leaving)');
+      if (btn) btn.disabled = status === 'loading';
     }
 
     if (error && error !== lastError) {
