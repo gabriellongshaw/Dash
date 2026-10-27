@@ -146,10 +146,52 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const countdown = $('countdown');
+  const countdownNum = $('countdown-num');
+  const COUNT_FROM = 3;
+  const COUNT_STEP = 800;
+  let counting = false;
+  let countTimer = 0;
+
+  function stopCountdown() {
+    clearTimeout(countTimer);
+    counting = false;
+    countdown.classList.add('hidden');
+  }
+
   function resumeGame() {
+    if (counting || game.state !== 'paused') return;
     hideEl(pauseOverlay);
-    audio.duck(0.6);
-    game.resume();
+    counting = true;
+    countdown.classList.remove('hidden');
+    let n = COUNT_FROM;
+    const step = () => {
+      if (n === 0) {
+        stopCountdown();
+        audio.duck(0.6);
+        game.resume();
+        return;
+      }
+      countdownNum.textContent = n;
+      countdownNum.style.animation = 'none';
+      void countdownNum.offsetWidth;
+      countdownNum.style.animation = '';
+      audio.sfx('click');
+      n -= 1;
+      countTimer = setTimeout(step, COUNT_STEP);
+    };
+    step();
+  }
+
+  function cancelCountdown() {
+    stopCountdown();
+    showEl(pauseOverlay);
+  }
+
+  function togglePause() {
+    if (counting) cancelCountdown();
+    else if (game.state === 'paused') resumeGame();
+    else pauseGame();
   }
 
   function action() {
@@ -174,8 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (slideKey) {
       game.slide(true);
     } else if (e.code === 'KeyP' || e.code === 'Escape') {
-      if (game.state === 'paused') resumeGame();
-      else pauseGame();
+      togglePause();
     } else if (e.code === 'Enter' && game.state === 'over' && overReady) {
       restart();
     }
@@ -206,8 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('pause-btn').addEventListener('click', e => {
     e.currentTarget.blur();
-    if (game.state === 'paused') resumeGame();
-    else pauseGame();
+    togglePause();
   });
 
   $('resume-btn').addEventListener('click', e => {
@@ -253,7 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', () => game.resize());
   onThemeChange(() => game.setPalette());
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pauseGame();
+    if (!document.hidden) return;
+    if (counting) cancelCountdown();
+    else pauseGame();
   });
   document.addEventListener('contextmenu', e => e.preventDefault());
 });
