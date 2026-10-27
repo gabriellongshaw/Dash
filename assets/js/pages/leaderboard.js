@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const keyOf = name => (name === 'all' ? 'all' : profile.state.quests.week);
   const scoreOf = name => (name === 'all' ? profile.state.best : weekBoardScore(profile.state.quests, profile.state.best));
   const myScore = () => scoreOf(scope);
+  const mineId = () => (profile.state.anon ? null : profile.state.uid);
 
   function row(entry, rank, index, me) {
     const el = document.createElement('div');
@@ -81,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     score.className = 'rank-score';
     score.textContent = entry.score;
     el.append(pos, avatar, name, score);
-    if (profile.social && entry.id) {
+    if (entry.id) {
       const open = () => navigateTo(me ? '../profile/' : `../profile/?id=${encodeURIComponent(entry.id)}`);
       el.classList.add('link');
       el.tabIndex = 0;
@@ -121,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderEntries(entries, myRank) {
-    const uid = profile.state.uid;
+    const uid = mineId();
     list.innerHTML = '';
     if (!entries.length) {
       message('No scores yet. Be the first!');
@@ -141,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function pull(name) {
     const key = keyOf(name);
     const entries = await fetchBoard(key);
-    const uid = profile.state.uid;
+    const uid = mineId();
     const score = scoreOf(name);
     let rank = null;
     if (uid && profile.state.publicBoard && score > 0 && !entries.some(entry => entry.id === uid)) {
@@ -152,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return { entries, rank };
   }
 
-  const signature = (key, result) => JSON.stringify([key, profile.state.uid, profile.social, result.entries.map(entry => [entry.id, entry.score, entry.photo]), result.rank]);
+  const signature = (key, result) => JSON.stringify([key, mineId(), result.entries.map(entry => [entry.id, entry.score, entry.photo]), result.rank]);
 
   async function load(force, quiet) {
     const name = scope;
@@ -168,12 +169,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!quiet || !shown) skeleton();
     const at = Date.now();
     const otherKey = keyOf(other);
-    pull(other).then(
-      result => {
-        cache[otherKey] = { at, ...result };
-      },
-      () => {}
-    );
+    const otherHit = cache[otherKey];
+    if (!otherHit || at - otherHit.at >= CACHE_MS) {
+      pull(other).then(
+        result => {
+          cache[otherKey] = { at, ...result };
+        },
+        () => {}
+      );
+    }
     try {
       const result = await pull(name);
       cache[key] = { at, ...result };
@@ -236,17 +240,14 @@ document.addEventListener('DOMContentLoaded', () => {
   $('note-signin').addEventListener('click', () => signInFlow());
   $('back-btn').addEventListener('click', () => navigateTo('../'));
 
-  let lastUid = profile.state.uid;
-  let wasSyncing = profile.session.syncing;
+  const boardState = () => JSON.stringify([mineId(), profile.state.quests.week, scoreOf('all'), scoreOf('week')]);
+  let lastBoard = boardState();
   profile.subscribe(() => {
     renderChrome();
-    const syncing = profile.session.syncing;
-    const synced = wasSyncing && !syncing;
-    wasSyncing = syncing;
-    if (profile.state.uid !== lastUid || synced) {
-      lastUid = profile.state.uid;
-      reload();
-    }
+    const next = boardState();
+    if (next === lastBoard) return;
+    lastBoard = next;
+    reload();
   });
 
   window.addEventListener('pageshow', e => {

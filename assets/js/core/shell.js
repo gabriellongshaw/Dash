@@ -16,6 +16,7 @@
   if (!document.documentElement.hasAttribute('data-shell')) {
     if (bare()) return;
     var to = location.pathname + location.search + location.hash;
+    window.__dashRedirect = true;
     location.replace(new URL('shell.html', root).href + '?to=' + encodeURIComponent(to));
     return;
   }

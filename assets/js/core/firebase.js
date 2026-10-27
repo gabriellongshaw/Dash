@@ -11,6 +11,7 @@ const firebaseConfig = {
 };
 
 export function loadFirebase() {
+  if (window.__dashRedirect) return new Promise(() => {});
   if (!cached) {
     cached = (async () => {
       const [appMod, authMod, fsMod] = await Promise.all([
