@@ -36,6 +36,70 @@ export function hideEl(el, ms = 180) {
   }, ms);
 }
 
+let swapping = false;
+let quiet = false;
+
+export const isQuiet = () => quiet;
+
+export function holdPage() {
+  const page = document.querySelector('.page');
+  if (!page || !page.animate || swapping || reduced() || document.hidden) {
+    const wasSwapping = swapping;
+    return {
+      release(change) {
+        quiet = wasSwapping;
+        try {
+          change();
+        } finally {
+          quiet = false;
+        }
+        return Promise.resolve();
+      }
+    };
+  }
+  swapping = true;
+  const out = page.animate(
+    [
+      { opacity: 1, transform: 'scale(1)' },
+      { opacity: 0, transform: 'scale(0.99)' }
+    ],
+    { duration: 180, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
+  );
+  const ready = new Promise(resolve => {
+    out.onfinish = resolve;
+    setTimeout(resolve, 420);
+  });
+  return {
+    async release(change) {
+      await ready;
+      quiet = true;
+      try {
+        change();
+        restartAnimations(page);
+      } finally {
+        quiet = false;
+        const back = page.animate(
+          [
+            { opacity: 0, transform: 'scale(1.012)' },
+            { opacity: 1, transform: 'scale(1)' }
+          ],
+          { duration: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+        );
+        out.cancel();
+        const done = () => {
+          swapping = false;
+        };
+        back.onfinish = done;
+        back.oncancel = done;
+      }
+    }
+  };
+}
+
+export function swapPage(change) {
+  return holdPage().release(change);
+}
+
 const SHOW_MS = 340;
 const COLLAPSE = ['height', 'paddingTop', 'paddingBottom', 'marginTop', 'marginBottom'];
 
@@ -49,7 +113,7 @@ export function setShown(el, show) {
   const now = animating ? el.shownTarget : !el.classList.contains('hidden');
   if (now === show) return;
   el.shownTarget = show;
-  if (reduced()) {
+  if (reduced() || quiet) {
     if (animating) el.shownAnim.cancel();
     el.shownAnim = null;
     el.classList.toggle('hidden', !show);
@@ -114,7 +178,7 @@ export function setCoins(el, value) {
   el.textContent = text;
   el.dataset.seen = '1';
   const pill = el.closest('.coin-pill');
-  if (seen && pill) bump(pill);
+  if (seen && pill && !quiet) bump(pill);
 }
 
 export function countTo(el, to, { duration = 700, suffix = '' } = {}) {

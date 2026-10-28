@@ -1,4 +1,5 @@
 import { loadFirebase } from './firebase.js';
+import { holdPage, swapPage } from './motion.js';
 import { cleanPrivacy, defaultPrivacy } from './privacy.js';
 import { findItem, kindOf } from './cosmetics.js';
 import {
@@ -158,10 +159,11 @@ async function refresh() {
   } catch {}
 }
 
+const accountOf = data => (data.uid && !data.anon ? data.uid : null);
+
 async function sync(user) {
   const out = await call('syncProfile', {});
-  state = { ...sanitize(out.profile), uid: user.uid, anon: user.isAnonymous, name: cleanName(user.displayName), photo: cleanPhoto(user.photoURL) };
-  persist();
+  return { ...sanitize(out.profile), uid: user.uid, anon: user.isAnonymous, name: cleanName(user.displayName), photo: cleanPhoto(user.photoURL) };
 }
 
 function startAnonymous() {
@@ -179,32 +181,64 @@ function startAnonymous() {
     });
 }
 
+let inflight = null;
+
 async function handleUser(user) {
   if (!user) {
     cloudReady = false;
-    if (state.uid) {
-      state = guestState();
-      persist();
-    }
-    session.status = 'out';
-    session.syncing = false;
-    emit();
+    const leave = () => {
+      if (state.uid) {
+        state = guestState();
+        persist();
+      }
+      session.status = 'out';
+      session.syncing = false;
+      emit();
+    };
+    if (accountOf(state)) await swapPage(leave);
+    else leave();
     startAnonymous();
     return;
   }
-  session.status = user.isAnonymous ? 'out' : 'in';
+  const key = `${user.uid}:${user.isAnonymous}`;
+  if (inflight && inflight.key === key) return inflight.promise;
+  const promise = runUser(user);
+  inflight = { key, promise };
+  try {
+    await promise;
+  } finally {
+    if (inflight && inflight.promise === promise) inflight = null;
+  }
+}
+
+async function runUser(user) {
+  const status = user.isAnonymous ? 'out' : 'in';
+  const hold = !user.isAnonymous && accountOf(state) !== user.uid ? holdPage() : null;
   session.syncing = true;
   session.error = null;
-  emit();
+  if (!hold) {
+    session.status = status;
+    emit();
+  }
+  let next = null;
   try {
-    await sync(user);
-    cloudReady = true;
+    next = await sync(user);
   } catch (e) {
-    cloudReady = false;
     session.error = e && e.code === 'permission-denied' ? 'rules' : 'offline';
   }
-  session.syncing = false;
-  emit();
+  const settle = () => {
+    session.status = status;
+    cloudReady = !!next;
+    if (next) {
+      state = next;
+      persist();
+    }
+    session.syncing = false;
+    emit();
+  };
+  if (hold) await hold.release(settle);
+  else if (next && accountOf(next) !== accountOf(state)) await swapPage(settle);
+  else settle();
 }
 
 async function finishLink() {

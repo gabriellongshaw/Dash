@@ -1,5 +1,5 @@
 import { profile } from '../core/profile.js';
-import { hideEl, reducedMotion, showEl } from '../core/motion.js';
+import { hideEl, isQuiet, reducedMotion, showEl } from '../core/motion.js';
 import { navigateTo } from '../core/transition.js';
 
 let toastEl = null;
@@ -120,7 +120,7 @@ export function mountAccount(el, root = '../') {
   }
 
   function swap(next) {
-    const animate = mode !== null && !reducedMotion();
+    const animate = mode !== null && !reducedMotion() && !isQuiet();
     [...el.children].forEach(node => {
       if (!animate) {
         node.remove();
