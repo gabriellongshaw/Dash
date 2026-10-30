@@ -13,6 +13,10 @@ const CAPPED_MS = 26;
 const MIN_FRAMES = 12;
 const BASE_MS = 360;
 const PROBE_MS = 480;
+const RECHECK_MS = 45 * 1000;
+const RECHECK_MAX = 10 * 60 * 1000;
+const MAX_BACKOFF = 4;
+const SETTLE_AWAY = 5 * 1000;
 const MASK = 'linear-gradient(to bottom, #000 40%, transparent)';
 
 const listeners = new Set();
@@ -56,6 +60,9 @@ let hiddenAt = 0;
 let watching = false;
 let lastScroll = 0;
 let cooldown = 0;
+let timer = 0;
+let backoff = 0;
+let lastTest = 0;
 
 remove('dash:graphics-auto');
 
@@ -215,15 +222,40 @@ async function probe() {
   } finally {
     stage.root.remove();
     probing = false;
+    lastTest = Date.now();
   }
 }
 
 function schedule(delay, tries = 3) {
-  setTimeout(async () => {
-    if (mode !== 'auto' || verdict) return;
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    if (mode !== 'auto' || document.hidden) return;
+    if (lowBattery || constrained()) {
+      arm();
+      return;
+    }
+    const before = LEVELS.indexOf(verdict);
     const done = await probe();
-    if (!done && tries > 1) schedule(4000, tries - 1);
+    if (!done && tries > 1) {
+      schedule(4000, tries - 1);
+      return;
+    }
+    if (done) {
+      const after = LEVELS.indexOf(verdict);
+      backoff = before >= 0 && after >= before ? Math.min(backoff + 1, MAX_BACKOFF) : 0;
+    }
+    arm();
   }, delay);
+}
+
+function arm() {
+  if (mode !== 'auto' || verdict === 'full') return;
+  schedule(Math.min(RECHECK_MS * 2 ** backoff, RECHECK_MAX));
+}
+
+function retest() {
+  backoff = 0;
+  schedule(600);
 }
 
 function judge(gaps) {
@@ -232,7 +264,10 @@ function judge(gaps) {
   const slow = gaps.filter(gap => gap > limit).length;
   if (slow / gaps.length <= 0.3) return;
   const next = LEVELS[LEVELS.indexOf(level()) + 1];
-  if (next) setVerdict(next);
+  if (!next) return;
+  backoff = Math.min(backoff + 1, MAX_BACKOFF);
+  setVerdict(next);
+  arm();
 }
 
 function onScroll() {
@@ -263,10 +298,17 @@ function onVisibility() {
     interrupt();
     return;
   }
-  if (mode === 'auto' && hiddenAt && Date.now() - hiddenAt > AWAY) {
-    resetVerdict();
-    schedule(600);
-  }
+  if (mode !== 'auto') return;
+  const away = hiddenAt ? Date.now() - hiddenAt : 0;
+  hiddenAt = 0;
+  if (away > AWAY || (verdict !== 'full' && away > SETTLE_AWAY)) retest();
+  else arm();
+}
+
+function onReturn(event) {
+  if (event.type === 'pageshow' && !event.persisted) return;
+  if (mode !== 'auto' || verdict === 'full' || document.hidden || probing) return;
+  if (Date.now() - lastTest > SETTLE_AWAY * 2) retest();
 }
 
 function watchBattery() {
@@ -279,6 +321,7 @@ function watchBattery() {
         if (next === lowBattery) return;
         lowBattery = next;
         apply();
+        if (!next && mode === 'auto') retest();
       };
       battery.addEventListener('chargingchange', update);
       battery.addEventListener('levelchange', update);
@@ -288,8 +331,12 @@ function watchBattery() {
 }
 
 function watchEnvironment() {
-  window.matchMedia('(prefers-reduced-transparency: reduce)').addEventListener?.('change', apply);
-  navigator.connection?.addEventListener?.('change', apply);
+  const changed = () => {
+    apply();
+    if (mode === 'auto') retest();
+  };
+  window.matchMedia('(prefers-reduced-transparency: reduce)').addEventListener?.('change', changed);
+  navigator.connection?.addEventListener?.('change', changed);
 }
 
 export const graphics = {
@@ -306,6 +353,8 @@ export const graphics = {
     if (!MODES.includes(next) || next === mode) return;
     mode = next;
     write(KEY, next);
+    clearTimeout(timer);
+    backoff = 0;
     if (next === 'auto') {
       resetVerdict();
       schedule(300);
@@ -331,8 +380,12 @@ export function initGraphics() {
     document.addEventListener(type, interrupt, { capture: true, passive: true })
   );
   document.addEventListener('visibilitychange', onVisibility);
+  window.addEventListener('focus', onReturn);
+  window.addEventListener('pageshow', onReturn);
+  lastTest = Date.now();
   document.addEventListener('scroll', onScroll, { capture: true, passive: true });
-  if (mode !== 'auto' || verdict) return;
-  if (document.readyState === 'complete') schedule(900);
-  else window.addEventListener('load', () => schedule(900), { once: true });
+  if (mode !== 'auto' || verdict === 'full') return;
+  const start = () => schedule(verdict ? 3000 : 900);
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start, { once: true });
 }
