@@ -121,6 +121,8 @@
   .reveal,
   .friend-row,
   .friend-row.leaving,
+  .poll-card,
+  .poll-card.leaving,
   .friend-card.entering > *,
   .friend-card.leaving > *,
   .item-card,
@@ -139,6 +141,7 @@
     animation: none;
   }
   .tab-pill,
+  .poll-fill,
   .sound-pill,
   .page,
   .toast,

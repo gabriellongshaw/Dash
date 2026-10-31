@@ -22,7 +22,14 @@ export const MESSAGES = {
   'you-blocked': 'You blocked this player. Unblock them first.',
   'too-many-favourites': 'You can favourite up to 10 friends.',
   'too-many-blocked': 'Your blocked list is full.',
-  privacy: 'That setting is not valid.'
+  privacy: 'That setting is not valid.',
+  admin: 'Only the owner can do that.',
+  signin: 'Sign in with Google to do that.',
+  'no-post': 'That post no longer exists.',
+  closed: 'This post is closed.',
+  kind: 'That does not work on this kind of post.',
+  option: 'That option does not exist.',
+  post: 'Add a title, and 2 to 6 different options for a poll.'
 };
 
 export const messageFor = e => MESSAGES[e && e.code] || `Something went wrong${e && e.code ? ` (${e.code})` : ''}. Try again.`;
