@@ -54,6 +54,14 @@ Sign in with Google to use Friends.
 - **Gifts:** send a friend coins, an item, or both.
 - **Favourites and blocking:** favourite up to 10 friends so they sit at the top of your list. Blocking someone hides you from them completely, and they are never told.
 
+## Polls and feedback
+
+Open **Polls** from the home screen to see polls, feedback requests and suggestion requests posted by Dash's creator.
+
+- **Polls:** anyone can see the results. Sign in with Google to vote, and change your vote any time while the poll is open.
+- **Feedback and suggestions:** sign in with Google to send a reply. Replies are private and only the creator can read them. You can edit or remove yours while the post is open.
+- **Posting:** only the creator's Google account can post, close or delete posts.
+
 ## Privacy and your account
 
 - **Guests:** you can play straight away as a guest. Your coins, items and quests are saved to an anonymous account in your browser. Signing in with Google keeps all of it and lets you carry on across devices.

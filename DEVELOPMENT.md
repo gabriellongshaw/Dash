@@ -32,6 +32,16 @@ The game runs in the browser, so no server can prove a run was played by a perso
 
 Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only the API reads and writes. The API code is in `server/social.js`. Leaderboard entries (`dashBoard` collections) are written only by the API and are publicly readable, so anything stored on them, such as a player's public photo, is visible to anyone.
 
+## Polls and feedback
+
+The polls page lists posts of three kinds: `poll`, `feedback` and `suggestion`. The API code is in `server/polls.js`, and the page is `polls/` with `assets/js/pages/polls.js`.
+
+- **Posting:** `createPost`, `setClosed`, `deletePost` and `listReplies` only work for the admin. The API treats a caller as admin only when their Firebase token comes from Google sign-in, the email is verified and it matches the `ADMIN_EMAIL` environment variable. Add it in Vercel under Settings, Environment Variables, then redeploy. While it is unset nobody can post. Nothing in the browser decides who is admin, the page only shows the composer when `listPosts` says `admin: true`.
+- **Reading:** `listPosts` is open to guests, so anyone can see polls and results.
+- **Voting and replying:** `vote` and `reply` need a Google sign-in, which keeps throwaway guest accounts from skewing polls. Each account has one vote per poll (changeable while open) and one reply per feedback or suggestion post.
+- **Storage:** posts are in `dashPolls`, with the votes in `dashPolls/{id}/votes` and the private replies in `dashPolls/{id}/replies`. Only the API reads and writes them, so no Firestore rule changes are needed.
+- **Limits:** titles 80 characters, details 600, poll options 60 (2 to 6 per poll), replies 500. The 30 newest posts are listed. Limits are at the top of `server/polls.js` and `assets/js/pages/polls.js`.
+
 ## Sound
 
 All music and effects are generated in the browser with the Web Audio API.
@@ -71,10 +81,11 @@ Ads use Google AdSense's game ads (the Ad Placement API) and run only on the pla
 - `shop/` — the shop page
 - `quests/` — daily and weekly quests
 - `friends/` — usernames, friends and gifting
+- `polls/` — polls, feedback and suggestions
 - `profile/` — player profiles, friend actions and your privacy settings
 - `leaderboard/` — weekly and all-time rankings
 - `assets/js/core/` — audio and music, difficulty curve, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
-- `server/` — friends, gifting, privacy and blocking logic used by the API
+- `server/` — friends, gifting, privacy, blocking and polls logic used by the API
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
 - `assets/js/components/` — game engine, runner, characters, hats, obstacles, world, particles, account UI
 - `assets/js/pages/` — page entry points
