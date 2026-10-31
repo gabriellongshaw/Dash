@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   requestAnimationFrame(frame);
 
-  document.querySelectorAll('#play-btn, #shop-btn, #quests-btn, #board-btn, #friends-btn').forEach(link => {
+  document.querySelectorAll('#play-btn, #shop-btn, #quests-btn, #board-btn, #friends-btn, #polls-btn').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
       navigateTo(link.getAttribute('href'));
