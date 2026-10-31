@@ -6,9 +6,11 @@ import { findItem } from '../assets/js/core/cosmetics.js';
 import { distanceAt } from '../assets/js/core/difficulty.js';
 import { cleanPrivacy, defaultPrivacy } from '../assets/js/core/privacy.js';
 import { createSocial, pickPhoto, profileFixups } from '../server/social.js';
+import { createPolls, isAdmin } from '../server/polls.js';
 import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
 const ORIGINS = ['https://gabriellongshaw.co.uk', 'https://www.gabriellongshaw.co.uk'];
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const PX_PER_METER = 30;
@@ -25,7 +27,7 @@ const ACTIONS_PER_SECOND = 6;
 
 const PHOTO_MODES = ['google', 'custom', 'none'];
 
-const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'doubleCoins', 'claimQuest', 'buyItem', 'viewProfile']);
+const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'doubleCoins', 'claimQuest', 'buyItem', 'viewProfile', 'listPosts']);
 
 const DEFAULT_OWNED = ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'];
 
@@ -153,7 +155,7 @@ const shortName = full => {
   return parts.length === 1 ? first : `${first} ${[...parts[parts.length - 1]][0].toUpperCase()}.`;
 };
 
-export function createApi({ db, verify, secret, now = () => Date.now() }) {
+export function createApi({ db, verify, secret, now = () => Date.now(), adminEmail = ADMIN_EMAIL }) {
   const profileRef = uid => db.doc(`dashProfiles/${uid}`);
   const allTimeRef = uid => db.doc(`dashBoard/${uid}`);
   const weekRef = (week, uid) => db.doc(`dashWeeks/${week}/entries/${uid}`);
@@ -201,8 +203,11 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
     return out;
   };
 
+  const polls = createPolls({ db, load, Fail, now });
+
   const actions = {
     ...social,
+    ...polls,
     setPhoto: republish(social.setPhoto),
     setPrivacy: republish(social.setPrivacy),
 
@@ -337,7 +342,7 @@ export function createApi({ db, verify, secret, now = () => Date.now() }) {
     const run = body && typeof body.action === 'string' ? actions[body.action] : null;
     if (!run) throw new Fail(400, 'action');
     if (user.anon && !ANON_ACTIONS.has(body.action)) throw new Fail(403, 'signin');
-    return run(user, body);
+    return run({ ...user, admin: isAdmin(user, adminEmail) }, body);
   };
 }
 
@@ -354,7 +359,8 @@ function setup() {
     verify: async token => {
       try {
         const decoded = await getAuth().verifyIdToken(token);
-        return { uid: decoded.uid, name: decoded.name || null, photo: decoded.picture || null, anon: !!decoded.firebase && decoded.firebase.sign_in_provider === 'anonymous' };
+        const provider = decoded.firebase ? decoded.firebase.sign_in_provider : null;
+        return { uid: decoded.uid, name: decoded.name || null, photo: decoded.picture || null, anon: provider === 'anonymous', email: decoded.email || null, verified: decoded.email_verified === true, provider };
       } catch {
         return null;
       }
