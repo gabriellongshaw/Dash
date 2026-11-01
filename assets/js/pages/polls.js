@@ -19,12 +19,14 @@ const EMPTY = {
   feedback: 'No feedback yet. Be the first to share some.',
   suggestion: 'No suggestions yet. Got an idea? Share it.'
 };
-const LIMITS = { title: 80, body: 600, option: 60, minOptions: 2, maxOptions: 6 };
+const LIMITS = { title: 80, body: 600, option: 60, minOptions: 2, maxOptions: 6, reply: 300 };
 
 const CROSS =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 const CHECK =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const BUBBLE =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.5-4.6A8 8 0 1 1 21 12Z"/></svg>';
 const PLUS =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
 
@@ -94,6 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let composerSig = '';
   let draft = null;
   const seen = new Set();
+  const threads = new Map();
+  const voterViews = new Map();
+  const editing = new Map();
 
   async function act(fn, success, sound) {
     if (busy) return false;
@@ -164,6 +169,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  async function undoVote(post, repaint) {
+    if (post.closed || post.mine.vote === null || busy) return;
+    const before = JSON.parse(JSON.stringify(post));
+    post.options[post.mine.vote].votes--;
+    post.total--;
+    post.mine.vote = null;
+    audio.sfx('claim');
+    repaint(true);
+    busy = true;
+    try {
+      const out = await profile.api('unvote', { id: post.id });
+      Object.assign(post, out.post);
+      showToast('Vote removed.');
+    } catch (e) {
+      Object.assign(post, before);
+      audio.sfx('error');
+      showToast(messageFor(e));
+    } finally {
+      busy = false;
+      repaint(true);
+    }
+  }
+
   function pollOptions(post, repaint) {
     const box = make('div', 'poll-options');
     post.options.forEach((option, i) => {
@@ -176,10 +204,273 @@ document.addEventListener('DOMContentLoaded', () => {
       const main = make('span', 'poll-main');
       main.append(check, make('span', 'poll-label', option.text));
       btn.append(fill, main, make('span', 'poll-pct'));
-      btn.addEventListener('click', () => castVote(post, i, repaint));
+      btn.addEventListener('click', () => (post.mine.vote === i ? undoVote(post, repaint) : castVote(post, i, repaint)));
       box.appendChild(btn);
     });
     return box;
+  }
+
+  function editForm(post, done) {
+    const draft = editing.get(post.id);
+    const form = make('div', 'poll-edit');
+    const title = make('input', 'friend-input');
+    title.type = 'text';
+    title.maxLength = LIMITS.title;
+    title.autocomplete = 'off';
+    title.value = draft.title;
+    title.setAttribute('aria-label', 'Title');
+    title.addEventListener('input', () => {
+      draft.title = title.value;
+    });
+    const text = make('textarea', 'friend-input poll-text');
+    text.maxLength = LIMITS.body;
+    text.rows = 4;
+    text.value = draft.body;
+    text.placeholder = 'Details (optional)';
+    text.setAttribute('aria-label', 'Details');
+    text.addEventListener('input', () => {
+      draft.body = text.value;
+    });
+    form.append(title, text);
+    if (post.kind === 'poll') {
+      const box = make('div', 'poll-options-edit');
+      draft.options.forEach((value, i) => {
+        const input = make('input', 'friend-input');
+        input.type = 'text';
+        input.maxLength = LIMITS.option;
+        input.autocomplete = 'off';
+        input.value = value;
+        input.setAttribute('aria-label', `Option ${i + 1}`);
+        input.addEventListener('input', () => {
+          draft.options[i] = input.value;
+        });
+        box.appendChild(input);
+      });
+      form.append(box, make('p', 'friend-hint', 'Fix wording only. Each option keeps its votes, so do not change what it means.'));
+    }
+    const group = make('div', 'poll-actions-group');
+    group.append(
+      button('Cancel', 'secondary-button', () => {
+        editing.delete(post.id);
+        done();
+      }),
+      button('Save', 'button', async () => {
+        if (!draft.title.trim()) {
+          audio.sfx('error');
+          showToast('Add a title.');
+          return;
+        }
+        if (post.kind === 'poll' && draft.options.some(value => !value.trim())) {
+          audio.sfx('error');
+          showToast('Options cannot be empty.');
+          return;
+        }
+        let out = null;
+        const ok = await act(
+          async () => {
+            out = await profile.api('editPost', { id: post.id, title: draft.title, body: draft.body, options: draft.options });
+            return out;
+          },
+          'Saved.',
+          'claim'
+        );
+        if (!ok) return;
+        Object.assign(post, out.post);
+        editing.delete(post.id);
+        done();
+      })
+    );
+    const actions = make('div', 'poll-actions');
+    actions.appendChild(group);
+    form.appendChild(actions);
+    return form;
+  }
+
+  function votersSection(post) {
+    const view = voterViews.get(post.id) || { open: false, failed: false, data: null };
+    voterViews.set(post.id, view);
+    const panel = make('div', 'poll-voters');
+    const toggle = button('', 'tertiary-button poll-voters-toggle', async () => {
+      view.open = !view.open;
+      paint();
+      if (view.open) await fetchVoters();
+    });
+    function paint() {
+      toggle.textContent = view.open ? 'Hide voters' : 'Who voted';
+      toggle.setAttribute('aria-expanded', String(view.open));
+      panel.classList.toggle('hidden', !view.open);
+      panel.innerHTML = '';
+      if (!view.open) return;
+      panel.appendChild(make('p', 'friend-hint', 'Only you can see who voted.'));
+      if (view.failed) {
+        panel.append(make('p', 'friend-hint', 'Could not load voters.'), button('Try again', 'tertiary-button', () => fetchVoters()));
+        return;
+      }
+      if (!view.data) {
+        panel.appendChild(make('p', 'friend-hint', 'Loading…'));
+        return;
+      }
+      view.data.options.forEach(group => {
+        const block = make('div', 'poll-voter-group');
+        block.appendChild(make('p', 'poll-voter-title', `${group.text} · ${group.voters.length}`));
+        if (group.voters.length) {
+          const names = make('div', 'poll-voter-names');
+          group.voters.forEach(voter => {
+            const chip = make('span', 'poll-voter', voter.name);
+            if (voter.at) chip.title = new Date(voter.at).toLocaleString();
+            names.appendChild(chip);
+          });
+          block.appendChild(names);
+        }
+        panel.appendChild(block);
+      });
+      if (view.data.listed < view.data.total) panel.appendChild(make('p', 'friend-hint', `Showing the first ${view.data.listed} of ${view.data.total} votes.`));
+    }
+    async function fetchVoters() {
+      view.failed = false;
+      if (!view.data) paint();
+      try {
+        view.data = await profile.api('listVoters', { id: post.id });
+      } catch {
+        view.failed = true;
+      }
+      paint();
+    }
+    paint();
+    if (view.open && !view.data) fetchVoters();
+    return { toggle, panel };
+  }
+
+  function repliesSection(post) {
+    const t = threads.get(post.id) || { open: false, loaded: false, loading: false, failed: false, list: [], draft: '' };
+    threads.set(post.id, t);
+    const wrap = make('div', 'poll-replies');
+    const toggle = make('button', 'poll-replies-toggle');
+    toggle.type = 'button';
+    const toggleIcon = make('span', 'poll-replies-icon');
+    toggleIcon.innerHTML = BUBBLE;
+    const toggleText = make('span');
+    toggle.append(toggleIcon, toggleText);
+    const panel = make('div', 'poll-thread');
+    const listBox = make('div', 'poll-reply-list');
+    const compose = make('div', 'poll-reply-compose');
+    panel.append(listBox, compose);
+    wrap.append(toggle, panel);
+
+    const paintToggle = () => {
+      toggleText.textContent = t.open ? 'Hide replies' : post.replies ? `${post.replies} ${post.replies === 1 ? 'reply' : 'replies'}` : 'Reply';
+      toggle.setAttribute('aria-expanded', String(t.open));
+      panel.classList.toggle('hidden', !t.open);
+    };
+
+    function replyRow(reply) {
+      const row = make('div', `poll-reply${reply.owner ? ' owner' : ''}`);
+      const meta = make('div', 'poll-reply-meta');
+      meta.appendChild(make('span', 'poll-reply-author', reply.author || 'Player'));
+      if (reply.owner) meta.appendChild(make('span', 'poll-owner', 'Creator'));
+      meta.appendChild(make('span', 'poll-time', ago(reply.at)));
+      row.append(meta, make('p', 'poll-reply-body', reply.body));
+      if (reply.canDelete) {
+        row.appendChild(
+          button('Delete', 'tertiary-button danger poll-reply-delete', async () => {
+            if (!confirm('Delete this reply?')) return;
+            let out = null;
+            const ok = await act(async () => {
+              out = await profile.api('deleteReply', { id: post.id, replyId: reply.id });
+              return out;
+            }, 'Deleted.');
+            if (!ok) return;
+            t.list = t.list.filter(item => item.id !== reply.id);
+            post.replies = out.replies;
+            await exitRow(row);
+            row.remove();
+            t.paint();
+          })
+        );
+      }
+      return row;
+    }
+
+    function paintList() {
+      listBox.innerHTML = '';
+      if (t.failed) {
+        listBox.append(make('p', 'friend-hint', 'Could not load replies.'), button('Try again', 'tertiary-button', () => loadThread()));
+      } else if (t.loading && !t.loaded) listBox.appendChild(make('p', 'friend-hint', 'Loading replies…'));
+      else if (!t.list.length) listBox.appendChild(make('p', 'friend-hint', 'No replies yet.'));
+      else t.list.forEach(reply => listBox.appendChild(replyRow(reply)));
+    }
+
+    t.paint = () => {
+      paintList();
+      paintToggle();
+    };
+
+    async function loadThread() {
+      t.loading = true;
+      t.failed = false;
+      t.paint();
+      try {
+        const out = await profile.api('listReplies', { id: post.id });
+        t.list = out.replies;
+        t.loaded = true;
+        post.replies = t.list.length;
+      } catch {
+        t.failed = true;
+      }
+      t.loading = false;
+      t.paint();
+    }
+
+    const named = data.admin || !!profile.state.username;
+    if (!profile.social) {
+      compose.append(make('p', 'friend-hint', 'Sign in with Google to reply.'), button('Sign in', 'tertiary-button', () => signInFlow()));
+    } else if (!named) {
+      compose.append(make('p', 'friend-hint', 'Choose a username in your profile to reply.'), button('Open profile', 'tertiary-button', () => navigateTo('../profile/')));
+    } else {
+      const input = make('textarea', 'friend-input poll-text poll-reply-input');
+      input.maxLength = LIMITS.reply;
+      input.rows = 2;
+      input.placeholder = 'Write a reply…';
+      input.setAttribute('aria-label', 'Reply');
+      input.value = t.draft;
+      input.addEventListener('input', () => {
+        t.draft = input.value;
+      });
+      const send = button('Reply', 'button', async () => {
+        if (!input.value.trim()) {
+          audio.sfx('error');
+          showToast('Write a reply first.');
+          return;
+        }
+        let out = null;
+        const ok = await act(
+          async () => {
+            out = await profile.api('createReply', { id: post.id, body: input.value });
+            return out;
+          },
+          'Replied.',
+          'claim'
+        );
+        if (!ok) return;
+        t.draft = '';
+        input.value = '';
+        post.replies = out.replies;
+        if (t.loaded) {
+          t.list.push(out.reply);
+          t.paint();
+        } else loadThread();
+      });
+      compose.append(input, send, make('p', 'friend-hint', 'Replies are public and show your username.'));
+    }
+
+    toggle.addEventListener('click', () => {
+      t.open = !t.open;
+      t.paint();
+      if (t.open && !t.loading) loadThread();
+    });
+    t.paint();
+    if (t.open && !t.loading && (!t.loaded || t.list.length !== post.replies)) loadThread();
+    return wrap;
   }
 
   function postCard(post, index) {
@@ -188,40 +479,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const fresh = !seen.has(post.id);
     if (!fresh) card.classList.add('static');
     seen.add(post.id);
+    const rebuild = () => card.replaceWith(postCard(post, index));
     const head = make('div', 'poll-head');
     head.appendChild(make('span', 'poll-kind', LABELS[post.kind]));
     if (post.closed) head.appendChild(make('span', 'poll-state', 'Closed'));
-    head.appendChild(make('span', 'poll-time', ago(post.at)));
+    head.appendChild(make('span', 'poll-time', post.editedAt ? `${ago(post.at)} · edited` : ago(post.at)));
     card.appendChild(head);
+    if (editing.has(post.id)) {
+      card.appendChild(editForm(post, rebuild));
+      return card;
+    }
     card.appendChild(make('h2', 'poll-title', post.title));
     if (post.author) card.appendChild(make('span', 'poll-author', `by ${post.author}`));
     if (post.body) card.appendChild(make('p', 'poll-body', post.body));
     if (post.kind === 'poll') {
+      const foot = make('div', 'poll-foot');
       const count = make('span', 'poll-count');
+      const undo = button('Undo vote', 'tertiary-button poll-undo', () => undoVote(post, repaint));
       let options = null;
       let last = -1;
       const repaint = animate => {
         paintOptions(options, post, animate);
         count.textContent = `${post.total} ${post.total === 1 ? 'vote' : 'votes'}`;
+        undo.classList.toggle('hidden', post.mine.vote === null || post.closed);
         if (last !== -1 && last !== post.total) tick(count);
         last = post.total;
       };
       options = pollOptions(post, repaint);
-      card.append(options, count);
+      foot.append(count, undo);
+      card.append(options, foot);
+      if (data.admin) {
+        const voters = votersSection(post);
+        foot.appendChild(voters.toggle);
+        card.appendChild(voters.panel);
+      }
       if (fresh && !reducedMotion()) requestAnimationFrame(() => requestAnimationFrame(() => repaint(true)));
       else repaint(false);
     }
     const mod = data.admin && post.kind === 'poll';
-    if (mod || post.canDelete) {
+    if (mod || post.canDelete || post.canEdit) {
       const actions = make('div', 'poll-actions');
-      if (mod) {
+      if (mod || post.canEdit) {
         const group = make('div', 'poll-actions-group');
-        group.appendChild(
-          button(post.closed ? 'Reopen poll' : 'Close poll', 'secondary-button', async () => {
-            const ok = await act(() => profile.api('setClosed', { id: post.id, closed: !post.closed }), post.closed ? 'Poll reopened.' : 'Poll closed.');
-            if (ok) load();
-          })
-        );
+        if (post.canEdit) {
+          group.appendChild(
+            button('Edit', 'secondary-button', () => {
+              editing.set(post.id, { title: post.title, body: post.body, options: post.options.map(option => option.text) });
+              rebuild();
+            })
+          );
+        }
+        if (mod) {
+          group.appendChild(
+            button(post.closed ? 'Reopen poll' : 'Close poll', 'secondary-button', async () => {
+              const ok = await act(() => profile.api('setClosed', { id: post.id, closed: !post.closed }), post.closed ? 'Poll reopened.' : 'Poll closed.');
+              if (ok) load();
+            })
+          );
+        }
         actions.appendChild(group);
       }
       if (post.canDelete) {
@@ -231,6 +546,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const ok = await act(() => profile.api('deletePost', { id: post.id }), 'Deleted.');
             if (!ok) return;
             seen.delete(post.id);
+            threads.delete(post.id);
+            voterViews.delete(post.id);
+            editing.delete(post.id);
             data = { ...data, posts: data.posts.filter(item => item.id !== post.id) };
             await exitRow(card);
             card.remove();
@@ -240,6 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       card.appendChild(actions);
     }
+    card.appendChild(repliesSection(post));
     return card;
   }
 

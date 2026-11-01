@@ -83,6 +83,7 @@
 }
 
 .poll-card.leaving,
+.poll-reply.leaving,
 .poll-option-row.leaving {
   overflow: hidden;
   pointer-events: none;
@@ -259,6 +260,184 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--meta-text);
+}
+
+.poll-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+
+.poll-foot .tertiary-button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.poll-foot .poll-voters-toggle {
+  margin-left: auto;
+}
+
+.poll-voters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  animation: fadeInUp 0.3s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+}
+
+.poll-voter-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.poll-voter-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.poll-voter {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--secondary-bg);
+  font-size: 0.78rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.poll-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.poll-edit > .friend-input,
+.poll-options-edit > .friend-input {
+  flex: none;
+  width: 100%;
+}
+
+.poll-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 2px solid var(--border);
+}
+
+.poll-replies-toggle {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 8px;
+  margin-left: -10px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 100px;
+  background: none;
+  color: var(--accent-strong);
+  font-family: var(--font-family);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.poll-replies-toggle:hover {
+  background: var(--secondary-bg);
+}
+
+.poll-replies-icon {
+  display: grid;
+  place-items: center;
+}
+
+.poll-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeInUp 0.3s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+}
+
+.poll-reply-list,
+.poll-reply-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.poll-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--secondary-bg);
+}
+
+.poll-reply-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.poll-reply-author {
+  font-size: 0.8rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.poll-owner {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--accent-strong);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.poll-reply-body {
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.poll-reply .poll-reply-delete {
+  align-self: flex-start;
+  margin: 0 0 -4px -10px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.poll-reply-compose .poll-reply-input {
+  min-height: 64px;
+}
+
+.poll-reply-compose .button {
+  width: 100%;
+}
+
+.poll-reply-compose .tertiary-button {
+  align-self: flex-start;
+}
+
+.poll-reply .danger,
+.poll-actions .danger {
+  color: var(--hazard-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  .poll-reply .danger {
+    color: var(--hazard);
+  }
 }
 
 .poll-count.tick {

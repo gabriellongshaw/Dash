@@ -30,7 +30,11 @@ export const MESSAGES = {
   kind: 'That does not work on this kind of post.',
   option: 'That option does not exist.',
   post: 'Add a title, and for polls 2 to 6 different options.',
-  forbidden: 'You can only delete your own posts.',
+  forbidden: 'You can only delete your own posts and replies.',
+  'not-yours': 'You can only edit your own posts.',
+  reply: 'Write a reply first.',
+  'replies-full': 'This post has the most replies it can hold.',
+  'reply-rate': 'You can reply 20 times a day. Try again tomorrow.',
   limit: 'You have 10 posts already. Delete one to post again.',
   rate: 'You can post 3 times a day. Try again tomorrow.'
 };
