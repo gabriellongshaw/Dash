@@ -189,7 +189,7 @@ export function createPolls({ db, load, Fail, now }) {
         const username = typeof data.username === 'string' && data.username ? `@${data.username}` : null;
         const display = typeof data.displayName === 'string' && data.displayName ? data.displayName : null;
         const name = username && display ? `${display} (${username})` : username || display || 'Unnamed player';
-        groups[row.option].voters.push({ name, at: row.at });
+        groups[row.option].voters.push({ name, at: row.at, mine: row.uid === user.uid });
       });
       return { options: groups, total: post.counts.reduce((sum, n) => sum + n, 0), listed: rows.length };
     },

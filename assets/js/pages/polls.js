@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const threads = new Map();
   const voterViews = new Map();
   const editing = new Map();
+  let pendingVote = Promise.resolve();
 
   async function act(fn, success, sound) {
     if (busy) return false;
@@ -161,9 +162,13 @@ document.addEventListener('DOMContentLoaded', () => {
     post.mine.vote = index;
     audio.sfx('claim');
     repaint(true);
+    const view = voterViews.get(post.id);
+    if (view && view.sync) view.sync(index);
     busy = true;
     try {
-      const out = await profile.api('vote', { id: post.id, option: index });
+      const request = profile.api('vote', { id: post.id, option: index });
+      pendingVote = request.catch(() => {});
+      const out = await request;
       Object.assign(post, out.post);
     } catch (e) {
       Object.assign(post, before);
@@ -172,6 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       busy = false;
       repaint(true);
+      if (view && view.reconcile) view.reconcile();
     }
   }
 
@@ -183,9 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
     post.mine.vote = null;
     audio.sfx('claim');
     repaint(true);
+    const view = voterViews.get(post.id);
+    if (view && view.sync) view.sync(null);
     busy = true;
     try {
-      const out = await profile.api('unvote', { id: post.id });
+      const request = profile.api('unvote', { id: post.id });
+      pendingVote = request.catch(() => {});
+      const out = await request;
       Object.assign(post, out.post);
       showToast('Vote removed.');
     } catch (e) {
@@ -195,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       busy = false;
       repaint(true);
+      if (view && view.reconcile) view.reconcile();
     }
   }
 
@@ -305,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function votersSection(post) {
-    const view = voterViews.get(post.id) || { open: false, failed: false, data: null };
+    const view = voterViews.get(post.id) || { open: false, failed: false, data: null, token: 0 };
     voterViews.set(post.id, view);
     const { el: toggle } = toggleButton(EYE, 'Who voted');
     toggle.classList.add('poll-voters-toggle');
@@ -344,15 +355,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchVoters() {
+      const token = ++view.token;
       view.failed = false;
       if (!view.data) paint();
+      await pendingVote;
+      let next = null;
       try {
-        view.data = await profile.api('listVoters', { id: post.id });
+        next = await profile.api('listVoters', { id: post.id });
       } catch {
-        view.failed = true;
+        if (token === view.token && !view.data) view.failed = true;
       }
+      if (token !== view.token) return;
+      if (next) view.data = next;
       paint();
     }
+
+    view.sync = choice => {
+      view.token++;
+      view.failed = false;
+      const data = view.data;
+      let own = null;
+      if (data) {
+        data.options.forEach(group => {
+          const at = group.voters.findIndex(voter => voter.mine);
+          if (at !== -1) own = group.voters.splice(at, 1)[0];
+        });
+      }
+      if (!own) view.data = null;
+      else {
+        data.total--;
+        data.listed--;
+        if (choice !== null) {
+          own.at = Date.now();
+          data.options[choice].voters.push(own);
+          data.total++;
+          data.listed++;
+        }
+      }
+      if (view.open) paint();
+    };
+
+    view.reconcile = () => {
+      if (view.open) fetchVoters();
+    };
 
     toggle.addEventListener('click', () => {
       view.open = !view.open;
