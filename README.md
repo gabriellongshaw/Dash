@@ -56,11 +56,11 @@ Sign in with Google to use Friends.
 
 ## Polls and feedback
 
-Open **Polls** from the home screen to see polls, feedback requests and suggestion requests posted by Dash's creator.
+Open **Polls** from the home screen. Filter by All, Polls, Feedback or Suggestions.
 
-- **Polls:** anyone can see the results. Sign in with Google to vote, and change your vote any time while the poll is open.
-- **Feedback and suggestions:** sign in with Google to send a reply. Replies are private and only the creator can read them. You can edit or remove yours while the post is open.
-- **Posting:** only the creator's Google account can post, close or delete posts.
+- **Polls:** posted by Dash's creator. Anyone can see the results. Sign in with Google to vote, and change your vote any time while the poll is open.
+- **Feedback and suggestions:** written by players. Sign in with Google and choose a username, then tap **New post**. Posts are public and show your username. You can post 3 times a day and have up to 10 posts at once, and you can delete your own posts.
+- **Moderation:** the creator can delete any post and close or reopen polls. Guests can read everything but have to sign in to vote or post.
 
 ## Privacy and your account
 

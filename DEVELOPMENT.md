@@ -36,11 +36,12 @@ Friend data lives in `dashUsernames`, `dashFriends` and `dashGifts`, which only 
 
 The polls page lists posts of three kinds: `poll`, `feedback` and `suggestion`. The API code is in `server/polls.js`, and the page is `polls/` with `assets/js/pages/polls.js`.
 
-- **Posting:** `createPost`, `setClosed`, `deletePost` and `listReplies` only work for the admin. The API treats a caller as admin only when their Firebase token comes from Google sign-in, the email is verified and it matches the `ADMIN_EMAIL` environment variable. Add it in Vercel under Settings, Environment Variables, then redeploy. While it is unset nobody can post. Nothing in the browser decides who is admin, the page only shows the composer when `listPosts` says `admin: true`.
-- **Reading:** `listPosts` is open to guests, so anyone can see polls and results.
-- **Voting and replying:** `vote` and `reply` need a Google sign-in, which keeps throwaway guest accounts from skewing polls. Each account has one vote per poll (changeable while open) and one reply per feedback or suggestion post.
-- **Storage:** posts are in `dashPolls`, with the votes in `dashPolls/{id}/votes` and the private replies in `dashPolls/{id}/replies`. Only the API reads and writes them, so no Firestore rule changes are needed.
-- **Limits:** titles 80 characters, details 600, poll options 60 (2 to 6 per poll), replies 500. The 30 newest posts are listed. Limits are at the top of `server/polls.js` and `assets/js/pages/polls.js`.
+- **Who can post:** only the admin can create polls. Any player signed in with Google who has chosen a username can create feedback and suggestion posts. Guests (anonymous accounts) can only read, because `listPosts` is the only polls action in `ANON_ACTIONS` in `api/game.js`. To let guests post or vote, add `createPost` or `vote` there, but note that guest accounts are free to create so it makes spam and ballot stuffing easy.
+- **Admin:** the API treats a caller as admin only when their Firebase token comes from Google sign-in, the email is verified and it matches the `ADMIN_EMAIL` environment variable. Add it in Vercel under Settings, Environment Variables, then redeploy. While it is unset nobody is admin. Nothing in the browser decides who is admin, the page only shows poll controls when the server says so.
+- **Moderation:** the admin can delete any post and close or reopen polls (`setClosed`). Authors can delete their own feedback and suggestion posts (`deletePost`). Posts are public, so delete anything inappropriate.
+- **Limits:** non-admin players can post 3 times in 24 hours and have 10 live posts at most. Titles are 80 characters, details 600, poll options 60 (2 to 6 per poll). The 50 newest posts are listed. Limits are at the top of `server/polls.js` and `assets/js/pages/polls.js`.
+- **Voting:** `vote` needs a Google sign-in. Each account has one vote per poll, changeable while the poll is open.
+- **Storage:** posts are in `dashPolls`, with votes in `dashPolls/{id}/votes`. Only the API reads and writes them, so no Firestore rule changes are needed. The author's user ID is stored on each post but never sent to browsers.
 
 ## Sound
 
