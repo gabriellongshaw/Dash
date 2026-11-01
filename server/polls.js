@@ -8,7 +8,11 @@ export const LIMITS = {
   maxOptions: 6,
   listed: 50,
   perDay: 3,
-  live: 10
+  live: 10,
+  reply: 300,
+  replies: 100,
+  repliesPerDay: 20,
+  voters: 500
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -21,6 +25,19 @@ export function cleanText(value, max, multiline = false) {
   return text.trim().slice(0, max);
 }
 
+export function cleanOptions(raw) {
+  const seen = new Set();
+  const out = [];
+  for (const item of Array.isArray(raw) ? raw : []) {
+    const text = cleanText(item, LIMITS.option);
+    const key = text.toLowerCase();
+    if (!text || seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+  }
+  return out;
+}
+
 export function cleanPost(body) {
   const src = body && typeof body === 'object' ? body : {};
   if (!KINDS.includes(src.kind)) return null;
@@ -28,14 +45,7 @@ export function cleanPost(body) {
   if (!title) return null;
   const post = { kind: src.kind, title, body: cleanText(src.body, LIMITS.body, true), options: [] };
   if (src.kind !== 'poll') return post;
-  const seen = new Set();
-  for (const raw of Array.isArray(src.options) ? src.options : []) {
-    const text = cleanText(raw, LIMITS.option);
-    const key = text.toLowerCase();
-    if (!text || seen.has(key)) continue;
-    seen.add(key);
-    post.options.push(text);
-  }
+  post.options = cleanOptions(src.options);
   if (post.options.length < LIMITS.minOptions || post.options.length > LIMITS.maxOptions) return null;
   return post;
 }
@@ -50,6 +60,9 @@ export function createPolls({ db, load, Fail, now }) {
   const posts = () => db.collection('dashPolls');
   const postRef = id => db.doc(`dashPolls/${id}`);
   const voteRef = (id, uid) => db.doc(`dashPolls/${id}/votes/${uid}`);
+  const repliesOf = id => postRef(id).collection('replies');
+  const replyRef = (id, replyId) => db.doc(`dashPolls/${id}/replies/${replyId}`);
+  const logRef = uid => db.doc(`dashReplyLog/${uid}`);
 
   const validId = value => typeof value === 'string' && POST_ID.test(value);
 
@@ -67,7 +80,24 @@ export function createPolls({ db, load, Fail, now }) {
       options,
       counts,
       closed: data.closed === true,
-      at: whole(data.at)
+      at: whole(data.at),
+      editedAt: whole(data.editedAt),
+      replyCount: whole(data.replyCount)
+    };
+  };
+
+  const canEdit = (post, user) => post.by === user.uid && (post.kind !== 'poll' || !!user.admin);
+  const canRemoveReply = (post, reply, user) => !!user.admin || reply.by === user.uid || (post.kind !== 'poll' && post.by === user.uid);
+
+  const shapeReply = (id, raw, post, user) => {
+    const data = raw && typeof raw === 'object' ? raw : {};
+    return {
+      id,
+      author: typeof data.author === 'string' ? data.author : null,
+      body: typeof data.body === 'string' ? data.body : '',
+      at: whole(data.at),
+      owner: data.owner === true,
+      canDelete: canRemoveReply(post, data, user)
     };
   };
 
@@ -79,9 +109,12 @@ export function createPolls({ db, load, Fail, now }) {
     author: post.author,
     closed: post.closed,
     at: post.at,
+    editedAt: post.editedAt,
+    replies: post.replyCount,
     options: post.options.map((text, i) => ({ text, votes: post.counts[i] })),
     total: post.counts.reduce((sum, n) => sum + n, 0),
     canDelete: !!user.admin || (post.kind !== 'poll' && post.by === user.uid),
+    canEdit: canEdit(post, user),
     mine: { vote: Number.isInteger(vote) && vote < post.options.length ? vote : null }
   });
 
@@ -118,6 +151,119 @@ export function createPolls({ db, load, Fail, now }) {
         tx.set(voteRef(id, user.uid), { option: choice, at: now() });
         tx.update(postRef(id), { counts });
         return { post: shape({ ...post, counts }, user, choice) };
+      });
+    },
+
+    async unvote(user, body) {
+      const id = needId(body);
+      return db.runTransaction(async tx => {
+        const [postSnap, voteSnap] = await Promise.all([tx.get(postRef(id)), tx.get(voteRef(id, user.uid))]);
+        if (!postSnap.exists) throw new Fail(404, 'no-post');
+        const post = read(id, postSnap.data());
+        if (post.kind !== 'poll') throw new Fail(400, 'kind');
+        if (post.closed) throw new Fail(409, 'closed');
+        if (!voteSnap.exists) return { post: shape(post, user, null) };
+        const before = voteSnap.data().option;
+        const counts = [...post.counts];
+        if (Number.isInteger(before) && before >= 0 && before < counts.length && counts[before] > 0) counts[before]--;
+        tx.delete(voteRef(id, user.uid));
+        tx.update(postRef(id), { counts });
+        return { post: shape({ ...post, counts }, user, null) };
+      });
+    },
+
+    async listVoters(user, body) {
+      if (!user.admin) throw new Fail(403, 'admin');
+      const id = needId(body);
+      const snap = await postRef(id).get();
+      if (!snap.exists) throw new Fail(404, 'no-post');
+      const post = read(id, snap.data());
+      if (post.kind !== 'poll') throw new Fail(400, 'kind');
+      const votes = await postRef(id).collection('votes').orderBy('at', 'asc').limit(LIMITS.voters).get();
+      const rows = votes.docs.map(doc => ({ uid: doc.id, option: doc.data().option, at: whole(doc.data().at) }));
+      const people = rows.length ? await db.getAll(...rows.map(row => db.doc(`dashProfiles/${row.uid}`))) : [];
+      const groups = post.options.map(text => ({ text, voters: [] }));
+      rows.forEach((row, i) => {
+        if (!Number.isInteger(row.option) || row.option < 0 || row.option >= groups.length) return;
+        const data = people[i].exists ? people[i].data() : {};
+        const username = typeof data.username === 'string' && data.username ? `@${data.username}` : null;
+        const display = typeof data.displayName === 'string' && data.displayName ? data.displayName : null;
+        const name = username && display ? `${display} (${username})` : username || display || 'Unnamed player';
+        groups[row.option].voters.push({ name, at: row.at });
+      });
+      return { options: groups, total: post.counts.reduce((sum, n) => sum + n, 0), listed: rows.length };
+    },
+
+    async editPost(user, body) {
+      const id = needId(body);
+      const title = cleanText(body.title, LIMITS.title);
+      if (!title) throw new Fail(400, 'post');
+      const text = cleanText(body.body, LIMITS.body, true);
+      return db.runTransaction(async tx => {
+        const [postSnap, voteSnap] = await Promise.all([tx.get(postRef(id)), tx.get(voteRef(id, user.uid))]);
+        if (!postSnap.exists) throw new Fail(404, 'no-post');
+        const post = read(id, postSnap.data());
+        if (!canEdit(post, user)) throw new Fail(403, 'not-yours');
+        const change = { title, body: text, editedAt: now() };
+        let options = post.options;
+        if (post.kind === 'poll') {
+          options = cleanOptions(body.options);
+          if (options.length !== post.options.length) throw new Fail(400, 'post');
+          change.options = options;
+        }
+        tx.update(postRef(id), change);
+        const vote = post.kind === 'poll' && voteSnap.exists ? voteSnap.data().option : null;
+        return { post: shape({ ...post, ...change, options }, user, vote) };
+      });
+    },
+
+    async listReplies(user, body) {
+      const id = needId(body);
+      const [postSnap, snap] = await Promise.all([postRef(id).get(), repliesOf(id).orderBy('at', 'asc').limit(LIMITS.replies).get()]);
+      if (!postSnap.exists) throw new Fail(404, 'no-post');
+      const post = read(id, postSnap.data());
+      return { replies: snap.docs.map(doc => shapeReply(doc.id, doc.data(), post, user)) };
+    },
+
+    async createReply(user, body) {
+      const id = needId(body);
+      const text = cleanText(body.body, LIMITS.reply, true);
+      if (!text) throw new Fail(400, 'reply');
+      const me = await db.runTransaction(tx => load(tx, user.uid));
+      const author = me.username ? `@${me.username}` : user.admin ? 'Gabriel' : null;
+      if (!author) throw new Fail(409, 'no-username');
+      const ref = repliesOf(id).doc();
+      return db.runTransaction(async tx => {
+        const [postSnap, logSnap] = await Promise.all([tx.get(postRef(id)), user.admin ? Promise.resolve(null) : tx.get(logRef(user.uid))]);
+        if (!postSnap.exists) throw new Fail(404, 'no-post');
+        const post = read(id, postSnap.data());
+        if (post.replyCount >= LIMITS.replies) throw new Fail(409, 'replies-full');
+        if (logSnap) {
+          const stored = logSnap.exists && Array.isArray(logSnap.data().times) ? logSnap.data().times : [];
+          const times = stored.filter(time => Number.isFinite(time) && time > now() - DAY_MS);
+          if (times.length >= LIMITS.repliesPerDay) throw new Fail(429, 'reply-rate');
+          tx.set(logRef(user.uid), { times: [...times, now()] });
+        }
+        const doc = { body: text, author, by: user.uid, owner: !!user.admin, at: now() };
+        tx.set(ref, doc);
+        tx.update(postRef(id), { replyCount: post.replyCount + 1 });
+        return { reply: shapeReply(ref.id, doc, post, user), replies: post.replyCount + 1 };
+      });
+    },
+
+    async deleteReply(user, body) {
+      const id = needId(body);
+      if (!validId(body.replyId)) throw new Fail(400, 'id');
+      return db.runTransaction(async tx => {
+        const [postSnap, replySnap] = await Promise.all([tx.get(postRef(id)), tx.get(replyRef(id, body.replyId))]);
+        if (!postSnap.exists) return { ok: true, replies: 0 };
+        const post = read(id, postSnap.data());
+        if (!replySnap.exists) return { ok: true, replies: post.replyCount };
+        if (!canRemoveReply(post, replySnap.data(), user)) throw new Fail(403, 'forbidden');
+        const replies = Math.max(0, post.replyCount - 1);
+        tx.delete(replyRef(id, body.replyId));
+        tx.update(postRef(id), { replyCount: replies });
+        return { ok: true, replies };
       });
     },
 
