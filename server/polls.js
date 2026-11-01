@@ -1,18 +1,17 @@
-import { FieldValue } from 'firebase-admin/firestore';
-
 export const KINDS = ['poll', 'feedback', 'suggestion'];
 
 export const LIMITS = {
   title: 80,
   body: 600,
   option: 60,
-  reply: 500,
   minOptions: 2,
   maxOptions: 6,
-  listed: 30,
-  replies: 200
+  listed: 50,
+  perDay: 3,
+  live: 10
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
 const POST_ID = /^[A-Za-z0-9]{20}$/;
 
 export function cleanText(value, max, multiline = false) {
@@ -42,7 +41,7 @@ export function cleanPost(body) {
 }
 
 export function isAdmin(user, email) {
-  return !!user && !user.anon && user.verified === true && user.provider === 'google.com' && typeof user.email === 'string' && typeof email === 'string' && user.email.toLowerCase() === email.toLowerCase();
+  return !!user && !user.anon && user.verified === true && user.provider === 'google.com' && typeof user.email === 'string' && typeof email === 'string' && email !== '' && user.email.toLowerCase() === email.toLowerCase();
 }
 
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
@@ -51,7 +50,6 @@ export function createPolls({ db, load, Fail, now }) {
   const posts = () => db.collection('dashPolls');
   const postRef = id => db.doc(`dashPolls/${id}`);
   const voteRef = (id, uid) => db.doc(`dashPolls/${id}/votes/${uid}`);
-  const replyRef = (id, uid) => db.doc(`dashPolls/${id}/replies/${uid}`);
 
   const validId = value => typeof value === 'string' && POST_ID.test(value);
 
@@ -64,30 +62,28 @@ export function createPolls({ db, load, Fail, now }) {
       kind: KINDS.includes(data.kind) ? data.kind : 'feedback',
       title: typeof data.title === 'string' ? data.title : '',
       body: typeof data.body === 'string' ? data.body : '',
+      author: typeof data.author === 'string' ? data.author : null,
+      by: typeof data.by === 'string' ? data.by : null,
       options,
       counts,
       closed: data.closed === true,
-      replies: whole(data.replies),
       at: whole(data.at)
     };
   };
 
-  const shape = (post, admin, vote = null, reply = null) => ({
+  const shape = (post, user, vote = null) => ({
     id: post.id,
     kind: post.kind,
     title: post.title,
     body: post.body,
+    author: post.author,
     closed: post.closed,
     at: post.at,
     options: post.options.map((text, i) => ({ text, votes: post.counts[i] })),
     total: post.counts.reduce((sum, n) => sum + n, 0),
-    replies: admin ? post.replies : null,
-    mine: { vote: Number.isInteger(vote) && vote < post.options.length ? vote : null, reply: typeof reply === 'string' ? reply : null }
+    canDelete: !!user.admin || (post.kind !== 'poll' && post.by === user.uid),
+    mine: { vote: Number.isInteger(vote) && vote < post.options.length ? vote : null }
   });
-
-  const needAdmin = user => {
-    if (!user.admin) throw new Fail(403, 'admin');
-  };
 
   const needId = body => {
     if (!validId(body.id)) throw new Fail(400, 'id');
@@ -97,14 +93,11 @@ export function createPolls({ db, load, Fail, now }) {
   return {
     async listPosts(user) {
       const snap = await posts().orderBy('at', 'desc').limit(LIMITS.listed).get();
-      const signed = !user.anon && snap.docs.length > 0;
-      const mine = signed ? await db.getAll(...snap.docs.flatMap(doc => [voteRef(doc.id, user.uid), replyRef(doc.id, user.uid)])) : [];
-      const list = snap.docs.map((doc, i) => {
-        const vote = signed && mine[i * 2].exists ? mine[i * 2].data().option : null;
-        const reply = signed && mine[i * 2 + 1].exists ? mine[i * 2 + 1].data().text : null;
-        return shape(read(doc.id, doc.data()), !!user.admin, vote, reply);
-      });
-      return { admin: !!user.admin, posts: list };
+      const docs = snap.docs.map(doc => read(doc.id, doc.data()));
+      const voting = user.anon ? [] : docs.filter(post => post.kind === 'poll');
+      const mine = voting.length ? await db.getAll(...voting.map(post => voteRef(post.id, user.uid))) : [];
+      const votes = new Map(voting.map((post, i) => [post.id, mine[i].exists ? mine[i].data().option : null]));
+      return { admin: !!user.admin, posts: docs.map(post => shape(post, user, votes.get(post.id) ?? null)) };
     },
 
     async vote(user, body) {
@@ -118,75 +111,56 @@ export function createPolls({ db, load, Fail, now }) {
         if (post.closed) throw new Fail(409, 'closed');
         if (choice < 0 || choice >= post.options.length) throw new Fail(400, 'option');
         const before = voteSnap.exists ? voteSnap.data().option : null;
-        if (before === choice) return { post: shape(post, !!user.admin, choice) };
+        if (before === choice) return { post: shape(post, user, choice) };
         const counts = [...post.counts];
         if (Number.isInteger(before) && before >= 0 && before < counts.length && counts[before] > 0) counts[before]--;
         counts[choice]++;
         tx.set(voteRef(id, user.uid), { option: choice, at: now() });
         tx.update(postRef(id), { counts });
-        return { post: shape({ ...post, counts }, !!user.admin, choice) };
-      });
-    },
-
-    async reply(user, body) {
-      const id = needId(body);
-      const text = cleanText(body.text, LIMITS.reply, true);
-      return db.runTransaction(async tx => {
-        const [postSnap, replySnap, me] = await Promise.all([tx.get(postRef(id)), tx.get(replyRef(id, user.uid)), load(tx, user.uid)]);
-        if (!postSnap.exists) throw new Fail(404, 'no-post');
-        const post = read(id, postSnap.data());
-        if (post.kind === 'poll') throw new Fail(400, 'kind');
-        if (post.closed) throw new Fail(409, 'closed');
-        if (!text) {
-          if (replySnap.exists) {
-            tx.delete(replyRef(id, user.uid));
-            tx.update(postRef(id), { replies: FieldValue.increment(-1) });
-          }
-          return { post: shape({ ...post, replies: Math.max(0, post.replies - (replySnap.exists ? 1 : 0)) }, !!user.admin, null, null) };
-        }
-        tx.set(replyRef(id, user.uid), { text, name: me.username ? `@${me.username}` : 'Player', uid: user.uid, at: now() });
-        if (!replySnap.exists) tx.update(postRef(id), { replies: FieldValue.increment(1) });
-        return { post: shape({ ...post, replies: post.replies + (replySnap.exists ? 0 : 1) }, !!user.admin, null, text) };
+        return { post: shape({ ...post, counts }, user, choice) };
       });
     },
 
     async createPost(user, body) {
-      needAdmin(user);
       const post = cleanPost(body);
       if (!post) throw new Fail(400, 'post');
+      if (post.kind === 'poll' && !user.admin) throw new Fail(403, 'admin');
+      let author = null;
+      if (post.kind !== 'poll') {
+        const me = await db.runTransaction(tx => load(tx, user.uid));
+        author = me.username ? `@${me.username}` : user.admin ? 'Gabriel' : null;
+        if (!author) throw new Fail(409, 'no-username');
+        if (!user.admin) {
+          const own = await posts().where('by', '==', user.uid).limit(LIMITS.live + 1).get();
+          if (own.docs.length >= LIMITS.live) throw new Fail(409, 'limit');
+          if (own.docs.filter(doc => whole(doc.data().at) > now() - DAY_MS).length >= LIMITS.perDay) throw new Fail(429, 'rate');
+        }
+      }
       const ref = posts().doc();
-      const doc = { ...post, counts: post.options.map(() => 0), closed: false, replies: 0, at: now(), by: user.uid };
+      const doc = { ...post, author, counts: post.options.map(() => 0), closed: false, at: now(), by: user.uid };
       await ref.set(doc);
-      return { post: shape(read(ref.id, doc), true) };
+      return { post: shape(read(ref.id, doc), user) };
     },
 
     async setClosed(user, body) {
-      needAdmin(user);
+      if (!user.admin) throw new Fail(403, 'admin');
       const id = needId(body);
       const closed = !!body.closed;
       const snap = await postRef(id).get();
       if (!snap.exists) throw new Fail(404, 'no-post');
+      if (read(id, snap.data()).kind !== 'poll') throw new Fail(400, 'kind');
       await postRef(id).update({ closed });
       return { ok: true, closed };
     },
 
     async deletePost(user, body) {
-      needAdmin(user);
       const id = needId(body);
+      const snap = await postRef(id).get();
+      if (!snap.exists) return { ok: true };
+      const post = read(id, snap.data());
+      if (!user.admin && (post.kind === 'poll' || post.by !== user.uid)) throw new Fail(403, 'forbidden');
       await db.recursiveDelete(postRef(id));
       return { ok: true };
-    },
-
-    async listReplies(user, body) {
-      needAdmin(user);
-      const id = needId(body);
-      const snap = await postRef(id).collection('replies').orderBy('at', 'desc').limit(LIMITS.replies).get();
-      return {
-        replies: snap.docs.map(doc => {
-          const data = doc.data();
-          return { name: typeof data.name === 'string' ? data.name : 'Player', text: typeof data.text === 'string' ? data.text : '', at: whole(data.at) };
-        })
-      };
     }
   };
 }

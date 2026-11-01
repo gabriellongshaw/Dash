@@ -29,7 +29,10 @@ export const MESSAGES = {
   closed: 'This post is closed.',
   kind: 'That does not work on this kind of post.',
   option: 'That option does not exist.',
-  post: 'Add a title, and 2 to 6 different options for a poll.'
+  post: 'Add a title, and for polls 2 to 6 different options.',
+  forbidden: 'You can only delete your own posts.',
+  limit: 'You have 10 posts already. Delete one to post again.',
+  rate: 'You can post 3 times a day. Try again tomorrow.'
 };
 
 export const messageFor = e => MESSAGES[e && e.code] || `Something went wrong${e && e.code ? ` (${e.code})` : ''}. Try again.`;
