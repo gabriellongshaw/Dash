@@ -1,4 +1,6 @@
 import { Game } from '../components/game.js';
+import { FirstPersonGame } from '../components/firstperson.js';
+import { getMode } from '../core/mode.js';
 import { onThemeChange, detectTouch } from '../core/theme.js';
 import { profile } from '../core/profile.js';
 import { resolveLook, resolveWorld } from '../core/cosmetics.js';
@@ -21,6 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
   ads.init();
   $('pause-btn').before(mountSound(document.querySelector('.hud-right'), { className: 'icon-button' }));
 
+  const first = getMode() === 'first';
+  document.body.classList.toggle('mode-first', first);
+  if (first) {
+    $('start-hint').querySelector('.hint-sub').innerHTML =
+      '<span class="desktop-only">&larr; &rarr; change lane &middot; Space / &uarr; jump &middot; &darr; slide</span><span class="touch-only">Swipe to move, jump and slide &middot; tap to jump</span>';
+  }
+
   const scoreEl = $('score');
   const bestEl = $('best');
   const coinsEl = $('coins');
@@ -38,7 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   bestEl.textContent = `Best ${profile.state.best}`;
 
-  const game = new Game($('game-canvas'), {
+  const Engine = first ? FirstPersonGame : Game;
+  const game = new Engine($('game-canvas'), {
     best: profile.state.best,
     getLook: () => resolveLook(profile.state.equipped),
     getWorld: () => resolveWorld(profile.state.equipped.world),
@@ -200,21 +210,61 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (game.state === 'over' && overReady) restart();
   }
 
-  $('game-canvas').addEventListener('pointerdown', e => {
-    e.preventDefault();
-    action();
-  });
+  const SWIPE = 24;
+  let touch = null;
+
+  if (first) {
+    const canvas = $('game-canvas');
+    canvas.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      if (game.state !== 'playing') {
+        action();
+        return;
+      }
+      canvas.setPointerCapture(e.pointerId);
+      touch = { x: e.clientX, y: e.clientY, moved: false };
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!touch) return;
+      const dx = e.clientX - touch.x;
+      const dy = e.clientY - touch.y;
+      if (Math.abs(dx) < SWIPE && Math.abs(dy) < SWIPE) return;
+      touch.x = e.clientX;
+      touch.y = e.clientY;
+      touch.moved = true;
+      if (game.state !== 'playing') return;
+      if (Math.abs(dx) > Math.abs(dy)) game.move(dx < 0 ? -1 : 1);
+      else if (dy < 0) game.jump();
+      else game.slide(true, true);
+    });
+    canvas.addEventListener('pointerup', () => {
+      if (touch && !touch.moved) action();
+      touch = null;
+    });
+    canvas.addEventListener('pointercancel', () => {
+      touch = null;
+    });
+  } else {
+    $('game-canvas').addEventListener('pointerdown', e => {
+      e.preventDefault();
+      action();
+    });
+  }
 
   window.addEventListener('keydown', e => {
     const jumpKey = e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW';
     const slideKey = e.code === 'ArrowDown' || e.code === 'KeyS';
-    if (jumpKey || slideKey) e.preventDefault();
+    const leftKey = e.code === 'ArrowLeft' || e.code === 'KeyA';
+    const rightKey = e.code === 'ArrowRight' || e.code === 'KeyD';
+    if (jumpKey || slideKey || leftKey || rightKey) e.preventDefault();
     if (e.repeat) return;
     if (jumpKey) {
       if (game.state === 'paused') resumeGame();
       else action();
     } else if (slideKey) {
       game.slide(true);
+    } else if ((leftKey || rightKey) && game.move) {
+      game.move(leftKey ? -1 : 1);
     } else if (e.code === 'KeyP' || e.code === 'Escape') {
       togglePause();
     } else if (e.code === 'Enter' && game.state === 'over' && overReady) {

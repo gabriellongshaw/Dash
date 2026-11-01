@@ -146,6 +146,10 @@ body.touch .controls {
   display: flex;
 }
 
+body.touch.mode-first .controls {
+  display: none;
+}
+
 .control-btn {
   pointer-events: auto;
   display: inline-flex;
