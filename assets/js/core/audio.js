@@ -222,6 +222,7 @@ const EFFECTS = {
     blip(sfxBus, { from: 640, to: 1300, dur: 0.14, vol: 0.14, t: ctx.currentTime + 0.07 });
   },
   slide: () => swoosh(sfxBus, { from: 2400, to: 500, dur: 0.22, vol: 0.28 }),
+  lane: () => swoosh(sfxBus, { from: 1500, to: 800, dur: 0.1, vol: 0.14 }),
   coin: () => {
     blip(sfxBus, { from: 988, dur: 0.07, vol: 0.14 });
     blip(sfxBus, { from: 1319, dur: 0.18, vol: 0.14, t: ctx.currentTime + 0.06 });
