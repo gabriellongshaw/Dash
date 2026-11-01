@@ -36,10 +36,17 @@
       <div class="shop-inner">
         <h1 class="shop-title">Polls</h1>
         <p class="shop-note hidden" id="note">
-          <span>Sign in to vote and reply.</span>
+          <span>Sign in to vote and post.</span>
           <button class="tertiary-button" id="note-signin">Sign in</button>
         </p>
-        <div class="friends-stack hidden" id="composer"></div>
+        <div class="tabs polls-tabs" id="tabs" role="tablist">
+          <span class="tab-pill" aria-hidden="true"></span>
+          <button class="tab active" data-filter="all" role="tab" aria-selected="true">All</button>
+          <button class="tab" data-filter="poll" role="tab" aria-selected="false">Polls</button>
+          <button class="tab" data-filter="feedback" role="tab" aria-selected="false">Feedback</button>
+          <button class="tab" data-filter="suggestion" role="tab" aria-selected="false">Suggestions</button>
+        </div>
+        <div class="poll-compose hidden" id="composer"></div>
         <div class="poll-list" id="list"></div>
       </div>
     </div>

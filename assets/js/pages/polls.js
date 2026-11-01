@@ -2,7 +2,7 @@ import { profile } from '../core/profile.js';
 import { mountAccount, showToast, signInFlow } from '../components/account.js';
 import { detectTouch } from '../core/theme.js';
 import { initPageFadeIn, navigateTo } from '../core/transition.js';
-import { exitRow, setCoins, setShown } from '../core/motion.js';
+import { exitRow, reducedMotion, setCoins, setShown } from '../core/motion.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
@@ -10,13 +10,23 @@ import { button, messageFor } from '../components/ui.js';
 
 const $ = id => document.getElementById(id);
 
-const KINDS = ['poll', 'feedback', 'suggestion'];
+const FILTERS = ['all', 'poll', 'feedback', 'suggestion'];
 const LABELS = { poll: 'Poll', feedback: 'Feedback', suggestion: 'Suggestion' };
-const PLACEHOLDERS = { feedback: 'Your feedback', suggestion: 'Your suggestion' };
-const LIMITS = { title: 80, body: 600, option: 60, reply: 500, minOptions: 2, maxOptions: 6 };
+const TITLES = { poll: 'Ask a question', feedback: 'What did you think?', suggestion: 'What should we add?' };
+const EMPTY = {
+  all: 'Nothing here yet. Check back soon.',
+  poll: 'No polls right now.',
+  feedback: 'No feedback yet. Be the first to share some.',
+  suggestion: 'No suggestions yet. Got an idea? Share it.'
+};
+const LIMITS = { title: 80, body: 600, option: 60, minOptions: 2, maxOptions: 6 };
 
 const CROSS =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+const CHECK =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const PLUS =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
 
 function make(tag, className, text) {
   const el = document.createElement(tag);
@@ -36,6 +46,30 @@ function ago(at) {
   return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function tween(el, to, suffix) {
+  const from = Number(el.dataset.v || 0);
+  el.dataset.v = String(to);
+  cancelAnimationFrame(el.tweenFrame);
+  if (reducedMotion() || from === to) {
+    el.textContent = `${to}${suffix}`;
+    return;
+  }
+  const start = performance.now();
+  const step = now => {
+    const t = Math.min(1, (now - start) / 480);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = `${Math.round(from + (to - from) * eased)}${suffix}`;
+    if (t < 1) el.tweenFrame = requestAnimationFrame(step);
+  };
+  el.tweenFrame = requestAnimationFrame(step);
+}
+
+function tick(el) {
+  el.classList.remove('tick');
+  void el.offsetWidth;
+  el.classList.add('tick');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
   initGraphics();
@@ -46,16 +80,19 @@ document.addEventListener('DOMContentLoaded', () => {
   mountAccount($('account'));
 
   const note = $('note');
+  const tabs = $('tabs');
   const composer = $('composer');
   const list = $('list');
   let data = { admin: false, posts: [] };
+  let filter = 'all';
   let loaded = false;
   let failed = false;
   let loading = false;
   let again = false;
   let busy = false;
   let loadedKey = null;
-  let composerBuilt = false;
+  let composerSig = '';
+  let draft = null;
   const seen = new Set();
 
   async function act(fn, success, sound) {
@@ -75,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function paintOptions(box, post) {
+  function paintOptions(box, post, animate) {
     Array.from(box.children).forEach((btn, i) => {
       const option = post.options[i];
       const share = post.total ? (option.votes / post.total) * 100 : 0;
@@ -83,8 +120,16 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.toggle('chosen', chosen);
       btn.setAttribute('aria-pressed', String(chosen));
       btn.disabled = post.closed;
-      btn.querySelector('.poll-fill').style.width = `${share}%`;
-      btn.querySelector('.poll-pct').textContent = post.total ? `${Math.round(share)}%` : '';
+      btn.querySelector('.poll-fill').style.transform = `scaleX(${share / 100})`;
+      const pct = btn.querySelector('.poll-pct');
+      if (!post.total) {
+        pct.dataset.v = '0';
+        pct.textContent = '';
+      } else if (animate) tween(pct, Math.round(share), '%');
+      else {
+        pct.dataset.v = String(Math.round(share));
+        pct.textContent = `${Math.round(share)}%`;
+      }
     });
   }
 
@@ -103,19 +148,19 @@ document.addEventListener('DOMContentLoaded', () => {
     post.options[index].votes++;
     post.total++;
     post.mine.vote = index;
-    repaint();
+    audio.sfx('claim');
+    repaint(true);
     busy = true;
     try {
       const out = await profile.api('vote', { id: post.id, option: index });
       Object.assign(post, out.post);
-      audio.sfx('claim');
     } catch (e) {
       Object.assign(post, before);
       audio.sfx('error');
       showToast(messageFor(e));
     } finally {
       busy = false;
-      repaint();
+      repaint(true);
     }
   }
 
@@ -126,164 +171,126 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.type = 'button';
       const fill = make('span', 'poll-fill');
       fill.setAttribute('aria-hidden', 'true');
-      btn.append(fill, make('span', 'poll-label', option.text), make('span', 'poll-pct'));
+      const check = make('span', 'poll-check');
+      check.innerHTML = CHECK;
+      const main = make('span', 'poll-main');
+      main.append(check, make('span', 'poll-label', option.text));
+      btn.append(fill, main, make('span', 'poll-pct'));
       btn.addEventListener('click', () => castVote(post, i, repaint));
       box.appendChild(btn);
     });
     return box;
   }
 
-  function replyForm(post) {
-    const form = make('div', 'poll-reply');
-    const input = make('textarea', 'friend-input poll-text');
-    input.maxLength = LIMITS.reply;
-    input.rows = 3;
-    input.value = post.mine.reply || '';
-    input.placeholder = profile.social ? PLACEHOLDERS[post.kind] : 'Sign in to reply';
-    input.disabled = !profile.social || post.closed;
-    input.setAttribute('aria-label', PLACEHOLDERS[post.kind]);
-    const row = make('div', 'poll-reply-row');
-    row.appendChild(make('span', 'friend-sub', post.closed ? 'Closed' : 'Only Gabriel sees replies.'));
-    if (profile.social && !post.closed) {
-      const label = () => (input.value.trim() ? (post.mine.reply ? 'Update' : 'Send') : post.mine.reply ? 'Remove' : 'Send');
-      const send = button(label(), 'button small', async () => {
-        const text = input.value.trim();
-        if (!text && !post.mine.reply) {
-          audio.sfx('error');
-          showToast('Write something first.');
-          return;
-        }
-        const ok = await act(
-          async () => {
-            const out = await profile.api('reply', { id: post.id, text });
-            Object.assign(post, out.post);
-          },
-          text ? 'Thanks, sent.' : 'Reply removed.',
-          'claim'
-        );
-        if (!ok) return;
-        input.value = post.mine.reply || '';
-        send.textContent = label();
-      });
-      input.addEventListener('input', () => {
-        send.textContent = label();
-      });
-      row.appendChild(send);
-    }
-    form.append(input, row);
-    return form;
-  }
-
-  function fillReplies(box, replies) {
-    box.innerHTML = '';
-    if (!replies.length) {
-      box.appendChild(make('p', 'quest-empty', 'No replies yet.'));
-      return;
-    }
-    replies.forEach(reply => {
-      const item = make('div', 'poll-reply-item');
-      const head = make('div', 'poll-reply-head');
-      head.append(make('span', 'poll-reply-name', reply.name), make('span', 'poll-time', ago(reply.at)));
-      item.append(head, make('p', 'poll-reply-text', reply.text));
-      box.appendChild(item);
-    });
-  }
-
   function postCard(post, index) {
-    const card = make('article', 'poll-card');
-    card.style.setProperty('--n', index);
-    if (seen.has(post.id)) card.classList.add('static');
+    const card = make('article', `poll-card ${post.kind}`);
+    card.style.setProperty('--n', Math.min(index, 8));
+    const fresh = !seen.has(post.id);
+    if (!fresh) card.classList.add('static');
     seen.add(post.id);
     const head = make('div', 'poll-head');
     head.appendChild(make('span', 'poll-kind', LABELS[post.kind]));
     if (post.closed) head.appendChild(make('span', 'poll-state', 'Closed'));
     head.appendChild(make('span', 'poll-time', ago(post.at)));
-    card.append(head, make('h2', 'poll-title', post.title));
+    card.appendChild(head);
+    card.appendChild(make('h2', 'poll-title', post.title));
+    if (post.author) card.appendChild(make('span', 'poll-author', `by ${post.author}`));
     if (post.body) card.appendChild(make('p', 'poll-body', post.body));
-    const foot = make('div', 'poll-foot');
-    const count = make('span', 'poll-count');
-    let options = null;
-    const repaint = () => {
-      if (!options) return;
-      paintOptions(options, post);
-      count.textContent = `${post.total} ${post.total === 1 ? 'vote' : 'votes'}`;
-    };
     if (post.kind === 'poll') {
+      const count = make('span', 'poll-count');
+      let options = null;
+      let last = -1;
+      const repaint = animate => {
+        paintOptions(options, post, animate);
+        count.textContent = `${post.total} ${post.total === 1 ? 'vote' : 'votes'}`;
+        if (last !== -1 && last !== post.total) tick(count);
+        last = post.total;
+      };
       options = pollOptions(post, repaint);
-      card.appendChild(options);
-      foot.appendChild(count);
-      repaint();
-    } else {
-      card.appendChild(replyForm(post));
+      card.append(options, count);
+      if (fresh && !reducedMotion()) requestAnimationFrame(() => requestAnimationFrame(() => repaint(true)));
+      else repaint(false);
     }
-    if (data.admin) {
-      const actions = make('div', 'poll-foot-actions');
-      const repliesBox = make('div', 'poll-replies hidden');
-      if (post.kind !== 'poll') {
-        const toggle = button(`Replies (${post.replies || 0})`, 'tertiary-button', async () => {
-          if (!repliesBox.classList.contains('hidden')) {
-            setShown(repliesBox, false);
-            return;
-          }
-          try {
-            const out = await profile.api('listReplies', { id: post.id });
-            fillReplies(repliesBox, out.replies);
-            setShown(repliesBox, true);
-          } catch (e) {
-            showToast(messageFor(e));
-          }
-        });
-        actions.appendChild(toggle);
+    const mod = data.admin && post.kind === 'poll';
+    if (mod || post.canDelete) {
+      const actions = make('div', 'poll-actions');
+      if (mod) {
+        const group = make('div', 'poll-actions-group');
+        group.appendChild(
+          button(post.closed ? 'Reopen poll' : 'Close poll', 'secondary-button', async () => {
+            const ok = await act(() => profile.api('setClosed', { id: post.id, closed: !post.closed }), post.closed ? 'Poll reopened.' : 'Poll closed.');
+            if (ok) load();
+          })
+        );
+        actions.appendChild(group);
       }
-      const close = button(post.closed ? 'Reopen' : 'Close', 'tertiary-button', async () => {
-        const ok = await act(() => profile.api('setClosed', { id: post.id, closed: !post.closed }), post.closed ? 'Reopened.' : 'Closed.');
-        if (ok) load();
-      });
-      const remove = button('', 'round-button', async () => {
-        if (!confirm(`Delete "${post.title}"?`)) return;
-        const ok = await act(() => profile.api('deletePost', { id: post.id }), 'Deleted.');
-        if (!ok) return;
-        seen.delete(post.id);
-        data = { ...data, posts: data.posts.filter(item => item.id !== post.id) };
-        await exitRow(card);
-        card.remove();
-        if (!data.posts.length) renderList();
-      });
-      remove.setAttribute('aria-label', `Delete ${post.title}`);
-      remove.innerHTML = CROSS;
-      actions.append(close, remove);
-      foot.appendChild(actions);
-      card.append(foot, repliesBox);
-    } else if (post.kind === 'poll') {
-      card.appendChild(foot);
+      if (post.canDelete) {
+        actions.appendChild(
+          button('Delete', 'tertiary-button danger', async () => {
+            if (!confirm(`Delete "${post.title}"?`)) return;
+            const ok = await act(() => profile.api('deletePost', { id: post.id }), 'Deleted.');
+            if (!ok) return;
+            seen.delete(post.id);
+            data = { ...data, posts: data.posts.filter(item => item.id !== post.id) };
+            await exitRow(card);
+            card.remove();
+            if (!visible().length) renderList();
+          })
+        );
+      }
+      card.appendChild(actions);
     }
     return card;
+  }
+
+  const visible = () => data.posts.filter(post => filter === 'all' || post.kind === filter);
+
+  function skeleton() {
+    for (let i = 0; i < 2; i++) {
+      const card = make('div', 'poll-card skeleton');
+      card.style.setProperty('--n', i);
+      ['poll-sk-head', 'poll-sk-title', 'poll-sk-row', 'poll-sk-row'].forEach(name => card.appendChild(make('span', name)));
+      list.appendChild(card);
+    }
   }
 
   function renderList() {
     list.innerHTML = '';
     if (!loaded) {
-      const text = failed || profile.session.status === 'unavailable' ? 'Could not load polls.' : 'Loading';
-      list.appendChild(make('p', 'quest-empty', text));
-      if (failed) list.appendChild(button('Try again', 'tertiary-button', () => load()));
+      if (failed || profile.session.status === 'unavailable') {
+        list.appendChild(make('p', 'quest-empty', 'Could not load polls.'));
+        if (failed) list.appendChild(button('Try again', 'tertiary-button', () => load()));
+      } else skeleton();
       return;
     }
-    if (!data.posts.length) {
-      list.appendChild(make('p', 'quest-empty', data.admin ? 'No posts yet. Create one above.' : 'Nothing here yet. Check back soon.'));
+    const posts = visible();
+    if (!posts.length) {
+      const empty = make('p', 'quest-empty reveal', EMPTY[filter]);
+      list.appendChild(empty);
       return;
     }
-    data.posts.forEach((post, i) => list.appendChild(postCard(post, i)));
+    posts.forEach((post, i) => list.appendChild(postCard(post, i)));
   }
 
-  function optionRow(rows, box, add, value) {
-    const row = make('div', 'poll-option-row');
+  function setFilter(next) {
+    if (next === filter) return;
+    filter = next;
+    tabs.style.setProperty('--i', FILTERS.indexOf(next));
+    tabs.querySelectorAll('.tab').forEach(tab => {
+      const on = tab.dataset.filter === next;
+      tab.classList.toggle('active', on);
+      tab.setAttribute('aria-selected', String(on));
+    });
+    seen.clear();
+    renderList();
+  }
+
+  function optionRow(rows, box, add, animate) {
+    const row = make('div', `poll-option-row${animate ? ' entering' : ''}`);
     const input = make('input', 'friend-input');
     input.type = 'text';
     input.maxLength = LIMITS.option;
-    input.value = value || '';
-    input.placeholder = `Option ${rows.length + 1}`;
     input.autocomplete = 'off';
-    input.setAttribute('aria-label', `Option ${rows.length + 1}`);
     const drop = make('button', 'round-button');
     drop.type = 'button';
     drop.innerHTML = CROSS;
@@ -292,14 +299,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const refresh = () => {
       rows.forEach((item, i) => {
         item.input.placeholder = `Option ${i + 1}`;
+        item.input.setAttribute('aria-label', `Option ${i + 1}`);
         item.drop.classList.toggle('hidden', rows.length <= LIMITS.minOptions);
       });
-      add.classList.toggle('hidden', rows.length >= LIMITS.maxOptions);
+      setShown(add, rows.length < LIMITS.maxOptions);
     };
-    drop.addEventListener('click', () => {
+    drop.addEventListener('click', async () => {
+      if (rows.length <= LIMITS.minOptions) return;
       rows.splice(rows.indexOf(entry), 1);
-      row.remove();
       refresh();
+      await exitRow(row);
+      row.remove();
     });
     row.append(input, drop);
     rows.push(entry);
@@ -309,73 +319,125 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildComposer() {
-    composerBuilt = true;
     composer.innerHTML = '';
-    const card = make('div', 'friend-card poll-composer');
-    let kind = 'poll';
-    const kinds = make('div', 'gift-quick');
-    const chips = KINDS.map(name => {
-      const chip = button(LABELS[name], `gift-chip${name === kind ? ' active' : ''}`, () => {
-        kind = name;
-        chips.forEach(item => {
-          item.classList.toggle('active', item === chip);
-          item.setAttribute('aria-pressed', String(item === chip));
+    const social = profile.social;
+    setShown(composer, social);
+    if (!social) return;
+    const kinds = data.admin ? ['poll', 'feedback', 'suggestion'] : ['feedback', 'suggestion'];
+    const named = data.admin || !!profile.state.username;
+    const toggle = make('button', 'secondary-button poll-compose-toggle');
+    toggle.type = 'button';
+    const toggleLabel = make('span', '', 'New post');
+    const icon = make('span', 'poll-compose-icon');
+    icon.innerHTML = PLUS;
+    toggle.append(icon, toggleLabel);
+    const panel = make('div', 'friend-card poll-composer hidden');
+    let kind = kinds[0];
+    if (!named) {
+      panel.append(
+        make('p', 'friend-title', 'Choose a username first'),
+        make('p', 'friend-hint', 'Posts show your username, so pick one in your profile before posting.'),
+        button('Open profile', 'button', () => navigateTo('../profile/'))
+      );
+    } else {
+      const kindTabs = make('div', 'tabs poll-kind-tabs');
+      kindTabs.style.setProperty('--count', kinds.length);
+      kindTabs.appendChild(make('span', 'tab-pill'));
+      const title = make('input', 'friend-input');
+      const body = make('textarea', 'friend-input poll-text');
+      const optionsBox = make('div', 'poll-options-edit hidden');
+      const rows = [];
+      const add = button('Add option', 'tertiary-button', () => optionRow(rows, optionsBox, add, true).input.focus());
+      optionsBox.appendChild(add);
+      const sync = initial => {
+        title.placeholder = TITLES[kind];
+        title.setAttribute('aria-label', TITLES[kind]);
+        if (initial) optionsBox.classList.toggle('hidden', kind !== 'poll');
+        else setShown(optionsBox, kind === 'poll');
+        kindTabs.style.setProperty('--i', kinds.indexOf(kind));
+        kindTabs.querySelectorAll('.tab').forEach(tab => {
+          tab.classList.toggle('active', tab.dataset.kind === kind);
+          tab.setAttribute('aria-selected', String(tab.dataset.kind === kind));
         });
-        optionsBox.classList.toggle('hidden', kind !== 'poll');
+      };
+      kinds.forEach(name => {
+        const tab = make('button', 'tab', name === 'suggestion' ? 'Suggestion' : LABELS[name]);
+        tab.type = 'button';
+        tab.dataset.kind = name;
+        tab.setAttribute('role', 'tab');
+        tab.addEventListener('click', () => {
+          kind = name;
+          sync();
+        });
+        kindTabs.appendChild(tab);
       });
-      chip.setAttribute('aria-pressed', String(name === kind));
-      return chip;
-    });
-    chips.forEach(chip => kinds.appendChild(chip));
-    const title = make('input', 'friend-input');
-    title.type = 'text';
-    title.maxLength = LIMITS.title;
-    title.placeholder = 'Title';
-    title.autocomplete = 'off';
-    title.setAttribute('aria-label', 'Title');
-    const body = make('textarea', 'friend-input poll-text');
-    body.maxLength = LIMITS.body;
-    body.rows = 3;
-    body.placeholder = 'Details (optional)';
-    body.setAttribute('aria-label', 'Details');
-    const optionsBox = make('div', 'poll-options-edit');
-    const rows = [];
-    const add = button('Add option', 'tertiary-button', () => {
-      optionRow(rows, optionsBox, add).input.focus();
-    });
-    optionsBox.appendChild(add);
-    optionRow(rows, optionsBox, add);
-    optionRow(rows, optionsBox, add);
-    const submit = button('Post', 'button small', async () => {
-      const payload = { kind, title: title.value, body: body.value, options: kind === 'poll' ? rows.map(item => item.input.value) : [] };
-      if (!payload.title.trim()) {
-        audio.sfx('error');
-        showToast('Add a title.');
-        return;
+      title.type = 'text';
+      title.maxLength = LIMITS.title;
+      title.autocomplete = 'off';
+      body.maxLength = LIMITS.body;
+      body.rows = 4;
+      body.placeholder = 'Details (optional)';
+      body.setAttribute('aria-label', 'Details');
+      optionRow(rows, optionsBox, add, false);
+      optionRow(rows, optionsBox, add, false);
+      if (draft) {
+        title.value = draft.title;
+        body.value = draft.body;
       }
-      if (kind === 'poll' && payload.options.filter(value => value.trim()).length < LIMITS.minOptions) {
-        audio.sfx('error');
-        showToast('Polls need at least 2 options.');
-        return;
-      }
-      const ok = await act(() => profile.api('createPost', payload), 'Posted.', 'claim');
-      if (!ok) return;
-      title.value = '';
-      body.value = '';
-      rows.forEach(item => {
-        item.input.value = '';
+      title.addEventListener('input', () => {
+        draft = { title: title.value, body: body.value };
       });
-      load();
-    });
-    const footer = make('div', 'poll-reply-row');
-    footer.append(make('span', 'friend-sub', 'Only you can post.'), submit);
-    card.append(make('p', 'friend-title', 'New post'), kinds, title, body, optionsBox, footer);
-    composer.appendChild(card);
+      body.addEventListener('input', () => {
+        draft = { title: title.value, body: body.value };
+      });
+      const submit = button('Post', 'button', async () => {
+        const payload = { kind, title: title.value, body: body.value, options: kind === 'poll' ? rows.map(item => item.input.value) : [] };
+        if (!payload.title.trim()) {
+          audio.sfx('error');
+          showToast('Add a title.');
+          return;
+        }
+        if (kind === 'poll' && payload.options.filter(value => value.trim()).length < LIMITS.minOptions) {
+          audio.sfx('error');
+          showToast('Polls need at least 2 options.');
+          return;
+        }
+        const ok = await act(() => profile.api('createPost', payload), 'Posted.', 'claim');
+        if (!ok) return;
+        draft = null;
+        title.value = '';
+        body.value = '';
+        rows.forEach(item => {
+          item.input.value = '';
+        });
+        open(false);
+        setFilter(kind);
+        load();
+      });
+      const hint = make('p', 'friend-hint', data.admin ? 'Only you can post polls.' : 'Posts are public and show your username.');
+      const actions = make('div', 'poll-actions');
+      const group = make('div', 'poll-actions-group');
+      group.appendChild(submit);
+      actions.appendChild(group);
+      panel.append(kindTabs, title, body, optionsBox, hint, actions);
+      sync(true);
+    }
+    let opened = false;
+    const open = on => {
+      opened = on;
+      toggle.classList.toggle('on', on);
+      toggleLabel.textContent = on ? 'Cancel' : 'New post';
+      setShown(panel, on);
+    };
+    toggle.addEventListener('click', () => open(!opened));
+    composer.append(toggle, panel);
   }
 
   function renderComposer() {
-    if (data.admin && !composerBuilt) buildComposer();
-    setShown(composer, data.admin);
+    const sig = `${profile.social}:${data.admin}:${!!profile.state.username}`;
+    if (sig === composerSig) return;
+    composerSig = sig;
+    buildComposer();
   }
 
   async function load() {
@@ -404,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function render() {
     setShown(note, profile.session.status === 'out');
     setCoins($('wallet'), profile.state.coins);
+    if (loaded) renderComposer();
   }
 
   const keyOf = () => (profile.canView ? (profile.social ? profile.state.uid : 'guest') : null);
@@ -414,6 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!key || profile.session.syncing || key === loadedKey) return;
     loadedKey = key;
     load();
+  });
+
+  tabs.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => setFilter(tab.dataset.filter));
   });
 
   $('note-signin').addEventListener('click', () => signInFlow());
