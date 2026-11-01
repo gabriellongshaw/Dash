@@ -1,6 +1,6 @@
 # Dash
 
-A fast, modern 2D endless runner. Jump, slide and double jump through obstacles, collect coins, and spend them on colours, characters, hats and worlds.
+A fast, modern endless runner. Jump, slide and double jump through obstacles, collect coins, and spend them on colours, characters, hats and worlds. Play it from the side, or in first person.
 
 ## How to play
 
@@ -9,6 +9,16 @@ Run as far as you can. Coins add 5 points each and distance adds the rest. The g
 **Desktop:** `Space`, `↑` or `W` to jump (press again in the air to double jump). Hold `↓` or `S` to slide, or to fast-fall in the air. `P` or `Esc` pauses.
 
 **Touch:** tap the screen or the jump button to jump, and hold the slide button to slide.
+
+### First person
+
+Pick **First person** above Play on the home screen to run down a three-lane track from the runner's eyes, like Subway Surfers. Your choice is remembered on that device.
+
+**Desktop:** `←` `→` or `A` `D` change lane. `Space`, `↑` or `W` jump (again in the air to double jump). `↓` or `S` slide. `P` or `Esc` pauses.
+
+**Touch:** swipe left or right to change lane, up to jump and down to slide (in the air, down drops you faster). A tap also jumps.
+
+Coins, quests, the shop and the leaderboard work the same in both views and share the same scores. Obstacles are the same too, but they sit in lanes, so many can be dodged by switching lane as well as by jumping or sliding. Wide barriers, ceiling gates, force fields and wide spikes cover every lane and still need a jump or slide. Characters, colours and hats are not visible in first person, but the world you picked is.
 
 ### Obstacles
 
