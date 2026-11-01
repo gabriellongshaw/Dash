@@ -33,6 +33,8 @@
 .poll-compose-icon {
   display: grid;
   place-items: center;
+  position: relative;
+  top: 1px;
 }
 
 .poll-compose-icon svg {
@@ -457,6 +459,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  padding: 0 6px;
 }
 
 .poll-toggle {
@@ -476,14 +479,6 @@
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-.poll-replies-toggle {
-  margin-left: -10px;
-}
-
-.poll-voters-toggle {
-  margin-right: -10px;
-}
-
 .poll-toggle:hover {
   background: var(--secondary-bg);
 }
@@ -492,6 +487,12 @@
 .poll-chevron {
   display: grid;
   place-items: center;
+}
+
+.poll-toggle-icon svg,
+.poll-undo svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .poll-chevron svg {

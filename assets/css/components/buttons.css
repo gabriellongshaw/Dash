@@ -54,6 +54,13 @@
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
+.secondary-button > svg {
+  flex-shrink: 0;
+  display: block;
+  position: relative;
+  top: 1px;
+}
+
 .secondary-button:hover,
 .secondary-button.hover {
   background: var(--button-secondary-bg-hover);
@@ -151,6 +158,11 @@
   cursor: pointer;
   touch-action: manipulation;
   transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.tertiary-button svg {
+  flex-shrink: 0;
+  display: block;
 }
 
 .tertiary-button:hover {
