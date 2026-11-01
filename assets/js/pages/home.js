@@ -10,6 +10,7 @@ import { clamp } from '../core/utils.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
+import { MODES, getMode, setMode } from '../core/mode.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
@@ -19,6 +20,25 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudio(1);
   mountSound(document.querySelector('.home-nav'));
   mountAccount(document.getElementById('account'), './');
+
+  const modeSwitch = document.getElementById('mode-switch');
+  const keyHints = document.getElementById('key-hints');
+  const showMode = mode => {
+    modeSwitch.style.setProperty('--i', MODES.indexOf(mode));
+    modeSwitch.querySelectorAll('.mode-option').forEach(option => {
+      const on = option.dataset.mode === mode;
+      option.classList.toggle('active', on);
+      option.setAttribute('aria-pressed', String(on));
+    });
+    keyHints.dataset.mode = mode;
+  };
+  modeSwitch.querySelectorAll('.mode-option').forEach(option => {
+    option.addEventListener('click', () => {
+      setMode(option.dataset.mode);
+      showMode(option.dataset.mode);
+    });
+  });
+  showMode(getMode());
 
   const bestEl = document.getElementById('home-best');
   const showStats = () => {
