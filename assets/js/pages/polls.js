@@ -27,6 +27,12 @@ const CHECK =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
 const BUBBLE =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.5-4.6A8 8 0 1 1 21 12Z"/></svg>';
+const CHEVRON =
+  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const EYE =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const UNDO =
+  '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
 const PLUS =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
 
@@ -252,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     group.append(
       button('Cancel', 'secondary-button', () => {
         editing.delete(post.id);
-        done();
+        done(false);
       }),
       button('Save', 'button', async () => {
         if (!draft.title.trim()) {
@@ -277,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!ok) return;
         Object.assign(post, out.post);
         editing.delete(post.id);
-        done();
+        done(true);
       })
     );
     const actions = make('div', 'poll-actions');
@@ -286,28 +292,38 @@ document.addEventListener('DOMContentLoaded', () => {
     return form;
   }
 
+  function toggleButton(icon, label) {
+    const el = make('button', 'poll-toggle');
+    el.type = 'button';
+    const ico = make('span', 'poll-toggle-icon');
+    ico.innerHTML = icon;
+    const text = make('span', 'poll-toggle-label', label);
+    const chevron = make('span', 'poll-chevron');
+    chevron.innerHTML = CHEVRON;
+    el.append(ico, text, chevron);
+    return { el, text };
+  }
+
   function votersSection(post) {
     const view = voterViews.get(post.id) || { open: false, failed: false, data: null };
     voterViews.set(post.id, view);
-    const panel = make('div', 'poll-voters');
-    const toggle = button('', 'tertiary-button poll-voters-toggle', async () => {
-      view.open = !view.open;
-      paint();
-      if (view.open) await fetchVoters();
-    });
+    const { el: toggle } = toggleButton(EYE, 'Who voted');
+    toggle.classList.add('poll-voters-toggle');
+    const panel = make('div', 'poll-panel');
+    const inner = make('div', 'poll-voters');
+    panel.appendChild(inner);
+    if (!view.open) panel.classList.add('hidden');
+    toggle.setAttribute('aria-expanded', String(view.open));
+
     function paint() {
-      toggle.textContent = view.open ? 'Hide voters' : 'Who voted';
-      toggle.setAttribute('aria-expanded', String(view.open));
-      panel.classList.toggle('hidden', !view.open);
-      panel.innerHTML = '';
-      if (!view.open) return;
-      panel.appendChild(make('p', 'friend-hint', 'Only you can see who voted.'));
+      inner.innerHTML = '';
+      inner.appendChild(make('p', 'friend-hint', 'Only you can see who voted.'));
       if (view.failed) {
-        panel.append(make('p', 'friend-hint', 'Could not load voters.'), button('Try again', 'tertiary-button', () => fetchVoters()));
+        inner.append(make('p', 'friend-hint', 'Could not load voters.'), button('Try again', 'tertiary-button', () => fetchVoters()));
         return;
       }
       if (!view.data) {
-        panel.appendChild(make('p', 'friend-hint', 'Loading…'));
+        inner.appendChild(make('p', 'friend-hint', 'Loading…'));
         return;
       }
       view.data.options.forEach(group => {
@@ -322,10 +338,11 @@ document.addEventListener('DOMContentLoaded', () => {
           });
           block.appendChild(names);
         }
-        panel.appendChild(block);
+        inner.appendChild(block);
       });
-      if (view.data.listed < view.data.total) panel.appendChild(make('p', 'friend-hint', `Showing the first ${view.data.listed} of ${view.data.total} votes.`));
+      if (view.data.listed < view.data.total) inner.appendChild(make('p', 'friend-hint', `Showing the first ${view.data.listed} of ${view.data.total} votes.`));
     }
+
     async function fetchVoters() {
       view.failed = false;
       if (!view.data) paint();
@@ -336,43 +353,49 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       paint();
     }
+
+    toggle.addEventListener('click', () => {
+      view.open = !view.open;
+      toggle.setAttribute('aria-expanded', String(view.open));
+      if (view.open) {
+        paint();
+        fetchVoters();
+      }
+      setShown(panel, view.open);
+    });
     paint();
     if (view.open && !view.data) fetchVoters();
     return { toggle, panel };
   }
 
   function repliesSection(post) {
-    const t = threads.get(post.id) || { open: false, loaded: false, loading: false, failed: false, list: [], draft: '' };
+    const t = threads.get(post.id) || { open: false, loaded: false, loading: false, failed: false, list: [], draft: '', enter: null };
     threads.set(post.id, t);
-    const wrap = make('div', 'poll-replies');
-    const toggle = make('button', 'poll-replies-toggle');
-    toggle.type = 'button';
-    const toggleIcon = make('span', 'poll-replies-icon');
-    toggleIcon.innerHTML = BUBBLE;
-    const toggleText = make('span');
-    toggle.append(toggleIcon, toggleText);
-    const panel = make('div', 'poll-thread');
+    const { el: toggle, text: toggleText } = toggleButton(BUBBLE, '');
+    toggle.classList.add('poll-replies-toggle');
+    const panel = make('div', 'poll-panel');
+    const inner = make('div', 'poll-thread');
     const listBox = make('div', 'poll-reply-list');
     const compose = make('div', 'poll-reply-compose');
-    panel.append(listBox, compose);
-    wrap.append(toggle, panel);
+    inner.append(listBox, compose);
+    panel.appendChild(inner);
+    if (!t.open) panel.classList.add('hidden');
+    toggle.setAttribute('aria-expanded', String(t.open));
 
     const paintToggle = () => {
-      toggleText.textContent = t.open ? 'Hide replies' : post.replies ? `${post.replies} ${post.replies === 1 ? 'reply' : 'replies'}` : 'Reply';
-      toggle.setAttribute('aria-expanded', String(t.open));
-      panel.classList.toggle('hidden', !t.open);
+      toggleText.textContent = post.replies ? `${post.replies} ${post.replies === 1 ? 'reply' : 'replies'}` : 'Reply';
     };
 
     function replyRow(reply) {
-      const row = make('div', `poll-reply${reply.owner ? ' owner' : ''}`);
-      const meta = make('div', 'poll-reply-meta');
-      meta.appendChild(make('span', 'poll-reply-author', reply.author || 'Player'));
-      if (reply.owner) meta.appendChild(make('span', 'poll-owner', 'Creator'));
-      meta.appendChild(make('span', 'poll-time', ago(reply.at)));
-      row.append(meta, make('p', 'poll-reply-body', reply.body));
+      const row = make('div', `poll-reply${reply.owner ? ' owner' : ''}${t.enter === reply.id ? ' entering' : ''}`);
+      const head = make('div', 'poll-reply-meta');
+      head.appendChild(make('span', 'poll-reply-author', reply.author || 'Player'));
+      if (reply.owner) head.appendChild(make('span', 'poll-owner', 'Creator'));
+      head.appendChild(make('span', 'poll-time', ago(reply.at)));
+      row.append(head, make('p', 'poll-reply-body', reply.body));
       if (reply.canDelete) {
         row.appendChild(
-          button('Delete', 'tertiary-button danger poll-reply-delete', async () => {
+          button('Delete', 'poll-tool danger poll-reply-delete', async () => {
             if (!confirm('Delete this reply?')) return;
             let out = null;
             const ok = await act(async () => {
@@ -382,9 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!ok) return;
             t.list = t.list.filter(item => item.id !== reply.id);
             post.replies = out.replies;
+            paintToggle();
             await exitRow(row);
             row.remove();
-            t.paint();
+            if (!t.list.length) paintList();
           })
         );
       }
@@ -398,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (t.loading && !t.loaded) listBox.appendChild(make('p', 'friend-hint', 'Loading replies…'));
       else if (!t.list.length) listBox.appendChild(make('p', 'friend-hint', 'No replies yet.'));
       else t.list.forEach(reply => listBox.appendChild(replyRow(reply)));
+      t.enter = null;
     }
 
     t.paint = () => {
@@ -457,6 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
         post.replies = out.replies;
         if (t.loaded) {
           t.list.push(out.reply);
+          t.enter = out.reply.id;
           t.paint();
         } else loadThread();
       });
@@ -465,12 +491,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggle.addEventListener('click', () => {
       t.open = !t.open;
-      t.paint();
+      toggle.setAttribute('aria-expanded', String(t.open));
+      setShown(panel, t.open);
       if (t.open && !t.loading) loadThread();
     });
     t.paint();
     if (t.open && !t.loading && (!t.loaded || t.list.length !== post.replies)) loadThread();
-    return wrap;
+    return { toggle, panel };
   }
 
   function postCard(post, index) {
@@ -479,86 +506,115 @@ document.addEventListener('DOMContentLoaded', () => {
     const fresh = !seen.has(post.id);
     if (!fresh) card.classList.add('static');
     seen.add(post.id);
-    const rebuild = () => card.replaceWith(postCard(post, index));
+
     const head = make('div', 'poll-head');
+    const time = make('span', 'poll-time');
+    const stamp = () => {
+      time.textContent = post.editedAt ? `${ago(post.at)} · edited` : ago(post.at);
+    };
+    stamp();
     head.appendChild(make('span', 'poll-kind', LABELS[post.kind]));
     if (post.closed) head.appendChild(make('span', 'poll-state', 'Closed'));
-    head.appendChild(make('span', 'poll-time', post.editedAt ? `${ago(post.at)} · edited` : ago(post.at)));
-    card.appendChild(head);
-    if (editing.has(post.id)) {
-      card.appendChild(editForm(post, rebuild));
-      return card;
-    }
-    card.appendChild(make('h2', 'poll-title', post.title));
-    if (post.author) card.appendChild(make('span', 'poll-author', `by ${post.author}`));
-    if (post.body) card.appendChild(make('p', 'poll-body', post.body));
-    if (post.kind === 'poll') {
-      const foot = make('div', 'poll-foot');
-      const count = make('span', 'poll-count');
-      const undo = button('Undo vote', 'tertiary-button poll-undo', () => undoVote(post, repaint));
-      let options = null;
-      let last = -1;
-      const repaint = animate => {
-        paintOptions(options, post, animate);
-        count.textContent = `${post.total} ${post.total === 1 ? 'vote' : 'votes'}`;
-        undo.classList.toggle('hidden', post.mine.vote === null || post.closed);
-        if (last !== -1 && last !== post.total) tick(count);
-        last = post.total;
-      };
-      options = pollOptions(post, repaint);
-      foot.append(count, undo);
-      card.append(options, foot);
-      if (data.admin) {
-        const voters = votersSection(post);
-        foot.appendChild(voters.toggle);
-        card.appendChild(voters.panel);
+    head.appendChild(time);
+
+    const content = make('div', 'poll-content');
+    const viewBox = make('div', 'poll-view');
+    const editBox = make('div', 'poll-edit-wrap');
+    content.append(viewBox, editBox);
+
+    function renderView(first) {
+      viewBox.innerHTML = '';
+      viewBox.appendChild(make('h2', 'poll-title', post.title));
+      if (post.author) viewBox.appendChild(make('span', 'poll-author', `by ${post.author}`));
+      if (post.body) viewBox.appendChild(make('p', 'poll-body', post.body));
+      if (post.kind === 'poll') {
+        const foot = make('div', 'poll-foot');
+        const count = make('span', 'poll-count');
+        const undo = button('', 'poll-undo', () => undoVote(post, repaint));
+        undo.innerHTML = `${UNDO}<span>Undo vote</span>`;
+        let options = null;
+        let last = -1;
+        const repaint = animate => {
+          paintOptions(options, post, animate);
+          count.textContent = `${post.total} ${post.total === 1 ? 'vote' : 'votes'}`;
+          const show = post.mine.vote !== null && !post.closed;
+          if (animate) setShown(undo, show);
+          else undo.classList.toggle('hidden', !show);
+          if (last !== -1 && last !== post.total) tick(count);
+          last = post.total;
+        };
+        options = pollOptions(post, repaint);
+        foot.append(count, undo);
+        viewBox.append(options, foot);
+        if (first && fresh && !reducedMotion()) requestAnimationFrame(() => requestAnimationFrame(() => repaint(true)));
+        else repaint(false);
       }
-      if (fresh && !reducedMotion()) requestAnimationFrame(() => requestAnimationFrame(() => repaint(true)));
-      else repaint(false);
-    }
-    const mod = data.admin && post.kind === 'poll';
-    if (mod || post.canDelete || post.canEdit) {
-      const actions = make('div', 'poll-actions');
-      if (mod || post.canEdit) {
-        const group = make('div', 'poll-actions-group');
-        if (post.canEdit) {
-          group.appendChild(
-            button('Edit', 'secondary-button', () => {
-              editing.set(post.id, { title: post.title, body: post.body, options: post.options.map(option => option.text) });
-              rebuild();
-            })
-          );
-        }
+      const mod = data.admin && post.kind === 'poll';
+      if (mod || post.canEdit || post.canDelete) {
+        const tools = make('div', 'poll-tools');
+        if (post.canEdit) tools.appendChild(button('Edit', 'poll-tool', () => openEditor()));
         if (mod) {
-          group.appendChild(
-            button(post.closed ? 'Reopen poll' : 'Close poll', 'secondary-button', async () => {
+          tools.appendChild(
+            button(post.closed ? 'Reopen poll' : 'Close poll', 'poll-tool', async () => {
               const ok = await act(() => profile.api('setClosed', { id: post.id, closed: !post.closed }), post.closed ? 'Poll reopened.' : 'Poll closed.');
               if (ok) load();
             })
           );
         }
-        actions.appendChild(group);
+        if (post.canDelete) {
+          tools.appendChild(
+            button('Delete', 'poll-tool danger', async () => {
+              if (!confirm(`Delete "${post.title}"?`)) return;
+              const ok = await act(() => profile.api('deletePost', { id: post.id }), 'Deleted.');
+              if (!ok) return;
+              seen.delete(post.id);
+              threads.delete(post.id);
+              voterViews.delete(post.id);
+              editing.delete(post.id);
+              data = { ...data, posts: data.posts.filter(item => item.id !== post.id) };
+              await exitRow(card);
+              card.remove();
+              if (!visible().length) renderList();
+            })
+          );
+        }
+        viewBox.appendChild(tools);
       }
-      if (post.canDelete) {
-        actions.appendChild(
-          button('Delete', 'tertiary-button danger', async () => {
-            if (!confirm(`Delete "${post.title}"?`)) return;
-            const ok = await act(() => profile.api('deletePost', { id: post.id }), 'Deleted.');
-            if (!ok) return;
-            seen.delete(post.id);
-            threads.delete(post.id);
-            voterViews.delete(post.id);
-            editing.delete(post.id);
-            data = { ...data, posts: data.posts.filter(item => item.id !== post.id) };
-            await exitRow(card);
-            card.remove();
-            if (!visible().length) renderList();
-          })
-        );
-      }
-      card.appendChild(actions);
     }
-    card.appendChild(repliesSection(post));
+
+    function openEditor() {
+      editing.set(post.id, { title: post.title, body: post.body, options: post.options.map(option => option.text) });
+      editBox.replaceChildren(editForm(post, close));
+      setShown(viewBox, false);
+      setShown(editBox, true);
+    }
+
+    function close(saved) {
+      if (saved) {
+        stamp();
+        renderView(false);
+      }
+      setShown(editBox, false);
+      setShown(viewBox, true);
+    }
+
+    renderView(true);
+    if (editing.has(post.id)) {
+      editBox.appendChild(editForm(post, close));
+      viewBox.classList.add('hidden');
+    } else editBox.classList.add('hidden');
+
+    const meta = make('div', 'poll-meta');
+    const bar = make('div', 'poll-bar');
+    const replies = repliesSection(post);
+    bar.appendChild(replies.toggle);
+    const voters = data.admin && post.kind === 'poll' ? votersSection(post) : null;
+    if (voters) bar.appendChild(voters.toggle);
+    meta.appendChild(bar);
+    if (voters) meta.appendChild(voters.panel);
+    meta.appendChild(replies.panel);
+
+    card.append(head, content, meta);
     return card;
   }
 
