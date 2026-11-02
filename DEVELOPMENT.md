@@ -75,12 +75,12 @@ Ads use Google AdSense's game ads (the Ad Placement API) and run only on the pla
 
 ## Third person mode
 
-The home screen stores the chosen view in `localStorage` under `dash:mode` (`classic` or `third`, helpers in `assets/js/core/mode.js`). `assets/js/pages/game.js` reads it and creates either `Game` (side view) or `ThirdPersonGame` (`assets/js/components/thirdperson.js`). Both expose the same methods and hooks, so the page, HUD, quests and run submission are shared.
+The home screen stores the chosen view in `localStorage` under `dash:mode` (`classic` or `third`, helpers in `assets/js/core/mode.js`). `assets/js/pages/game.js` reads it and creates either `Game` (Classic) or `ThirdPersonGame` (`assets/js/components/thirdperson.js`). Both expose the same methods and hooks, so the page, HUD, quests and run submission are shared.
 
-- `lanes.js` holds the lane obstacles, coin layouts and spawner. It reuses the tier and spacing curve from `obstacles.js`, so obstacle and coin density per metre matches the side view.
+- `lanes.js` holds the lane obstacles, coin layouts and spawner. It reuses the tier and spacing curve from `obstacles.js`, so obstacle and coin density per metre matches Classic.
 - `perspective.js` projects the track, obstacles and coins onto the 2D canvas. There is no 3D library.
-- `thirdperson.js` reuses `Runner` for jumping, double jumping and sliding, with height measured upwards from the ground. The camera sits `back` units behind the runner, and obstacles and coins are shifted by `back` while drawing. The runner sprite is drawn between obstacles ahead of and behind it, mirrored while it changes lane.
-- Distance, speed, scoring and the numbers sent in `submitRun` are the same as the side view, so the same server checks in `api/game.js` apply to both views.
+- `thirdperson.js` reuses `Runner` for jumping, double jumping and sliding, with height measured upwards from the ground. The camera sits `back` units behind the runner, and obstacles and coins are shifted by `back` while drawing. The runner is drawn between obstacles ahead of and behind it using `runnerback.js`, a rear-view rig (run cycle, lane lean, jump, double jump flip and roll) with per-character details such as ears, tails and packs. Classic and the shop previews still use the side-view sprite.
+- Distance, speed, scoring and the numbers sent in `submitRun` are the same as Classic, so the same server checks in `api/game.js` apply to both views.
 - `submitRun` takes a `mode` (`side` or `third`). Third person runs update `bestThird` and `weekThird` on the profile and write to the separate `dashBoardThird` and `dashWeeksThird/{week}/entries` collections. They do not change `best`, `vBest` or the score stats used by quests. The new collections need the same public read rule as `dashBoard` and `dashWeeks` in the Firestore rules.
 
 ## Not found page
@@ -101,5 +101,5 @@ The home screen stores the chosen view in `localStorage` under `dash:mode` (`cla
 - `assets/js/core/` — audio and music, difficulty curve, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
 - `server/` — friends, gifting, privacy, blocking and polls logic used by the API
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
-- `assets/js/components/` — game engines (side view and third person), runner, characters, hats, obstacles, lanes, perspective renderer, world, particles, account UI
+- `assets/js/components/` — game engines (Classic and third person), runner, characters, hats, obstacles, lanes, perspective renderer, world, particles, account UI
 - `assets/js/pages/` — page entry points
