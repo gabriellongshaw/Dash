@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderMeta() {
-    const view = mode === 'third' ? 'Third person' : 'Side view';
+    const view = mode === 'third' ? 'Third person' : 'Classic';
     $('meta-left').textContent = `${view} · ${scope === 'all' ? 'Best score ever' : 'Best score this week'}`;
     $('meta-right').textContent = scope === 'all' ? '' : `Resets in ${formatTime(msUntilReset('w'))}`;
   }

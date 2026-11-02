@@ -1,6 +1,6 @@
 # Dash
 
-A fast, modern endless runner. Jump, slide and double jump through obstacles, collect coins, and spend them on colours, characters, hats and worlds. Play it from the side, or in third person.
+A fast, modern endless runner. Jump, slide and double jump through obstacles, collect coins, and spend them on colours, characters, hats and worlds. Play it in the classic side view, or in third person.
 
 ## How to play
 
@@ -18,7 +18,7 @@ Pick **Third person** above Play on the home screen to run down a three-lane tra
 
 **Touch:** swipe left or right to change lane, up to jump and down to slide. Each swipe does one thing, so a long drag will not change several lanes. A quick tap also jumps.
 
-Coins, quests and the shop are shared between both views, but third person has its own best score and its own leaderboard. Score quests only count side view runs. Obstacles are the same as the side view, but they sit in lanes, so many can be dodged by switching lane as well as by jumping or sliding. Wide barriers, ceiling gates, force fields and wide spikes cover every lane and still need a jump or slide. Your character, colours and hat are visible from behind, and so is the world you picked.
+Coins, quests and the shop are shared between both modes, but third person has its own best score and its own leaderboard. Score quests only count Classic runs. Obstacles are the same as in Classic, but they sit in lanes, so many can be dodged by switching lane as well as by jumping or sliding. Wide barriers, ceiling gates, force fields and wide spikes cover every lane and still need a jump or slide. Your character, colours and hat are visible from behind, and so is the world you picked.
 
 ### Obstacles
 
@@ -53,7 +53,7 @@ Quests are another way to earn coins. Open **Quests** from the home screen.
 
 ## Leaderboard
 
-See the top 25 runners **This week** and **All time**, ranked by best score. Switch between **Side view** and **Third person** to see each board. Anyone can view it, and guests can tap a name to open that player's profile (unless they have limited who can see it). Sign in with Google to put your score on it. You appear as your first name and last initial, and your profile photo shows beside it if you keep your photo set to **Public**. You can hide yourself from the leaderboard at any time, which also removes your entries.
+See the top 25 runners **This week** and **All time**, ranked by best score. Switch between **Classic** and **Third person** to see each board. Anyone can view it, and guests can tap a name to open that player's profile (unless they have limited who can see it). Sign in with Google to put your score on it. You appear as your first name and last initial, and your profile photo shows beside it if you keep your photo set to **Public**. You can hide yourself from the leaderboard at any time, which also removes your entries.
 
 ## Friends and profiles
 
