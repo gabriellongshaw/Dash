@@ -1,6 +1,7 @@
 import { clamp, lerp, parseColor, tintColor, toCss } from '../core/utils.js';
 import { drawHat, hatSpec } from './hats.js';
 import { drawCharacter, hatFit, traitsOf } from './characters.js';
+import { drawRunnerBack } from './runnerback.js';
 
 export const GRAVITY = 2700;
 export const JUMP_SPEED = 735;
@@ -39,6 +40,8 @@ export class Runner {
     this.buffer = 0;
     this.clock = 0;
     this.squash = 0;
+    this.airK = 0;
+    this.flip = -1;
     this.alive = true;
     this.landed = false;
     this.slid = false;
@@ -53,7 +56,10 @@ export class Runner {
     this.vy = -(first ? JUMP_SPEED : DOUBLE_JUMP_SPEED);
     this.jumps++;
     this.jumpCount++;
-    if (!first) this.doubleCount++;
+    if (!first) {
+      this.doubleCount++;
+      this.flip = 0;
+    }
     this.grounded = false;
     this.sliding = false;
     this.squash = -0.3;
@@ -78,6 +84,7 @@ export class Runner {
         this.grounded = true;
         this.jumps = 0;
         this.landed = true;
+        this.flip = -1;
         this.squash = 0.35;
         if (this.buffer > 0) {
           this.buffer = 0;
@@ -112,12 +119,18 @@ export class Runner {
     this.visV += ((target - this.vis) * SPRING_K - this.visV * SPRING_D) * dt;
     this.vis = clamp(this.vis + this.visV * dt, -0.12, 1.14);
     this.squash -= this.squash * Math.min(1, dt * 14);
+    this.airK += ((this.grounded ? 0 : 1) - this.airK) * Math.min(1, dt * 20);
+    if (this.flip >= 0) this.flip += dt;
   }
 
   box() {
     const h = lerp(40, 20, this.pose);
     const w = lerp(22, 38, this.pose);
     return { x: this.x + lerp(6, 4, this.pose), y: this.y - 2 - h, w, h };
+  }
+
+  drawBack(ctx, p, speed, time, look = {}, lean = 0) {
+    drawRunnerBack(this, ctx, p, speed, time, look, lean);
   }
 
   draw(ctx, p, speed, time, look = {}) {

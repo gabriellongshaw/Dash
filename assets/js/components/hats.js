@@ -17,7 +17,7 @@ const hats = {
     ctx.arc(0, -20, 4, 0, TAU);
     ctx.fill();
   },
-  'hat:cap'(ctx) {
+  'hat:cap'(ctx, info) {
     ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
     ctx.moveTo(-14, 1);
@@ -27,7 +27,8 @@ const hats = {
     ctx.fill();
     ctx.fillStyle = '#1d4ed8';
     ctx.beginPath();
-    ctx.roundRect(4, -4, 19, 5, 2.5);
+    if (info.back) ctx.roundRect(-7, -3, 14, 4, 2);
+    else ctx.roundRect(4, -4, 19, 5, 2.5);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
@@ -505,10 +506,12 @@ const hats = {
     ctx.fill();
     ctx.fillStyle = '#6b7280';
     ctx.fillRect(-14, -3, 28, 4);
-    ctx.fillStyle = '#374151';
-    ctx.beginPath();
-    ctx.roundRect(3, -9, 10, 3, 1.5);
-    ctx.fill();
+    if (!info.back) {
+      ctx.fillStyle = '#374151';
+      ctx.beginPath();
+      ctx.roundRect(3, -9, 10, 3, 1.5);
+      ctx.fill();
+    }
     ctx.fillStyle = '#d1d5db';
     ctx.fillRect(-1.5, -15, 3, 6);
   },

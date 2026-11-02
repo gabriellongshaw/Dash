@@ -394,8 +394,9 @@ export class ThirdPersonGame {
     ctx.restore();
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(k * (this.x - this.lane * LANE_W > 3 ? -1 : 1), k);
-    this.runner.draw(ctx, this.palette, speed, this.time, this.look);
+    ctx.scale(k, k);
+    const lean = this.state === 'playing' ? clamp((this.lane * LANE_W - this.x) / (LANE_W * 0.6), -1, 1) : 0;
+    this.runner.drawBack(ctx, this.palette, speed, this.time, this.look, lean);
     ctx.restore();
   }
 }
