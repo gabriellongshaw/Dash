@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="../assets/css/components/account.css">
   <link rel="stylesheet" href="../assets/css/components/shop.css">
   <link rel="stylesheet" href="../assets/css/components/board.css">
+  <link rel="stylesheet" href="../assets/css/components/mode.css">
   <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
@@ -36,6 +37,11 @@
           <span>Sign in to put your score on the leaderboard.</span>
           <button class="tertiary-button" id="note-signin">Sign in</button>
         </p>
+        <div class="mode-switch" id="mode-switch" role="group" aria-label="View">
+          <span class="mode-pill" aria-hidden="true"></span>
+          <button class="mode-option active" data-mode="classic" aria-pressed="true">Side view</button>
+          <button class="mode-option" data-mode="third" aria-pressed="false">Third person</button>
+        </div>
         <div class="tabs tabs-2" id="tabs" role="tablist">
           <span class="tab-pill" aria-hidden="true"></span>
           <button class="tab active" data-scope="week" role="tab" aria-selected="true">This week</button>

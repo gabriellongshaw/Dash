@@ -1,4 +1,5 @@
 import { profile } from '../core/profile.js';
+import { getMode } from '../core/mode.js';
 import { fetchBoard, fetchRank, shortName } from '../core/leaderboard.js';
 import { msUntilReset, weekBoardScore } from '../core/quests.js';
 import { mountAccount, signInFlow } from '../components/account.js';
@@ -37,12 +38,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const note = $('note');
   const visibility = $('visibility-btn');
   let scope = 'week';
+  let mode = getMode();
   let token = 0;
   const cache = {};
   let shown = '';
 
-  const keyOf = name => (name === 'all' ? 'all' : profile.state.quests.week);
-  const scoreOf = name => (name === 'all' ? profile.state.best : weekBoardScore(profile.state.quests, profile.state.best));
+  const weekOf = () => profile.state.quests.week;
+  const keyOf = name => `${mode}:${name === 'all' ? 'all' : weekOf()}`;
+  const scopeOf = name => (name === 'all' ? 'all' : weekOf());
+  const scoreOf = name => {
+    if (mode === 'third') {
+      const mine = profile.state.weekThird;
+      return name === 'all' ? profile.state.bestThird : mine && mine.week === weekOf() ? mine.score : 0;
+    }
+    return name === 'all' ? profile.state.best : weekBoardScore(profile.state.quests, profile.state.best);
+  };
   const myScore = () => scoreOf(scope);
   const mineId = () => (profile.state.anon ? null : profile.state.uid);
 
@@ -140,14 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function pull(name) {
-    const key = keyOf(name);
-    const entries = await fetchBoard(key);
+    const entries = await fetchBoard(scopeOf(name), mode);
     const uid = mineId();
     const score = scoreOf(name);
     let rank = null;
     if (uid && profile.state.publicBoard && score > 0 && !entries.some(entry => entry.id === uid)) {
       try {
-        rank = await fetchRank(key, score);
+        rank = await fetchRank(scopeOf(name), score, mode);
       } catch {}
     }
     return { entries, rank };
@@ -201,7 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderMeta() {
-    $('meta-left').textContent = scope === 'all' ? 'Best score ever' : 'Best score this week';
+    const view = mode === 'third' ? 'Third person' : 'Side view';
+    $('meta-left').textContent = `${view} · ${scope === 'all' ? 'Best score ever' : 'Best score this week'}`;
     $('meta-right').textContent = scope === 'all' ? '' : `Resets in ${formatTime(msUntilReset('w'))}`;
   }
 
@@ -230,6 +240,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  const modeSwitch = $('mode-switch');
+  const modeButtons = [...modeSwitch.querySelectorAll('.mode-option')];
+  const showMode = () => {
+    modeSwitch.style.setProperty('--i', mode === 'third' ? 1 : 0);
+    modeButtons.forEach(b => {
+      const active = b.dataset.mode === mode;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-pressed', active);
+    });
+  };
+  modeButtons.forEach(b => {
+    b.addEventListener('click', () => {
+      b.blur();
+      if (b.dataset.mode === mode) return;
+      mode = b.dataset.mode;
+      showMode();
+      renderMeta();
+      load(false);
+    });
+  });
+  showMode();
+
   visibility.addEventListener('click', () => {
     visibility.blur();
     profile.setPublicBoard(!profile.state.publicBoard);
@@ -240,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('note-signin').addEventListener('click', () => signInFlow());
   $('back-btn').addEventListener('click', () => navigateTo('../'));
 
-  const boardState = () => JSON.stringify([mineId(), profile.state.quests.week, scoreOf('all'), scoreOf('week')]);
+  const boardState = () => JSON.stringify([mineId(), mode, profile.state.quests.week, scoreOf('all'), scoreOf('week')]);
   let lastBoard = boardState();
   profile.subscribe(() => {
     renderChrome();

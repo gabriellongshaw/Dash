@@ -288,3 +288,8 @@
   border-color: var(--accent);
   outline: none;
 }
+
+.board-page .mode-switch {
+  max-width: none;
+  margin-bottom: 10px;
+}
