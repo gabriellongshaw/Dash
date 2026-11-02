@@ -32,6 +32,8 @@ let anonPending = false;
 const defaults = () => ({
   coins: 0,
   best: 0,
+  bestThird: 0,
+  weekThird: { week: '', score: 0 },
   runs: 0,
   owned: ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'],
   equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' },
@@ -71,6 +73,11 @@ function sanitize(raw) {
   return {
     coins: whole(data.coins),
     best: whole(data.best),
+    bestThird: whole(data.bestThird),
+    weekThird: {
+      week: data.weekThird && typeof data.weekThird.week === 'string' ? data.weekThird.week : '',
+      score: data.weekThird ? whole(data.weekThird.score) : 0
+    },
     runs: whole(data.runs),
     owned: [...owned],
     equipped,
@@ -349,12 +356,17 @@ export const profile = {
   recordRun(run) {
     const { coins, score } = run;
     if (!cloudReady || !state.uid) return;
+    const third = run.mode === 'third';
+    const quests = applyRun(state.quests, third ? { ...run, score: 0 } : run);
+    const mine = state.weekThird;
     state = {
       ...state,
       coins: state.coins + coins,
       runs: state.runs + 1,
-      best: Math.max(state.best, score),
-      quests: applyRun(state.quests, run)
+      best: third ? state.best : Math.max(state.best, score),
+      bestThird: third ? Math.max(state.bestThird, score) : state.bestThird,
+      weekThird: third ? { week: quests.week, score: Math.max(mine.week === quests.week ? mine.score : 0, score) } : mine,
+      quests
     };
     persist();
     emit();
@@ -373,7 +385,8 @@ export const profile = {
           jumps: run.jumps,
           doubles: run.doubles,
           slides: run.slides,
-          dodged: run.dodged
+          dodged: run.dodged,
+          mode: third ? 'third' : 'side'
         });
       })
       .then(out => {

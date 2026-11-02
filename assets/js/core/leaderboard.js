@@ -3,6 +3,8 @@ import { FIRST_WEEK } from './quests.js';
 
 const ALL_TIME = 'dashBoard';
 const WEEKS = 'dashWeeks';
+const ALL_TIME_THIRD = 'dashBoardThird';
+const WEEKS_THIRD = 'dashWeeksThird';
 const PAGE = 25;
 
 const PHOTO_DATA = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
@@ -27,15 +29,17 @@ export function shortName(full) {
   return `${first} ${[...parts[parts.length - 1]][0].toUpperCase()}.`;
 }
 
-function collectionFor(cloud, scope) {
+function collectionFor(cloud, scope, mode) {
   const { collection } = cloud.fsMod;
-  return scope === 'all' ? collection(cloud.db, ALL_TIME) : collection(cloud.db, WEEKS, scope, 'entries');
+  const third = mode === 'third';
+  if (scope === 'all') return collection(cloud.db, third ? ALL_TIME_THIRD : ALL_TIME);
+  return collection(cloud.db, third ? WEEKS_THIRD : WEEKS, scope, 'entries');
 }
 
-async function fetchRaw(scope) {
+async function fetchRaw(scope, mode) {
   const cloud = await loadFirebase();
   const { query, orderBy, limit, getDocs } = cloud.fsMod;
-  const snap = await getDocs(query(collectionFor(cloud, scope), orderBy('score', 'desc'), limit(PAGE)));
+  const snap = await getDocs(query(collectionFor(cloud, scope, mode), orderBy('score', 'desc'), limit(PAGE)));
   return snap.docs.map(d => {
     const data = d.data();
     return {
@@ -47,9 +51,9 @@ async function fetchRaw(scope) {
   });
 }
 
-export async function fetchBoard(scope) {
-  if (scope !== FIRST_WEEK) return fetchRaw(scope);
-  const [weekly, all] = await Promise.all([fetchRaw(scope), fetchRaw('all')]);
+export async function fetchBoard(scope, mode) {
+  if (scope !== FIRST_WEEK || mode === 'third') return fetchRaw(scope, mode);
+  const [weekly, all] = await Promise.all([fetchRaw(scope, mode), fetchRaw('all', mode)]);
   const best = new Map();
   [...weekly, ...all].forEach(entry => {
     const have = best.get(entry.id);
@@ -58,10 +62,10 @@ export async function fetchBoard(scope) {
   return [...best.values()].sort((a, b) => b.score - a.score).slice(0, PAGE);
 }
 
-export async function fetchRank(scope, score) {
-  if (scope === FIRST_WEEK) scope = 'all';
+export async function fetchRank(scope, score, mode) {
+  if (scope === FIRST_WEEK && mode !== 'third') scope = 'all';
   const cloud = await loadFirebase();
   const { query, where, getCountFromServer } = cloud.fsMod;
-  const snap = await getCountFromServer(query(collectionFor(cloud, scope), where('score', '>', whole(score))));
+  const snap = await getCountFromServer(query(collectionFor(cloud, scope, mode), where('score', '>', whole(score))));
   return snap.data().count + 1;
 }

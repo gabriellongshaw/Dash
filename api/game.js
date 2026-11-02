@@ -41,10 +41,19 @@ class Fail extends Error {
 
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
+const cleanWeekThird = v => ({
+  week: v && typeof v.week === 'string' && /^\d{4}-W\d{2}$/.test(v.week) ? v.week : '',
+  score: v ? whole(v.score) : 0
+});
+
+const MODES = ['side', 'third'];
+
 const defaults = () => ({
   coins: 0,
   best: 0,
   vBest: 0,
+  bestThird: 0,
+  weekThird: { week: '', score: 0 },
   runs: 0,
   owned: [...DEFAULT_OWNED],
   equipped: { skin: 'skin:emerald', hat: 'hat:none', char: 'char:bot', world: 'world:skyline' },
@@ -75,6 +84,8 @@ function sanitize(raw) {
     coins: whole(data.coins),
     best: whole(data.best),
     vBest: whole(data.vBest),
+    bestThird: whole(data.bestThird),
+    weekThird: cleanWeekThird(data.weekThird),
     runs: whole(data.runs),
     owned: [...owned],
     equipped,
@@ -96,6 +107,8 @@ function sanitize(raw) {
 const view = p => ({
   coins: p.coins,
   best: p.best,
+  bestThird: p.bestThird,
+  weekThird: p.weekThird,
   runs: p.runs,
   owned: p.owned,
   equipped: p.equipped,
@@ -132,7 +145,9 @@ export function cleanRun(data) {
     slides: read(src.slides),
     dodged: read(src.dodged)
   };
-  return Object.values(run).some(v => v === null) ? null : run;
+  if (Object.values(run).some(v => v === null)) return null;
+  run.mode = MODES.includes(src.mode) ? src.mode : 'side';
+  return run;
 }
 
 export function checkRun(run, elapsed) {
@@ -159,6 +174,8 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
   const profileRef = uid => db.doc(`dashProfiles/${uid}`);
   const allTimeRef = uid => db.doc(`dashBoard/${uid}`);
   const weekRef = (week, uid) => db.doc(`dashWeeks/${week}/entries/${uid}`);
+  const allTimeThirdRef = uid => db.doc(`dashBoardThird/${uid}`);
+  const weekThirdRef = (week, uid) => db.doc(`dashWeeksThird/${week}/entries/${uid}`);
   const entry = (name, score, photo) => ({ name: shortName(name), score, photo, updatedAt: FieldValue.serverTimestamp() });
   const boardPhoto = (user, profile) => (profile.privacy.photo === 'public' ? pickPhoto({ photoMode: profile.photoMode, photoData: profile.photoData, photo: cleanPhoto(user.photo) }) : null);
 
@@ -189,6 +206,10 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
     if (profile.vBest > 0) writes.push(allTimeRef(user.uid).set(entry(profile.username || user.name, profile.vBest, photo)));
     const weekScore = weekBoardScore(week, profile.vBest);
     if (weekScore > 0) writes.push(weekRef(week.week, user.uid).set(entry(profile.username || user.name, weekScore, photo)));
+    const name = profile.username || user.name;
+    if (profile.bestThird > 0) writes.push(allTimeThirdRef(user.uid).set(entry(name, profile.bestThird, photo)));
+    const thirdWeek = profile.weekThird.week === week.week ? profile.weekThird.score : 0;
+    if (thirdWeek > 0) writes.push(weekThirdRef(week.week, user.uid).set(entry(name, thirdWeek, photo)));
     const results = await Promise.allSettled(writes);
     results.forEach(result => result.status === 'rejected' && console.error('board write failed', result.reason));
     return results.every(result => result.status === 'fulfilled');
@@ -257,13 +278,19 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
           return { profile, rejected: problem };
         }
         const score = run.meters + run.coins * 5;
-        const quests = applyRun(profile.quests, { ...run, score });
+        const third = run.mode === 'third';
+        const quests = applyRun(profile.quests, { ...run, score: third ? 0 : score });
+        const weekNow = quests.week;
         const next = {
           ...profile,
           coins: profile.coins + run.coins,
           runs: profile.runs + 1,
-          best: Math.max(profile.best, score),
-          vBest: Math.max(profile.vBest, score),
+          best: third ? profile.best : Math.max(profile.best, score),
+          vBest: third ? profile.vBest : Math.max(profile.vBest, score),
+          bestThird: third ? Math.max(profile.bestThird, score) : profile.bestThird,
+          weekThird: third
+            ? { week: weekNow, score: Math.max(profile.weekThird.week === weekNow ? profile.weekThird.score : 0, score) }
+            : profile.weekThird,
           quests
         };
         tx.update(profileRef(user.uid), {
@@ -271,6 +298,8 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
           runs: next.runs,
           best: next.best,
           vBest: next.vBest,
+          bestThird: next.bestThird,
+          weekThird: next.weekThird,
           quests,
           ...base,
           lastCoins: run.coins
@@ -330,7 +359,7 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
       if (on) await publish(user, profile);
       else {
         const week = rollQuests(profile.quests).week;
-        await Promise.allSettled([allTimeRef(user.uid).delete(), weekRef(week, user.uid).delete()]);
+        await Promise.allSettled([allTimeRef(user.uid).delete(), weekRef(week, user.uid).delete(), allTimeThirdRef(user.uid).delete(), weekThirdRef(week, user.uid).delete()]);
       }
       return { profile: view(profile) };
     }
