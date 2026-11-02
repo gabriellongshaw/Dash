@@ -1,6 +1,6 @@
 const KEY = 'dash:mode';
 
-export const MODES = ['classic', 'first'];
+export const MODES = ['classic', 'third'];
 
 export function getMode() {
   try {

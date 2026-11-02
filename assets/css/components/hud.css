@@ -146,7 +146,7 @@ body.touch .controls {
   display: flex;
 }
 
-body.touch.mode-first .controls {
+body.touch.mode-third .controls {
   display: none;
 }
 

@@ -14,13 +14,17 @@ const HALF = 12;
 const REACH = 12;
 const SHIFT = 15;
 const SLIDE_TIME = 0.55;
-const EYE = 44;
-const CROUCH = 24;
+const EYE = 112;
 const FOCAL = 0.9;
-const HORIZON = 0.48;
+const TALL = 1.15;
+const HORIZON = 0.45;
+const FEET = 0.78;
+const RUNNER_H = 340;
+const FOLLOW = 0.3;
+const LOOK = 0.6;
 const START_Z = 800;
 
-export class FirstPersonGame {
+export class ThirdPersonGame {
   constructor(canvas, hooks) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
@@ -52,6 +56,7 @@ export class FirstPersonGame {
     this.lane = 0;
     this.x = 0;
     this.eye = EYE;
+    this.back = 300;
     this.slideHeld = false;
     this.slideTimer = 0;
     this.frame = this.frame.bind(this);
@@ -73,7 +78,9 @@ export class FirstPersonGame {
     v.h = fit.viewH;
     v.cx = fit.viewW / 2;
     v.hy = Math.round(fit.viewH * HORIZON);
-    v.F = fit.viewW * FOCAL;
+    v.F = Math.min(fit.viewW * FOCAL, fit.viewH * TALL);
+    this.back = (RUNNER_H * v.F) / fit.viewH;
+    this.spawner.cull = -this.back + 10;
     this.world.resize(v.w, v.h, v.hy);
     this.world.streaks = [];
   }
@@ -120,7 +127,7 @@ export class FirstPersonGame {
     this.particles.clear();
     this.world.restart();
     this.spawner.reset();
-    this.runner.reset(0, 0);
+    this.runner.reset(-17, 0);
     this.state = 'ready';
     this.emitScore();
   }
@@ -182,7 +189,7 @@ export class FirstPersonGame {
     this.coast = this.speed;
     this.shake = this.reducedMotion ? 0 : 1;
     this.flash = this.reducedMotion ? 0 : 0.6;
-    this.particles.emit(this.viewW / 2, this.view.hy + 120, 28, {
+    this.particles.emit(this.viewW / 2 + (this.x - this.camX()) * this.scale(), this.feetY() - 20, 28, {
       s0: 120,
       s1: 420,
       l0: 0.5,
@@ -209,6 +216,19 @@ export class FirstPersonGame {
       slides: this.slides,
       dodged: this.dodged
     });
+  }
+
+  camX() {
+    return this.x * LOOK;
+  }
+
+  scale() {
+    return this.view.F / this.back;
+  }
+
+  feetY() {
+    const v = this.view;
+    return v.hy + (this.eye * v.F) / this.back;
   }
 
   across(o) {
@@ -281,7 +301,7 @@ export class FirstPersonGame {
       c.taken = true;
       this.coins++;
       audio.sfx('coin');
-      this.particles.emit(this.viewW / 2 + (c.x - this.x) * 2, this.view.hy + 90, 8, {
+      this.particles.emit(this.viewW / 2 + (c.x - this.camX()) * this.scale(), this.feetY() - c.up * this.scale(), 8, {
         s0: 40,
         s1: 160,
         l0: 0.25,
@@ -306,9 +326,8 @@ export class FirstPersonGame {
       this.shake = Math.max(0, this.shake - dt * 2.5);
       this.flash = Math.max(0, this.flash - dt * 2);
       const runner = this.runner;
-      const bob = this.reducedMotion || !runner.grounded || runner.sliding ? 0 : Math.abs(Math.sin(runner.clock)) * 1.2;
-      const target = EYE - CROUCH * clamp(runner.vis, 0, 1.1) - runner.y * 0.8 + bob;
-      this.eye += (target - this.eye) * Math.min(1, 20 * dt);
+      const target = EYE + Math.max(0, -runner.y) * FOLLOW;
+      this.eye += (target - this.eye) * Math.min(1, 10 * dt);
     }
     this.draw();
     requestAnimationFrame(this.frame);
@@ -322,14 +341,8 @@ export class FirstPersonGame {
       ctx.translate((Math.random() - 0.5) * this.shake * 10, (Math.random() - 0.5) * this.shake * 10);
     }
     const speed = this.state === 'over' ? this.coast : this.state === 'ready' ? 150 : this.speed;
-    if (!this.reducedMotion) {
-      const tilt = (this.lane * LANE_W - this.x) * 0.0006;
-      ctx.translate(v.cx, v.hy);
-      ctx.rotate(tilt);
-      ctx.translate(-v.cx, -v.hy);
-    }
     v.p = this.world.p;
-    v.x = this.x;
+    v.x = this.camX();
     v.eye = this.eye;
     v.time = this.time;
     v.scroll = this.scroll;
@@ -342,10 +355,18 @@ export class FirstPersonGame {
     queue.length = 0;
     for (const o of list) queue.push(o);
     for (const c of coins) if (!c.taken) queue.push(c);
-    queue.sort((a, b) => b.z - a.z);
+    if (this.runner.alive || this.state === 'over') queue.push(this.runner);
+    queue.sort((a, b) => (b === this.runner ? 0 : b.z) - (a === this.runner ? 0 : a.z));
+    const back = this.back;
     for (const item of queue) {
+      if (item === this.runner) {
+        this.drawRunner(ctx, speed);
+        continue;
+      }
+      item.z += back;
       if (item.kind) drawObstacle(ctx, v, item);
       else drawCoin(ctx, v, item);
+      item.z -= back;
     }
     drawRush(ctx, v, speed);
     this.particles.draw(ctx);
@@ -355,5 +376,26 @@ export class FirstPersonGame {
       ctx.fillRect(-30, -30, v.w + 60, v.h + 60);
       ctx.globalAlpha = 1;
     }
+  }
+
+  drawRunner(ctx, speed) {
+    if (!this.runner.alive) return;
+    const v = this.view;
+    const k = this.scale();
+    const x = v.cx + (this.x - this.camX()) * k;
+    const y = this.feetY();
+    const lift = Math.max(0, -this.runner.y);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0.08, 0.3 - lift / 600);
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 20 * k * (1 - Math.min(0.4, lift / 400)), 5 * k, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(k * (this.x - this.lane * LANE_W > 3 ? -1 : 1), k);
+    this.runner.draw(ctx, this.palette, speed, this.time, this.look);
+    ctx.restore();
   }
 }

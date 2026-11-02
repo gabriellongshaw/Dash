@@ -296,6 +296,7 @@ const POOLS = [
 
 export class LaneSpawner {
   constructor() {
+    this.cull = -60;
     this.reset();
   }
 
@@ -349,12 +350,12 @@ export class LaneSpawner {
       const o = this.obstacles[i];
       o.z -= dz + o.closing * dt;
       if (o.tick) o.tick(dt);
-      if (o.z + o.d < -60) this.obstacles.splice(i, 1);
+      if (o.z + o.d < this.cull) this.obstacles.splice(i, 1);
     }
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const c = this.coins[i];
       c.z -= dz;
-      if (c.taken || c.z < -40) this.coins.splice(i, 1);
+      if (c.taken || c.z < this.cull) this.coins.splice(i, 1);
     }
     this.travel += dz;
     if (this.travel >= this.nextAt) this.spawn(speed, dist, SPAWN_Z);

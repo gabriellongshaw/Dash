@@ -48,7 +48,7 @@
   color: var(--text);
 }
 
-.key-hints[data-mode='classic'] .for-first,
-.key-hints[data-mode='first'] .for-classic {
+.key-hints[data-mode='classic'] .for-third,
+.key-hints[data-mode='third'] .for-classic {
   display: none;
 }

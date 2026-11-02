@@ -1,5 +1,5 @@
 import { Game } from '../components/game.js';
-import { FirstPersonGame } from '../components/firstperson.js';
+import { ThirdPersonGame } from '../components/thirdperson.js';
 import { getMode } from '../core/mode.js';
 import { onThemeChange, detectTouch } from '../core/theme.js';
 import { profile } from '../core/profile.js';
@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
   ads.init();
   $('pause-btn').before(mountSound(document.querySelector('.hud-right'), { className: 'icon-button' }));
 
-  const first = getMode() === 'first';
-  document.body.classList.toggle('mode-first', first);
-  if (first) {
+  const third = getMode() === 'third';
+  document.body.classList.toggle('mode-third', third);
+  if (third) {
     $('start-hint').querySelector('.hint-sub').innerHTML =
-      '<span class="desktop-only">&larr; &rarr; change lane &middot; Space / &uarr; jump &middot; &darr; slide</span><span class="touch-only">Swipe to move, jump and slide &middot; tap to jump</span>';
+      '<span class="desktop-only">&larr; &rarr; change lane &middot; Space / &uarr; jump &middot; &darr; slide</span><span class="touch-only">Swipe to move, jump or slide &middot; tap to jump</span>';
   }
 
   const scoreEl = $('score');
@@ -45,14 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
   let showDouble = null;
   const doubleBtn = $('double-btn');
 
-  bestEl.textContent = `Best ${profile.state.best}`;
+  const bestOf = () => (third ? profile.state.bestThird : profile.state.best);
+  bestEl.textContent = `Best ${bestOf()}`;
 
-  const Engine = first ? FirstPersonGame : Game;
+  const Engine = third ? ThirdPersonGame : Game;
   const game = new Engine($('game-canvas'), {
-    best: profile.state.best,
+    best: bestOf(),
     getLook: () => resolveLook(profile.state.equipped),
     getWorld: () => resolveWorld(profile.state.equipped.world),
-    hints: () => profile.state.best === 0,
+    hints: () => profile.state.best === 0 && profile.state.bestThird === 0,
     onScore(score, coins) {
       scoreEl.textContent = score;
       coinsEl.textContent = coins;
@@ -63,8 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     },
     onOver(result) {
-      profile.recordRun(result);
-      bestEl.textContent = `Best ${profile.state.best}`;
+      profile.recordRun({ ...result, mode: third ? 'third' : 'side' });
+      bestEl.textContent = `Best ${bestOf()}`;
       showQuestNote();
       audio.duck(0.2);
       $('over-note').classList.toggle('hidden', profile.session.status !== 'out');
@@ -210,10 +211,13 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (game.state === 'over' && overReady) restart();
   }
 
-  const SWIPE = 24;
+  const SWIPE = 48;
+  const TAP_MOVE = 14;
+  const TAP_TIME = 280;
+  const DOMINANCE = 1.4;
   let touch = null;
 
-  if (first) {
+  if (third) {
     const canvas = $('game-canvas');
     canvas.addEventListener('pointerdown', e => {
       e.preventDefault();
@@ -222,23 +226,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       canvas.setPointerCapture(e.pointerId);
-      touch = { x: e.clientX, y: e.clientY, moved: false };
+      touch = { x: e.clientX, y: e.clientY, at: performance.now(), done: false, drift: 0 };
     });
     canvas.addEventListener('pointermove', e => {
       if (!touch) return;
       const dx = e.clientX - touch.x;
       const dy = e.clientY - touch.y;
-      if (Math.abs(dx) < SWIPE && Math.abs(dy) < SWIPE) return;
-      touch.x = e.clientX;
-      touch.y = e.clientY;
-      touch.moved = true;
-      if (game.state !== 'playing') return;
-      if (Math.abs(dx) > Math.abs(dy)) game.move(dx < 0 ? -1 : 1);
-      else if (dy < 0) game.jump();
-      else game.slide(true, true);
+      const ax = Math.abs(dx);
+      const ay = Math.abs(dy);
+      touch.drift = Math.max(touch.drift, ax, ay);
+      if (touch.done || game.state !== 'playing') return;
+      if (ax >= SWIPE && ax > ay * DOMINANCE) game.move(dx < 0 ? -1 : 1);
+      else if (ay >= SWIPE && ay > ax * DOMINANCE) {
+        if (dy < 0) game.jump();
+        else game.slide(true, true);
+      } else return;
+      touch.done = true;
     });
     canvas.addEventListener('pointerup', () => {
-      if (touch && !touch.moved) action();
+      if (touch && !touch.done && touch.drift < TAP_MOVE && performance.now() - touch.at < TAP_TIME) action();
       touch = null;
     });
     canvas.addEventListener('pointercancel', () => {
@@ -328,8 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
   profile.subscribe(() => {
     game.setLook(resolveLook(profile.state.equipped));
     game.setWorld(resolveWorld(profile.state.equipped.world));
-    game.best = Math.max(game.best, profile.state.best);
-    if (game.state !== 'playing') bestEl.textContent = `Best ${profile.state.best}`;
+    game.best = Math.max(game.best, bestOf());
+    if (game.state !== 'playing') bestEl.textContent = `Best ${bestOf()}`;
     setShown($('over-note'), profile.session.status === 'out' && !overOverlay.classList.contains('hidden'));
   });
 
