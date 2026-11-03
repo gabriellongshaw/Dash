@@ -83,6 +83,21 @@ The home screen stores the chosen view in `localStorage` under `dash:mode` (`cla
 - Distance, speed, scoring and the numbers sent in `submitRun` are the same as Classic, so the same server checks in `api/game.js` apply to both views.
 - `submitRun` takes a `mode` (`side` or `third`). Third person runs update `bestThird` and `weekThird` on the profile and write to the separate `dashBoardThird` and `dashWeeksThird/{week}/entries` collections. They do not change `best`, `vBest` or the score stats used by quests. The new collections need the same public read rule as `dashBoard` and `dashWeeks` in the Firestore rules.
 
+  If the third person leaderboard shows "The leaderboard is not set up yet", the rules are missing. Add these to the Firestore rules next to the existing `dashBoard` and `dashWeeks` ones (the API writes with the Admin SDK, so clients never need write access):
+
+  ```
+  match /dashBoardThird/{uid} {
+    allow read: if true;
+    allow write: if false;
+  }
+  match /dashWeeksThird/{week}/entries/{uid} {
+    allow read: if true;
+    allow write: if false;
+  }
+  ```
+- Camera: it follows the runner sideways with a small delay and barely rises on jumps, so lane changes and jumps read clearly. The camera height is set from the screen size so the runner always sits in the lower part of the view.
+- Coins: `LaneSpawner.guide` puts a coin trail in a lane the new obstacles do not block, starting a little before them, so coins lead you to the safe lane. `snake` builds a trail that weaves between lanes, and `train` and `trainPair` add long carriages that must be dodged by changing lane.
+
 ## Not found page
 
 `404.html` sends visitors to the not-found page on gabriellongshaw.co.uk, the same as the other sites.

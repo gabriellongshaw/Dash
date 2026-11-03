@@ -23,7 +23,8 @@ const HORIZON = 0.4;
 const FEET = 0.76;
 const RUNNER_H = 340;
 const LANE_FIT = 0.27;
-const FOLLOW = 0.3;
+const FOLLOW = 0.1;
+const CAM_RATE = 9;
 const LOOK = 0.6;
 const START_Z = 800;
 
@@ -58,6 +59,7 @@ export class ThirdPersonGame {
     this.state = 'ready';
     this.lane = 0;
     this.x = 0;
+    this.camPos = 0;
     this.baseEye = 112;
     this.eye = 112;
     this.back = 300;
@@ -129,6 +131,7 @@ export class ThirdPersonGame {
     this.flash = 0;
     this.lane = 0;
     this.x = 0;
+    this.camPos = 0;
     this.slideHeld = false;
     this.slideTimer = 0;
     this.particles.clear();
@@ -226,7 +229,7 @@ export class ThirdPersonGame {
   }
 
   camX() {
-    return this.x * LOOK;
+    return this.camPos;
   }
 
   scale() {
@@ -333,6 +336,7 @@ export class ThirdPersonGame {
       this.shake = Math.max(0, this.shake - dt * 2.5);
       this.flash = Math.max(0, this.flash - dt * 2);
       const runner = this.runner;
+      this.camPos += (this.x * LOOK - this.camPos) * Math.min(1, CAM_RATE * dt);
       const target = this.baseEye + Math.max(0, -runner.y) * FOLLOW;
       this.eye += (target - this.eye) * Math.min(1, 10 * dt);
     }

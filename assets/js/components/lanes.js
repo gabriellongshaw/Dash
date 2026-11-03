@@ -1,4 +1,4 @@
-import { pick, rand, randInt } from '../core/utils.js';
+import { clamp, pick, rand, randInt } from '../core/utils.js';
 import { BODY_LIFT, jumpHeight, jumpTime } from './runner.js';
 import { spacingOf, tierOf } from './obstacles.js';
 
@@ -13,6 +13,9 @@ const WALL_H = 124;
 const SPIKE_H = 18;
 const SPIKE_D = 30;
 const GATE_D = 28;
+const TRAIN_H = 128;
+const COIN_GAP = 34;
+const COIN_UP = 24;
 const GATE_CLEARANCE = 36;
 const GATE_TOP = 150;
 const DRONE_D = 36;
@@ -244,10 +247,46 @@ const builders = {
     return at - z - gap;
   },
   coins(s, z) {
-    const count = randInt(5, 8);
+    const count = randInt(8, 14);
     const a = lane();
     s.coinLine(a, z, count);
-    return count * 34;
+    return count * COIN_GAP;
+  },
+  snake(s, z) {
+    const count = randInt(12, 18);
+    let a = lane();
+    let at = 0;
+    for (let i = 0; i < count; i++) {
+      s.coin(a, z + at, COIN_UP);
+      at += COIN_GAP;
+      if (i % 5 === 4 && i < count - 1) {
+        const next = a === 0 ? pick([-1, 1]) : 0;
+        for (let j = 1; j <= 2; j++) {
+          s.coin(a + ((next - a) * j) / 3, z + at, COIN_UP);
+          at += COIN_GAP;
+        }
+        a = next;
+      }
+    }
+    return at;
+  },
+  train(s, z) {
+    const a = lane();
+    const d = randInt(240, 420);
+    s.add(piece('train', a, a, 0, TRAIN_H, d, { closing: Math.random() < 0.4 ? 110 : 0 }), z);
+    return d;
+  },
+  trainPair(s, z) {
+    const open = lane();
+    const d = randInt(240, 380);
+    let first = true;
+    for (let a = -1; a <= 1; a++) {
+      if (a === open) continue;
+      s.add(piece('train', a, a, 0, TRAIN_H, d), z, first);
+      first = false;
+    }
+    s.coinLine(open, z, Math.floor(d / COIN_GAP));
+    return d;
   }
 };
 
@@ -284,14 +323,14 @@ function missile(a) {
 }
 
 const POOLS = [
-  ['crate', 'crate', 'crate', 'pair', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'drone', 'barrier', 'coins'],
-  ['crate', 'crate', 'pair', 'pair', 'spikes', 'spikes', 'gate', 'gate', 'gate', 'wall', 'wall', 'drone', 'drone', 'combo', 'droneCrate', 'barrier', 'coins'],
-  ['crate', 'pair', 'spikes', 'gate', 'gate', 'wall', 'wall', 'double', 'drone', 'bobDrone', 'combo', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'triple', 'roller', 'saw', 'saw', 'coins'],
-  ['pair', 'spikes', 'wideSpikes', 'gate', 'gate', 'wall', 'wall', 'double', 'bobDrone', 'bobDrone', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'saw', 'saw', 'missile', 'missile', 'field', 'coins'],
-  ['wideSpikes', 'wideSpikes', 'gate', 'wall', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'gauntlet', 'gauntlet', 'gauntlet', 'saw', 'missile', 'missile', 'field', 'sawPair', 'fieldGate'],
-  ['wideSpikes', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'roller', 'gauntlet', 'gauntlet', 'missile', 'missile', 'field', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes'],
-  ['wideSpikes', 'bobDrone', 'wallGate', 'wallDrone', 'spikeDrone', 'triple', 'gauntlet', 'gauntlet', 'marathon', 'marathon', 'missile', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes'],
-  ['wallDrone', 'spikeDrone', 'triple', 'gauntlet', 'marathon', 'marathon', 'marathon', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes']
+  ['crate', 'crate', 'crate', 'pair', 'spikes', 'spikes', 'gate', 'gate', 'wall', 'drone', 'barrier', 'coins', 'snake'],
+  ['crate', 'crate', 'pair', 'pair', 'spikes', 'spikes', 'gate', 'gate', 'gate', 'wall', 'wall', 'drone', 'drone', 'combo', 'droneCrate', 'barrier', 'coins', 'train', 'snake'],
+  ['crate', 'pair', 'spikes', 'gate', 'gate', 'wall', 'wall', 'double', 'drone', 'bobDrone', 'combo', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'triple', 'roller', 'saw', 'saw', 'coins', 'train', 'trainPair', 'snake'],
+  ['pair', 'spikes', 'wideSpikes', 'gate', 'gate', 'wall', 'wall', 'double', 'bobDrone', 'bobDrone', 'combo', 'wallGate', 'wallGate', 'droneCrate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'saw', 'saw', 'missile', 'missile', 'field', 'coins', 'train', 'trainPair', 'snake'],
+  ['wideSpikes', 'wideSpikes', 'gate', 'wall', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'wallDrone', 'spikeDrone', 'triple', 'triple', 'roller', 'roller', 'gauntlet', 'gauntlet', 'gauntlet', 'saw', 'missile', 'missile', 'field', 'sawPair', 'fieldGate', 'train', 'trainPair'],
+  ['wideSpikes', 'bobDrone', 'bobDrone', 'wallGate', 'wallGate', 'crateDrone', 'wallDrone', 'spikeDrone', 'triple', 'roller', 'gauntlet', 'gauntlet', 'missile', 'missile', 'field', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes', 'train', 'trainPair'],
+  ['wideSpikes', 'bobDrone', 'wallGate', 'wallDrone', 'spikeDrone', 'triple', 'gauntlet', 'gauntlet', 'marathon', 'marathon', 'missile', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes', 'train', 'trainPair'],
+  ['wallDrone', 'spikeDrone', 'triple', 'gauntlet', 'marathon', 'marathon', 'marathon', 'sawPair', 'sawGate', 'fieldGate', 'fieldDrone', 'missileCrate', 'missileSpikes', 'train', 'trainPair']
 ];
 
 export class LaneSpawner {
@@ -319,8 +358,8 @@ export class LaneSpawner {
   }
 
   coinLine(a, z, count) {
-    if (Math.random() > 0.7) return;
-    for (let i = 0; i < count; i++) this.coin(a, z + i * 34, 24);
+    if (Math.random() > 0.85) return;
+    for (let i = 0; i < count; i++) this.coin(a, z + i * COIN_GAP, COIN_UP);
   }
 
   jumpCoins(a, zc, speed) {
@@ -361,9 +400,23 @@ export class LaneSpawner {
     if (this.travel >= this.nextAt) this.spawn(speed, dist, SPAWN_Z);
   }
 
+  guide(first, coins, z, width) {
+    if (this.coins.length > coins || Math.random() > 0.75) return;
+    const blocked = [false, false, false];
+    for (const o of this.obstacles.slice(first)) for (let a = o.a; a <= o.b; a++) blocked[a + 1] = true;
+    const free = [-1, 0, 1].filter(a => !blocked[a + 1]);
+    if (!free.length) return;
+    const a = pick(free);
+    const count = clamp(Math.floor(Math.min(width, 420) / COIN_GAP) + 3, 5, 14);
+    for (let i = 0; i < count; i++) this.coin(a, z - 3 * COIN_GAP + i * COIN_GAP, COIN_UP);
+  }
+
   spawn(speed, dist, z) {
     const kind = pick(POOLS[tierOf(dist)]);
+    const first = this.obstacles.length;
+    const coins = this.coins.length;
     const width = builders[kind](this, z, speed);
+    this.guide(first, coins, z, width);
     this.travel = 0;
     this.nextAt = width + speed * rand(0.8, 1.25) * spacingOf(dist) + 90;
   }

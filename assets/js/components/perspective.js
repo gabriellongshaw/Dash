@@ -20,6 +20,7 @@ export function makeColors(pal, p) {
   return {
     hazard: { front: pal.hazard, top: pal.hazardLight, side: pal.hazardDark },
     gate: { front: pal.hazardDark, top: pal.hazard, side: pal.hazardDark },
+    train: { front: pal.hazardDark, top: pal.hazardLight, side: pal.hazard },
     pylon: { front: p.far, top: p.far, side: p.mid }
   };
 }
@@ -87,6 +88,7 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
     ctx.fillStyle = c.side;
     ctx.fill();
   }
+  if (z0 < NEAR) return false;
   ctx.fillStyle = c.front;
   ctx.fillRect(ax0, ay1, ax1 - ax0, ay0 - ay1);
   face.x = ax0;
@@ -303,6 +305,21 @@ export function drawObstacle(ctx, v, o) {
       break;
     case 'spikes':
       spikes(ctx, v, o);
+      break;
+    case 'train':
+      if (box(ctx, v, v.train, o.x0, o.x1, o.y0, o.y1, o.z, z1)) {
+        const { x, y, w, h } = face;
+        ctx.fillStyle = pal.hazardLight;
+        ctx.fillRect(x + w * 0.12, y + h * 0.14, w * 0.33, h * 0.27);
+        ctx.fillRect(x + w * 0.55, y + h * 0.14, w * 0.33, h * 0.27);
+        ctx.fillStyle = pal.hazard;
+        ctx.fillRect(x, y + h * 0.58, w, h * 0.1);
+        ctx.fillStyle = '#fff4b8';
+        ctx.beginPath();
+        ctx.arc(x + w * 0.22, y + h * 0.84, w * 0.07, 0, Math.PI * 2);
+        ctx.arc(x + w * 0.78, y + h * 0.84, w * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+      }
       break;
     case 'drone': {
       const m = (o.x0 + o.x1) / 2;

@@ -31,6 +31,7 @@ Coins, quests and the shop are shared between both modes, but third person has i
 - **Bouncing orbs:** spiked balls that hop along the ground. Jump when they are low, slip underneath when they are high.
 - **Missiles:** fast rockets announced by a warning triangle at the edge of the screen. Jump low ones and slide under higher ones.
 - **Force fields:** wide barriers that need one long jump.
+- **Trains (third person):** long carriages that fill a lane. You cannot jump or slide them, so switch lane early. Some roll toward you.
 
 ## Customise
 
