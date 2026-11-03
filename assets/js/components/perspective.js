@@ -1,19 +1,25 @@
 import { clamp } from '../core/utils.js';
 import { LANE_W } from './lanes.js';
+import { drawProp, propsFor } from './roadside.js';
 
 export const NEAR = 8;
 export const FAR = 1600;
 
-const FADE = 380;
+const FADE = 120;
+const PROP_FADE = 260;
+const SLEEPER = 38;
 const ROAD_HALF = LANE_W * 1.5;
-const PYLON_GAP = 220;
+const PROP_ROWS = [
+  { off: 150, gap: 190, salt: 977 },
+  { off: 48, gap: 130, salt: 0 }
+];
 const STRIPE = 100;
 const DASH = 60;
 
 const face = { x: 0, y: 0, w: 0, h: 0 };
 
 export function makeView() {
-  return { fade: 1, w: 0, h: 0, cx: 0, hy: 0, F: 1, eye: 38, x: 0, p: null, pal: null, hazard: null, pylon: null, time: 0, scroll: 0, speed: 0, reduced: false };
+  return { fade: 1, w: 0, h: 0, cx: 0, hy: 0, F: 1, eye: 38, x: 0, p: null, pal: null, hazard: null, pylon: null, props: null, night: 0, time: 0, scroll: 0, speed: 0, reduced: false };
 }
 
 export function makeColors(pal, p) {
@@ -115,15 +121,23 @@ export function drawRoad(ctx, v) {
     ground(ctx, v, -ROAD_HALF, ROAD_HALF, Math.max(z, NEAR), z + STRIPE);
   }
 
-  ctx.fillStyle = p.groundLine;
-  ctx.globalAlpha = 0.8;
-  const dash = v.scroll % (DASH * 2);
-  for (let z = -dash; z < FAR; z += DASH * 2) {
-    if (z + DASH <= NEAR) continue;
-    const a = Math.max(z, NEAR);
-    ground(ctx, v, -LANE_W / 2 - 2, -LANE_W / 2 + 2, a, z + DASH);
-    ground(ctx, v, LANE_W / 2 - 2, LANE_W / 2 + 2, a, z + DASH);
+  ctx.fillStyle = '#000';
+  ctx.globalAlpha = 0.2;
+  const tie = v.scroll % SLEEPER;
+  for (let z = -tie; z < FAR; z += SLEEPER) {
+    if (z + 7 <= NEAR) continue;
+    for (let a = -1; a <= 1; a++) ground(ctx, v, a * LANE_W - 25, a * LANE_W + 25, Math.max(z, NEAR), z + 7);
   }
+  ctx.fillStyle = '#fff';
+  ctx.globalAlpha = 0.5;
+  for (let a = -1; a <= 1; a++) {
+    ground(ctx, v, a * LANE_W - 14, a * LANE_W - 11.4, NEAR, FAR);
+    ground(ctx, v, a * LANE_W + 11.4, a * LANE_W + 14, NEAR, FAR);
+  }
+  ctx.fillStyle = p.groundLine;
+  ctx.globalAlpha = 0.5;
+  ground(ctx, v, -LANE_W / 2 - 1, -LANE_W / 2 + 1, NEAR, FAR);
+  ground(ctx, v, LANE_W / 2 - 1, LANE_W / 2 + 1, NEAR, FAR);
   ctx.globalAlpha = 0.9;
   ground(ctx, v, -ROAD_HALF - 4, -ROAD_HALF, NEAR, FAR);
   ground(ctx, v, ROAD_HALF, ROAD_HALF + 4, NEAR, FAR);
@@ -137,16 +151,38 @@ export function drawRoad(ctx, v) {
   ctx.fillRect(-30, hy, w + 60, (h - hy) * 0.16);
   ctx.globalAlpha = 1;
 
-  const px = ROAD_HALF + 46;
-  const first = PYLON_GAP - (v.scroll % PYLON_GAP);
-  const count = Math.floor((FAR - first) / PYLON_GAP);
-  for (let i = count; i >= 0; i--) {
-    const z = first + i * PYLON_GAP;
-    ctx.globalAlpha = clamp((FAR - z) / FADE, 0, 1);
-    box(ctx, v, v.pylon, px - 8, px + 8, 0, 56, z, z + 16);
-    box(ctx, v, v.pylon, -px - 8, -px + 8, 0, 56, z, z + 16);
+  const set = v.props || propsFor(null);
+  const o = { r: 0, c: '', n: v.night, t: v.time, snow: false };
+  for (const row of PROP_ROWS) {
+    const first = row.gap - (v.scroll % row.gap);
+    const base = Math.floor(v.scroll / row.gap) + 1;
+    for (let j = Math.floor((FAR - first) / row.gap); j >= 0; j--) {
+      const z = first + j * row.gap;
+      if (z < 50) continue;
+      const k = v.F / z;
+      const alpha = clamp((FAR - z) / PROP_FADE, 0, 1) * clamp((z - 50) / 90, 0, 1);
+      for (let side = -1; side <= 1; side += 2) {
+        const hsh = hash((base + j) * 2 + (side > 0 ? 1 : 0) + row.salt);
+        const x = side * (ROAD_HALF + row.off + (hsh % 41));
+        const sx = v.cx + (x - v.x) * k;
+        if (sx < -160 * k - 60 || sx > v.w + 160 * k + 60) continue;
+        o.r = ((hsh >>> 8) % 1000) / 1000;
+        ctx.save();
+        ctx.translate(sx, v.hy + v.eye * k);
+        ctx.scale(k, k);
+        ctx.globalAlpha = alpha;
+        drawProp(ctx, set[(hsh >>> 3) % set.length], o);
+        ctx.restore();
+      }
+    }
   }
   ctx.globalAlpha = 1;
+}
+
+function hash(n) {
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  n = Math.imul(n ^ (n >>> 16), 0x45d9f3b);
+  return (n ^ (n >>> 16)) >>> 0;
 }
 
 function tape(ctx, v, band, a, b) {
@@ -295,9 +331,30 @@ export function drawObstacle(ctx, v, o) {
     case 'crate':
     case 'wall':
       if (box(ctx, v, v.hazard, o.x0, o.x1, o.y0, o.y1, o.z, z1)) {
+        const { x, y, w, h } = face;
         ctx.strokeStyle = pal.hazardDark;
-        ctx.lineWidth = clamp(face.w * 0.03, 1, 6);
-        ctx.strokeRect(face.x + face.w * 0.14, face.y + face.h * 0.18, face.w * 0.72, face.h * 0.64);
+        ctx.lineWidth = clamp(w * 0.03, 1, 6);
+        ctx.strokeRect(x + w * 0.08, y + h * 0.08, w * 0.84, h * 0.84);
+        ctx.beginPath();
+        ctx.moveTo(x + w * 0.08, y + h * 0.08);
+        ctx.lineTo(x + w * 0.92, y + h * 0.92);
+        ctx.moveTo(x + w * 0.92, y + h * 0.08);
+        ctx.lineTo(x + w * 0.08, y + h * 0.92);
+        ctx.stroke();
+        ctx.fillStyle = pal.hazardLight;
+        ctx.globalAlpha *= 0.35;
+        ctx.fillRect(x, y, w, Math.max(2, h * 0.07));
+        ctx.globalAlpha /= 0.35;
+        ctx.fillStyle = pal.hazardDark;
+        const rv = Math.max(1.5, w * 0.035);
+        for (const [cx, cy] of [[0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85]]) {
+          ctx.beginPath();
+          ctx.arc(x + w * cx, y + h * cy, rv, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = pal.hazardDark;
+        ctx.lineWidth = Math.max(1, w * 0.012);
+        ctx.strokeRect(x, y, w, h);
       }
       break;
     case 'gate':
@@ -364,26 +421,48 @@ export function drawCoin(ctx, v, c) {
   const gy = v.hy + v.eye * k;
   const fade = clamp((FAR - c.z) / FADE, 0, 1) * v.fade;
   const spin = Math.abs(Math.cos(v.time * 4 + c.z * 0.01));
-  const r = 11 * k;
+  const r = 13 * k;
   ctx.globalAlpha = fade * clamp(0.32 - c.up / 400, 0.1, 0.32);
   ctx.fillStyle = '#000';
   ctx.beginPath();
   ctx.ellipse(x, gy, r * 0.8, r * 0.28, 0, 0, Math.PI * 2);
   ctx.fill();
+  const w = Math.max(r * 0.3, r * (0.25 + spin * 0.75));
+  ctx.globalAlpha = fade * 0.22;
+  ctx.fillStyle = v.pal.coin;
+  ctx.beginPath();
+  ctx.ellipse(x, y, w * 1.7, r * 1.7, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.globalAlpha = fade;
-  const w = Math.max(r * 0.28, r * (0.25 + spin * 0.75));
   ctx.fillStyle = v.pal.coinDark;
   ctx.beginPath();
   ctx.ellipse(x, y, w, r, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = v.pal.coin;
+  const g = ctx.createLinearGradient(x - w, y - r, x + w, y + r);
+  g.addColorStop(0, '#fff3b0');
+  g.addColorStop(0.5, v.pal.coin);
+  g.addColorStop(1, v.pal.coinDark);
+  ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.ellipse(x, y, w * 0.78, r * 0.84, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y, w * 0.84, r * 0.86, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = v.pal.coinDark;
+  ctx.lineWidth = Math.max(1, r * 0.1);
+  ctx.beginPath();
+  ctx.ellipse(x, y, w * 0.58, r * 0.6, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = v.pal.coinDark;
+  ctx.beginPath();
+  ctx.moveTo(x, y - r * 0.32);
+  ctx.lineTo(x + w * 0.26, y);
+  ctx.lineTo(x, y + r * 0.32);
+  ctx.lineTo(x - w * 0.26, y);
+  ctx.closePath();
   ctx.fill();
   ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = fade * 0.55 * spin;
+  ctx.globalAlpha = fade * 0.7 * spin;
   ctx.beginPath();
-  ctx.ellipse(x - w * 0.28, y - r * 0.3, w * 0.16, r * 0.26, 0, 0, Math.PI * 2);
+  ctx.ellipse(x - w * 0.45, y - r * 0.5, w * 0.12, r * 0.2, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 }

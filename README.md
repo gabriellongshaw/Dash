@@ -18,7 +18,7 @@ Pick **Third person** above Play on the home screen to run down a three-lane tra
 
 **Touch:** swipe left or right to change lane, up to jump and down to slide. Each swipe does one thing, so a long drag will not change several lanes. A quick tap also jumps.
 
-Coins, quests and the shop are shared between both modes, but third person has its own best score and its own leaderboard. Score quests only count Classic runs. Obstacles are the same as in Classic, but they sit in lanes, so many can be dodged by switching lane as well as by jumping or sliding. Wide barriers, ceiling gates, force fields and wide spikes cover every lane and still need a jump or slide. Your character, colours and hat are visible from behind, and so is the world you picked.
+Coins, quests and the shop are shared between both modes, but third person has its own best score and its own leaderboard. Score quests only count Classic runs. Obstacles are the same as in Classic, but they sit in lanes, so many can be dodged by switching lane as well as by jumping or sliding. Wide barriers, ceiling gates, force fields and wide spikes cover every lane and still need a jump or slide. Your character, colours and hat are visible from behind, and so is the world you picked. The sides of the track are lined with scenery from your world, like cacti in Desert or lollipops in Candy.
 
 ### Obstacles
 

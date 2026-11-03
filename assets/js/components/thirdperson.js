@@ -3,6 +3,7 @@ import { World } from './world.js';
 import { LaneSpawner, LANE_W } from './lanes.js';
 import { Particles } from './particles.js';
 import { drawCoin, drawObstacle, drawRoad, drawRush, makeColors, makeView } from './perspective.js';
+import { propsFor } from './roadside.js';
 import { fitStage } from './stage.js';
 import { readPalette, isDark } from '../core/theme.js';
 import { clamp } from '../core/utils.js';
@@ -14,13 +15,13 @@ const HALF = 12;
 const REACH = 12;
 const SHIFT = 22;
 const SLIDE_TIME = 0.55;
-const EYE_MIN = 100;
-const EYE_MAX = 165;
+const EYE_MIN = 120;
+const EYE_MAX = 205;
 const PASS = 50;
 const FOCAL = 0.9;
 const TALL = 1.15;
-const HORIZON = 0.4;
-const FEET = 0.76;
+const HORIZON = 0.3;
+const FEET = 0.74;
 const RUNNER_H = 340;
 const LANE_FIT = 0.27;
 const FOLLOW = 0.1;
@@ -100,6 +101,8 @@ export class ThirdPersonGame {
 
   paint() {
     this.view.pal = this.palette;
+    this.view.props = propsFor(this.theme && this.theme.id);
+    this.view.night = this.world.s || 0;
     Object.assign(this.view, makeColors(this.palette, this.world.p));
   }
 

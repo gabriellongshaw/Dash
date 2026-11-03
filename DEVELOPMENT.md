@@ -95,6 +95,7 @@ The home screen stores the chosen view in `localStorage` under `dash:mode` (`cla
     allow write: if false;
   }
   ```
+- Roadside: `roadside.js` draws world themed props (buildings, cacti, pines, palms, lollipops, crystals and so on) down both sides of the track, chosen per world in its `SETS` table and dimmed with the day and night cycle. `perspective.js` also draws rails and sleepers on each lane.
 - Camera: it follows the runner sideways with a small delay and barely rises on jumps, so lane changes and jumps read clearly. The camera height is set from the screen size so the runner always sits in the lower part of the view.
 - Coins: `LaneSpawner.guide` puts a coin trail in a lane the new obstacles do not block, starting a little before them, so coins lead you to the safe lane. `snake` builds a trail that weaves between lanes, and `train` and `trainPair` add long carriages that must be dodged by changing lane.
 
