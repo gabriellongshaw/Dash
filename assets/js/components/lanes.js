@@ -247,7 +247,7 @@ const builders = {
     const count = randInt(5, 8);
     const a = lane();
     s.coinLine(a, z, count);
-    return count * 28;
+    return count * 34;
   }
 };
 
@@ -320,7 +320,7 @@ export class LaneSpawner {
 
   coinLine(a, z, count) {
     if (Math.random() > 0.7) return;
-    for (let i = 0; i < count; i++) this.coin(a, z + i * 26, 16);
+    for (let i = 0; i < count; i++) this.coin(a, z + i * 34, 24);
   }
 
   jumpCoins(a, zc, speed) {

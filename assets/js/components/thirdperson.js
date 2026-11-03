@@ -20,6 +20,7 @@ const TALL = 1.15;
 const HORIZON = 0.45;
 const FEET = 0.78;
 const RUNNER_H = 340;
+const LANE_FIT = 0.27;
 const FOLLOW = 0.3;
 const LOOK = 0.6;
 const START_Z = 800;
@@ -79,7 +80,8 @@ export class ThirdPersonGame {
     v.cx = fit.viewW / 2;
     v.hy = Math.round(fit.viewH * HORIZON);
     v.F = Math.min(fit.viewW * FOCAL, fit.viewH * TALL);
-    this.back = (RUNNER_H * v.F) / fit.viewH;
+    const fit3 = Math.min(fit.viewH / RUNNER_H, (fit.viewW * LANE_FIT) / LANE_W);
+    this.back = v.F / fit3;
     this.spawner.cull = -this.back + 10;
     this.world.resize(v.w, v.h, v.hy);
     this.world.streaks = [];

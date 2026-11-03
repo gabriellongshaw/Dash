@@ -239,15 +239,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (ax >= SWIPE && ax > ay * DOMINANCE) game.move(dx < 0 ? -1 : 1);
       else if (ay >= SWIPE && ay > ax * DOMINANCE) {
         if (dy < 0) game.jump();
-        else game.slide(true, true);
+        else {
+          game.slide(true);
+          touch.sliding = true;
+        }
       } else return;
       touch.done = true;
     });
     canvas.addEventListener('pointerup', () => {
+      if (touch && touch.sliding) game.slide(false);
       if (touch && !touch.done && touch.drift < TAP_MOVE && performance.now() - touch.at < TAP_TIME) action();
       touch = null;
     });
     canvas.addEventListener('pointercancel', () => {
+      if (touch && touch.sliding) game.slide(false);
       touch = null;
     });
   } else {

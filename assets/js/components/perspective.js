@@ -4,7 +4,7 @@ import { LANE_W } from './lanes.js';
 export const NEAR = 8;
 export const FAR = 1600;
 
-const FADE = 700;
+const FADE = 380;
 const ROAD_HALF = LANE_W * 1.5;
 const PYLON_GAP = 220;
 const STRIPE = 100;
@@ -103,10 +103,10 @@ export function drawRoad(ctx, v) {
   ctx.fillStyle = p.groundLine;
   ctx.fillRect(-30, hy, w + 60, 2);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
   ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, FAR);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.035)';
+  ctx.fillStyle = 'rgba(255,255,255,0.07)';
   const shift = v.scroll % (STRIPE * 2);
   for (let z = -shift; z < FAR; z += STRIPE * 2) {
     if (z + STRIPE <= NEAR) continue;
@@ -114,13 +114,13 @@ export function drawRoad(ctx, v) {
   }
 
   ctx.fillStyle = p.groundLine;
-  ctx.globalAlpha = 0.45;
+  ctx.globalAlpha = 0.8;
   const dash = v.scroll % (DASH * 2);
   for (let z = -dash; z < FAR; z += DASH * 2) {
     if (z + DASH <= NEAR) continue;
     const a = Math.max(z, NEAR);
-    ground(ctx, v, -LANE_W / 2 - 1.5, -LANE_W / 2 + 1.5, a, z + DASH);
-    ground(ctx, v, LANE_W / 2 - 1.5, LANE_W / 2 + 1.5, a, z + DASH);
+    ground(ctx, v, -LANE_W / 2 - 2, -LANE_W / 2 + 2, a, z + DASH);
+    ground(ctx, v, LANE_W / 2 - 2, LANE_W / 2 + 2, a, z + DASH);
   }
   ctx.globalAlpha = 0.9;
   ground(ctx, v, -ROAD_HALF - 4, -ROAD_HALF, NEAR, FAR);
@@ -256,6 +256,29 @@ function warn(ctx, v, o) {
   ctx.globalAlpha = 1;
 }
 
+function shadow(ctx, v, o) {
+  const m = (o.x0 + o.x1) / 2;
+  let x0 = o.x0;
+  let x1 = o.x1;
+  if (o.kind === 'drone') {
+    x0 = m - 20;
+    x1 = m + 20;
+  } else if (o.kind === 'missile') {
+    x0 = m - 9;
+    x1 = m + 9;
+  } else if (o.kind === 'saw' || o.kind === 'roller') {
+    const z = Math.max(o.z + o.d / 2, NEAR);
+    const k = v.F / z;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(v.cx + (m - v.x) * k, v.hy + v.eye * k, 22 * k, 6 * k, 0, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  ctx.fillStyle = o.kind === 'drone' || o.kind === 'gate' || o.kind === 'missile' ? 'rgba(0,0,0,0.16)' : 'rgba(0,0,0,0.3)';
+  ground(ctx, v, x0 - 3, x1 + 3, o.z - 3, o.z + o.d + 3);
+}
+
 export function drawObstacle(ctx, v, o) {
   if (o.z >= FAR) {
     if (o.kind === 'missile') warn(ctx, v, o);
@@ -265,6 +288,7 @@ export function drawObstacle(ctx, v, o) {
   ctx.globalAlpha = clamp((FAR - o.z) / FADE, 0, 1);
   const pal = v.pal;
   const z1 = o.z + o.d;
+  shadow(ctx, v, o);
   switch (o.kind) {
     case 'crate':
     case 'wall':
@@ -317,17 +341,33 @@ export function drawObstacle(ctx, v, o) {
 export function drawCoin(ctx, v, c) {
   if (c.z >= FAR || c.z <= NEAR) return;
   const k = v.F / c.z;
+  const bob = Math.sin(v.time * 3 + c.z * 0.02) * 1.5;
   const x = v.cx + (c.x - v.x) * k;
-  const y = v.hy + (v.eye - c.up) * k;
+  const y = v.hy + (v.eye - c.up - bob) * k;
+  const gy = v.hy + v.eye * k;
+  const fade = clamp((FAR - c.z) / FADE, 0, 1);
   const spin = Math.abs(Math.cos(v.time * 4 + c.z * 0.01));
-  ctx.globalAlpha = clamp((FAR - c.z) / FADE, 0, 1);
-  ctx.fillStyle = v.pal.coin;
-  ctx.strokeStyle = v.pal.coinDark;
-  ctx.lineWidth = Math.max(1, 2 * k);
+  const r = 11 * k;
+  ctx.globalAlpha = fade * clamp(0.32 - c.up / 400, 0.1, 0.32);
+  ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.ellipse(x, y, Math.max(2, 9 * k * (0.3 + spin * 0.7)), 9 * k, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, gy, r * 0.8, r * 0.28, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.stroke();
+  ctx.globalAlpha = fade;
+  const w = Math.max(r * 0.28, r * (0.25 + spin * 0.75));
+  ctx.fillStyle = v.pal.coinDark;
+  ctx.beginPath();
+  ctx.ellipse(x, y, w, r, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = v.pal.coin;
+  ctx.beginPath();
+  ctx.ellipse(x, y, w * 0.78, r * 0.84, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = fade * 0.55 * spin;
+  ctx.beginPath();
+  ctx.ellipse(x - w * 0.28, y - r * 0.3, w * 0.16, r * 0.26, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.globalAlpha = 1;
 }
 
