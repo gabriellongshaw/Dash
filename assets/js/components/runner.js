@@ -41,7 +41,6 @@ export class Runner {
     this.clock = 0;
     this.squash = 0;
     this.airK = 0;
-    this.flip = -1;
     this.alive = true;
     this.landed = false;
     this.slid = false;
@@ -56,10 +55,7 @@ export class Runner {
     this.vy = -(first ? JUMP_SPEED : DOUBLE_JUMP_SPEED);
     this.jumps++;
     this.jumpCount++;
-    if (!first) {
-      this.doubleCount++;
-      this.flip = 0;
-    }
+    if (!first) this.doubleCount++;
     this.grounded = false;
     this.sliding = false;
     this.squash = -0.3;
@@ -84,8 +80,7 @@ export class Runner {
         this.grounded = true;
         this.jumps = 0;
         this.landed = true;
-        this.flip = -1;
-        this.squash = 0.35;
+            this.squash = 0.35;
         if (this.buffer > 0) {
           this.buffer = 0;
           this.jump();
@@ -120,7 +115,6 @@ export class Runner {
     this.vis = clamp(this.vis + this.visV * dt, -0.12, 1.14);
     this.squash -= this.squash * Math.min(1, dt * 14);
     this.airK += ((this.grounded ? 0 : 1) - this.airK) * Math.min(1, dt * 20);
-    if (this.flip >= 0) this.flip += dt;
   }
 
   box() {

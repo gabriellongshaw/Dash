@@ -5,12 +5,10 @@ const TAU = Math.PI * 2;
 const HIP = -16;
 const SHOULDER = -27;
 const TORSO_TOP = -30;
-const FLIP_TIME = 0.42;
 
 const mix = (c, to, t) => toCss(tintColor(parseColor(c), to, t));
 const lighten = (c, t) => mix(c, [255, 255, 255, 1], t);
 const darken = (c, t) => mix(c, [0, 0, 0, 1], t);
-const ease = t => 1 - (1 - t) * (1 - t);
 
 export function skinColors(p, look, time) {
   const skin = look.skin || {};
@@ -538,7 +536,7 @@ const defaultPaint = c => ({ head: c.body, torso: c.body, arm: c.body, leg: c.da
 // run cycle, jump and roll can be blended together smoothly.
 function armPose(side, za, g) {
   const sx = side * (g.tw / 2 - 0.5);
-  const sy = SHOULDER;
+  const sy = g.sh;
   const u = (za + 1) / 2;
   let ex = sx + side * lerp(8.5, 6.5, u);
   let ey = sy + lerp(9, 7.5, u);
@@ -555,10 +553,10 @@ function armPose(side, za, g) {
     hy = lerp(hy, sy + jy, g.air);
   }
   if (g.roll > 0) {
-    ex = lerp(ex, sx + side * 9, g.roll);
-    ey = lerp(ey, sy + 4, g.roll);
-    hx = lerp(hx, sx + side * 3, g.roll);
-    hy = lerp(hy, sy + 8, g.roll);
+    ex = lerp(ex, sx + side * 5.5, g.roll);
+    ey = lerp(ey, sy - 4, g.roll);
+    hx = lerp(hx, side * 6.5, g.roll);
+    hy = lerp(hy, g.headY - 13, g.roll);
   }
   if (g.lean !== 0) {
     // the arm on the outside of the turn flings out
@@ -609,22 +607,22 @@ function legPose(side, p, g) {
     fy = lerp(fy, ay, g.air);
   }
   if (g.roll > 0) {
-    fx = lerp(fx, side * 7, g.roll);
-    fy = lerp(fy, -2.5, g.roll);
+    fx = lerp(fx, side * 7.5, g.roll);
+    fy = lerp(fy, -3, g.roll);
   }
-  return { fx, fy, z, lift: Math.max(0, -fy) / 10.5 };
+  return { fx, fy, z, lift: lerp(Math.max(0, -fy) / 10.5, 0.85, g.roll) };
 }
 
 function drawLeg(ctx, side, leg, hipY, g, c) {
-  const hx = side * 5.6;
+  const hx = side * (5.6 + g.roll * 1.2);
   const mx = (hx + leg.fx) / 2 + side * Math.min(3.5, leg.lift * 3);
   const my = (hipY + leg.fy) / 2;
-  stroke(ctx, c.leg, 7.6);
+  stroke(ctx, c.leg, 7.6 + g.roll * 1.4);
   ctx.beginPath();
   ctx.moveTo(hx, hipY + 2);
   ctx.quadraticCurveTo(mx, my, leg.fx, leg.fy - 3.4);
   ctx.stroke();
-  const s = 1 - leg.z * 0.05;
+  const s = (1 - leg.z * 0.05) * (1 + g.roll * 0.25);
   const sh = 6.4 + leg.lift * 1.6;
   ctx.fillStyle = c.shoe;
   pill(ctx, leg.fx - 5.2 * s, leg.fy - sh, 10.4 * s, sh, [3.6, 3.6, 2, 2]);
@@ -777,28 +775,29 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
   const fall = clamp(r.vy / 800, -1, 1);
   const phase = r.clock;
   const k = Math.min(1, speed / 700);
-  const g = { c, spec, time, phase, k, lean, air, fall, roll, hat, hw: spec.hw, hh: spec.hh, tw: spec.tw };
+  const p = Math.min(1, roll);
+  const headY0 = lerp(-37.5, -25, p);
+  const g = { c, spec, time, phase, k, lean, air, fall, roll: p, hat, hw: spec.hw, hh: spec.hh, tw: spec.tw, sh: lerp(SHOULDER, -17, p), headY: headY0 };
   const colors = (spec.paint || defaultPaint)(c);
 
   const run = 1 - air;
   const bob = 3 * Math.cos(phase) ** 2 * run * (1 - roll);
   const sway = Math.sin(phase) * 1.3 * run * (1 - roll);
   const tilt = Math.sin(phase) * 0.06 * run * (1 - roll) + lean * 0.08;
-  const sx = (1 + r.squash * 0.45) * (1 + roll * 0.1);
-  const sy = (1 - r.squash * 0.45) * lerp(1, 0.58, Math.min(1, roll));
+  const sx = 1 + r.squash * 0.45;
+  const sy = 1 - r.squash * 0.45;
 
   ctx.save();
+  ctx.translate(0, r.y);
   ctx.rotate(lean * 0.3);
   ctx.scale(sx, sy);
-  if (r.flip >= 0) {
-    const a = ease(clamp(r.flip / FLIP_TIME, 0, 1)) * TAU;
-    ctx.translate(0, -24);
-    ctx.rotate(a);
-    ctx.translate(0, 24);
-  }
 
   if (spec.blob) {
-    const top = drawBlob(ctx, spec.blob, g);
+    const ky = lerp(1, 0.6, p);
+    ctx.save();
+    ctx.scale(lerp(1, 1.1, p), ky);
+    const top = drawBlob(ctx, spec.blob, g) * ky;
+    ctx.restore();
     if (hat) {
       const info = hatSpec(look.hat);
       ctx.save();
@@ -812,7 +811,8 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
     return;
   }
 
-  const hipY = HIP - bob;
+  const hipB = lerp(HIP, -9, p);
+  const hipY = hipB - bob;
   const legs = [
     { side: -1, ...legPose(-1, phase, g) },
     { side: 1, ...legPose(1, phase + Math.PI, g) }
@@ -822,7 +822,7 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
     { side: -1, za: -Math.cos(phase) },
     { side: 1, za: Math.cos(phase) }
   ];
-  const far = a => a.za > 0.15 && air < 0.5 && roll < 0.5;
+  const far = a => p > 0.5 || (a.za > 0.15 && air < 0.5);
 
   for (const leg of legs) drawLeg(ctx, leg.side, leg, hipY, g, colors);
 
@@ -837,41 +837,46 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
   // torso
   const tw = spec.tw;
   ctx.fillStyle = colors.torso;
-  pill(ctx, -tw / 2, TORSO_TOP, tw, 15.5, [7.5, 7.5, 4, 4]);
+  const tTop = lerp(TORSO_TOP, -19, p);
+  const tH = lerp(15.5, 10.5, p);
+  pill(ctx, -tw / 2, tTop, tw, tH, [7.5, 7.5, 4, 4]);
   ctx.fill();
   ctx.save();
-  pill(ctx, -tw / 2, TORSO_TOP, tw, 15.5, [7.5, 7.5, 4, 4]);
+  pill(ctx, -tw / 2, tTop, tw, tH, [7.5, 7.5, 4, 4]);
   ctx.clip();
   ctx.fillStyle = darken(colors.torso, 0.18);
   ctx.globalAlpha = 0.6;
-  ctx.fillRect(-tw / 2, -19.5, tw, 5);
+  ctx.fillRect(-tw / 2, tTop + tH - 5.5, tw, 5);
   ctx.globalAlpha = 0.12;
   ctx.fillStyle = '#000';
-  ctx.fillRect(-tw / 2, TORSO_TOP + 7, tw, 9);
+  ctx.fillRect(-tw / 2, tTop + tH * 0.45, tw, tH);
   ctx.globalAlpha = 0.2;
   ctx.fillStyle = '#fff';
-  ctx.fillRect(-tw / 2 + 3, TORSO_TOP + 2, 3, 6);
+  ctx.fillRect(-tw / 2 + 3, tTop + 2, 3, Math.min(6, tH - 4));
   ctx.restore();
   ctx.globalAlpha = 1;
 
   if (spec.tail) {
     ctx.save();
-    ctx.translate(0, HIP - 1);
+    ctx.translate(0, hipB - 1);
+    ctx.scale(1, lerp(1, 0.75, p));
     spec.tail(ctx, g);
     ctx.restore();
   }
   if (spec.pack) {
     ctx.save();
-    ctx.translate(0, -22.5);
+    ctx.translate(0, lerp(-22.5, -14, p));
+    ctx.scale(1, lerp(1, 0.7, p));
     spec.pack(ctx, g);
     ctx.restore();
   }
 
   // head
   const nod = Math.sin(phase * 2 - 0.8) * 0.7 * run;
-  const headY = -37.5 - 1.6 * air * -Math.min(0, fall) + roll * 6 + nod;
+  const headY = headY0 - 1.6 * air * -Math.min(0, fall) + nod;
   ctx.save();
   ctx.translate(-sway * 0.5, headY);
+  ctx.scale(lerp(1, 0.9, p), lerp(1, 0.9, p));
   ctx.rotate(-tilt * 1.6 + lean * 0.14);
   if (spec.headBehind) spec.headBehind(ctx, g);
   ctx.fillStyle = colors.head;
