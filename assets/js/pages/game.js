@@ -211,10 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (game.state === 'over' && overReady) restart();
   }
 
-  const SWIPE = 48;
+  const SWIPE = 30;
   const TAP_MOVE = 14;
   const TAP_TIME = 280;
-  const DOMINANCE = 1.4;
+  const DOMINANCE = 1.25;
   let touch = null;
 
   if (third) {

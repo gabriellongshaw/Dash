@@ -13,7 +13,7 @@ const DASH = 60;
 const face = { x: 0, y: 0, w: 0, h: 0 };
 
 export function makeView() {
-  return { w: 0, h: 0, cx: 0, hy: 0, F: 1, eye: 38, x: 0, p: null, pal: null, hazard: null, pylon: null, time: 0, scroll: 0, speed: 0, reduced: false };
+  return { fade: 1, w: 0, h: 0, cx: 0, hy: 0, F: 1, eye: 38, x: 0, p: null, pal: null, hazard: null, pylon: null, time: 0, scroll: 0, speed: 0, reduced: false };
 }
 
 export function makeColors(pal, p) {
@@ -285,7 +285,7 @@ export function drawObstacle(ctx, v, o) {
     return;
   }
   if (o.z + o.d <= NEAR) return;
-  ctx.globalAlpha = clamp((FAR - o.z) / FADE, 0, 1);
+  ctx.globalAlpha = clamp((FAR - o.z) / FADE, 0, 1) * v.fade;
   const pal = v.pal;
   const z1 = o.z + o.d;
   shadow(ctx, v, o);
@@ -330,7 +330,7 @@ export function drawObstacle(ctx, v, o) {
     case 'field':
       ctx.globalAlpha *= 0.75;
       box(ctx, v, { front: pal.hazardLight, top: pal.hazardLight, side: pal.hazard }, o.x0, o.x1, 0, o.y1, o.z, z1);
-      ctx.globalAlpha = clamp((FAR - o.z) / FADE, 0, 1);
+      ctx.globalAlpha = clamp((FAR - o.z) / FADE, 0, 1) * v.fade;
       box(ctx, v, v.hazard, o.x0, o.x0 + 8, 0, 40, o.z, z1);
       box(ctx, v, v.hazard, o.x1 - 8, o.x1, 0, 40, o.z, z1);
       break;
@@ -345,7 +345,7 @@ export function drawCoin(ctx, v, c) {
   const x = v.cx + (c.x - v.x) * k;
   const y = v.hy + (v.eye - c.up - bob) * k;
   const gy = v.hy + v.eye * k;
-  const fade = clamp((FAR - c.z) / FADE, 0, 1);
+  const fade = clamp((FAR - c.z) / FADE, 0, 1) * v.fade;
   const spin = Math.abs(Math.cos(v.time * 4 + c.z * 0.01));
   const r = 11 * k;
   ctx.globalAlpha = fade * clamp(0.32 - c.up / 400, 0.1, 0.32);

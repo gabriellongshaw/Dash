@@ -12,13 +12,15 @@ import { speedAt } from '../core/difficulty.js';
 const STEP = 1 / 90;
 const HALF = 12;
 const REACH = 12;
-const SHIFT = 15;
+const SHIFT = 22;
 const SLIDE_TIME = 0.55;
-const EYE = 112;
+const EYE_MIN = 100;
+const EYE_MAX = 165;
+const PASS = 50;
 const FOCAL = 0.9;
 const TALL = 1.15;
-const HORIZON = 0.45;
-const FEET = 0.78;
+const HORIZON = 0.4;
+const FEET = 0.76;
 const RUNNER_H = 340;
 const LANE_FIT = 0.27;
 const FOLLOW = 0.3;
@@ -56,7 +58,8 @@ export class ThirdPersonGame {
     this.state = 'ready';
     this.lane = 0;
     this.x = 0;
-    this.eye = EYE;
+    this.baseEye = 112;
+    this.eye = 112;
     this.back = 300;
     this.slideHeld = false;
     this.slideTimer = 0;
@@ -82,6 +85,8 @@ export class ThirdPersonGame {
     v.F = Math.min(fit.viewW * FOCAL, fit.viewH * TALL);
     const fit3 = Math.min(fit.viewH / RUNNER_H, (fit.viewW * LANE_FIT) / LANE_W);
     this.back = v.F / fit3;
+    this.baseEye = clamp(((FEET - HORIZON) * fit.viewH) / fit3, EYE_MIN, EYE_MAX);
+    this.eye = this.baseEye;
     this.spawner.cull = -this.back + 10;
     this.world.resize(v.w, v.h, v.hy);
     this.world.streaks = [];
@@ -328,7 +333,7 @@ export class ThirdPersonGame {
       this.shake = Math.max(0, this.shake - dt * 2.5);
       this.flash = Math.max(0, this.flash - dt * 2);
       const runner = this.runner;
-      const target = EYE + Math.max(0, -runner.y) * FOLLOW;
+      const target = this.baseEye + Math.max(0, -runner.y) * FOLLOW;
       this.eye += (target - this.eye) * Math.min(1, 10 * dt);
     }
     this.draw();
@@ -365,11 +370,15 @@ export class ThirdPersonGame {
         this.drawRunner(ctx, speed);
         continue;
       }
+      const behind = -(item.z + (item.d || 0));
+      v.fade = behind > 0 ? 1 - behind / PASS : 1;
+      if (v.fade <= 0) continue;
       item.z += back;
       if (item.kind) drawObstacle(ctx, v, item);
       else drawCoin(ctx, v, item);
       item.z -= back;
     }
+    v.fade = 1;
     drawRush(ctx, v, speed);
     this.particles.draw(ctx);
     if (this.flash > 0) {
