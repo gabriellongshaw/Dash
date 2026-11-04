@@ -270,10 +270,14 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
       if (!run || !started) throw new Fail(400, 'run');
       const out = await db.runTransaction(async tx => {
         const profile = await load(tx, user.uid);
-        if (started <= profile.lastRun) return { profile, rejected: 'replay' };
+        if (started <= profile.lastRun) {
+          console.warn('run rejected replay', user.uid);
+          return { profile, rejected: 'replay' };
+        }
         const problem = checkRun(run, (now() - started) / 1000);
         const base = { lastRun: started, lastCoins: 0, updatedAt: FieldValue.serverTimestamp() };
         if (problem) {
+          console.warn('run rejected', problem, JSON.stringify({ ...run, seconds: (now() - started) / 1000 }));
           tx.update(profileRef(user.uid), base);
           return { profile, rejected: problem };
         }
