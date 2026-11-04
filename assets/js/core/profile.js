@@ -350,7 +350,12 @@ export const profile = {
     runPromise = null;
     lastSubmit = null;
     if (!cloudReady || !state.uid) return;
-    runPromise = call('startRun').then(out => out.runId).catch(() => null);
+    runPromise = call('startRun')
+      .then(out => out.runId)
+      .catch(e => {
+        console.warn(`[dash] could not start a tracked run: ${(e && (e.code || e.message)) || 'unknown'}`);
+        return null;
+      });
   },
 
   recordRun(run) {
@@ -390,10 +395,12 @@ export const profile = {
         });
       })
       .then(out => {
+        if (out.rejected) console.warn(`[dash] run not saved: rejected (${out.rejected})`);
         if (state.uid === uid) applyServer(out.profile);
         return out.rejected ? null : runId;
       })
-      .catch(() => {
+      .catch(e => {
+        console.warn(`[dash] run not saved: ${(e && (e.code || e.message)) || 'unknown'}`);
         refresh();
         return null;
       });
