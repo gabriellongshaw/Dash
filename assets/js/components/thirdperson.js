@@ -370,7 +370,9 @@ export class ThirdPersonGame {
     for (const o of list) queue.push(o);
     for (const c of coins) if (!c.taken) queue.push(c);
     if (this.runner.alive || this.state === 'over') queue.push(this.runner);
-    queue.sort((a, b) => (b === this.runner ? 0 : b.z) - (a === this.runner ? 0 : a.z));
+    const camX = this.camX();
+    const lateral = item => (item === this.runner || item.x0 === undefined ? 0 : Math.abs((item.x0 + item.x1) / 2 - camX));
+    queue.sort((a, b) => (b === this.runner ? 0 : b.z) - (a === this.runner ? 0 : a.z) || lateral(b) - lateral(a));
     const back = this.back;
     for (const item of queue) {
       if (item === this.runner) {

@@ -376,6 +376,9 @@ export function drawObstacle(ctx, v, o) {
         ctx.arc(x + w * 0.22, y + h * 0.84, w * 0.07, 0, Math.PI * 2);
         ctx.arc(x + w * 0.78, y + h * 0.84, w * 0.07, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+        ctx.lineWidth = Math.max(1, w * 0.02);
+        ctx.strokeRect(x, y, w, h);
       }
       break;
     case 'drone': {

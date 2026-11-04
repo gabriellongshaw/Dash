@@ -6,6 +6,7 @@ export const LANE_W = 64;
 export const SPAWN_Z = 1500;
 
 const HALF = LANE_W * 0.46;
+const TRAIN_HALF = LANE_W * 0.4;
 const CRATE_D = 34;
 const BARRIER_D = 28;
 const WALL_D = 26;
@@ -273,7 +274,7 @@ const builders = {
   train(s, z) {
     const a = lane();
     const d = randInt(240, 420);
-    s.add(piece('train', a, a, 0, TRAIN_H, d, { closing: Math.random() < 0.4 ? 110 : 0 }), z);
+    s.add(piece('train', a, a, 0, TRAIN_H, d, { half: TRAIN_HALF, closing: Math.random() < 0.4 ? 110 : 0 }), z);
     return d;
   },
   trainPair(s, z) {
@@ -282,7 +283,7 @@ const builders = {
     let first = true;
     for (let a = -1; a <= 1; a++) {
       if (a === open) continue;
-      s.add(piece('train', a, a, 0, TRAIN_H, d), z, first);
+      s.add(piece('train', a, a, 0, TRAIN_H, d, { half: TRAIN_HALF }), z, first);
       first = false;
     }
     s.coinLine(open, z, Math.floor(d / COIN_GAP));
