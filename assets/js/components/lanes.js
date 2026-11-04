@@ -2,7 +2,7 @@ import { clamp, pick, rand, randInt } from '../core/utils.js';
 import { BODY_LIFT, jumpHeight, jumpTime } from './runner.js';
 import { spacingOf, tierOf } from './obstacles.js';
 
-export const LANE_W = 64;
+export const LANE_W = 82;
 export const SPAWN_Z = 1500;
 
 const HALF = LANE_W * 0.46;

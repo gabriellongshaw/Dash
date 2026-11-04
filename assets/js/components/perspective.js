@@ -1,6 +1,7 @@
 import { clamp } from '../core/utils.js';
 import { LANE_W } from './lanes.js';
 import { drawProp, propsFor } from './roadside.js';
+import { shade, texture } from './textures.js';
 
 export const NEAR = 8;
 export const FAR = 1600;
@@ -66,6 +67,8 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
     ctx.lineTo(ax0, ay0);
     ctx.closePath();
     ctx.fill();
+    shade(ctx, ax0, 0, bx0, 0, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.32)');
+    texture(ctx, 'brushed', ax0, ay1, ka * 0.3, 0.5);
   } else if (v.x > x1) {
     ctx.beginPath();
     ctx.moveTo(ax1, ay1);
@@ -74,6 +77,8 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
     ctx.lineTo(ax1, ay0);
     ctx.closePath();
     ctx.fill();
+    shade(ctx, ax1, 0, bx1, 0, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.32)');
+    texture(ctx, 'brushed', ax1, ay1, ka * 0.3, 0.5);
   }
   if (v.eye > y1) {
     ctx.fillStyle = c.top;
@@ -84,6 +89,8 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
     ctx.lineTo(bx0, by1);
     ctx.closePath();
     ctx.fill();
+    shade(ctx, 0, ay1, 0, by1, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)');
+    texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.5);
   } else if (v.eye < y0) {
     ctx.beginPath();
     ctx.moveTo(ax0, ay0);
@@ -97,6 +104,10 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
   if (z0 < NEAR) return false;
   ctx.fillStyle = c.front;
   ctx.fillRect(ax0, ay1, ax1 - ax0, ay0 - ay1);
+  ctx.beginPath();
+  ctx.rect(ax0, ay1, ax1 - ax0, ay0 - ay1);
+  shade(ctx, 0, ay1, 0, ay0, 'rgba(255,255,255,0.16)', 'rgba(0,0,0,0.22)');
+  texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.55);
   face.x = ax0;
   face.y = ay1;
   face.w = ax1 - ax0;
@@ -126,13 +137,13 @@ export function drawRoad(ctx, v) {
   const tie = v.scroll % SLEEPER;
   for (let z = -tie; z < FAR; z += SLEEPER) {
     if (z + 7 <= NEAR) continue;
-    for (let a = -1; a <= 1; a++) ground(ctx, v, a * LANE_W - 25, a * LANE_W + 25, Math.max(z, NEAR), z + 7);
+    for (let a = -1; a <= 1; a++) ground(ctx, v, a * LANE_W - LANE_W * 0.39, a * LANE_W + LANE_W * 0.39, Math.max(z, NEAR), z + 7);
   }
   ctx.fillStyle = '#fff';
   ctx.globalAlpha = 0.5;
   for (let a = -1; a <= 1; a++) {
-    ground(ctx, v, a * LANE_W - 14, a * LANE_W - 11.4, NEAR, FAR);
-    ground(ctx, v, a * LANE_W + 11.4, a * LANE_W + 14, NEAR, FAR);
+    ground(ctx, v, a * LANE_W - LANE_W * 0.22, a * LANE_W - LANE_W * 0.178, NEAR, FAR);
+    ground(ctx, v, a * LANE_W + LANE_W * 0.178, a * LANE_W + LANE_W * 0.22, NEAR, FAR);
   }
   ctx.fillStyle = p.groundLine;
   ctx.globalAlpha = 0.5;
@@ -317,6 +328,62 @@ function shadow(ctx, v, o) {
   ground(ctx, v, x0 - 3, x1 + 3, o.z - 3, o.z + o.d + 3);
 }
 
+
+const CAR = 120;
+
+function sidePoint(v, xe, y, z) {
+  const k = v.F / Math.max(z, NEAR);
+  return [v.cx + (xe - v.x) * k, v.hy + (v.eye - y) * k];
+}
+
+function sideQuad(ctx, v, xe, y0, y1, za, zb) {
+  const a = sidePoint(v, xe, y0, za);
+  const b = sidePoint(v, xe, y1, za);
+  const c = sidePoint(v, xe, y1, zb);
+  const d = sidePoint(v, xe, y0, zb);
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1]);
+  ctx.lineTo(b[0], b[1]);
+  ctx.lineTo(c[0], c[1]);
+  ctx.lineTo(d[0], d[1]);
+  ctx.closePath();
+}
+
+// Carriage windows, door seams and a stripe along the visible flank of a train.
+function trainSide(ctx, v, o, z1) {
+  const xe = v.x < o.x0 ? o.x0 : v.x > o.x1 ? o.x1 : null;
+  if (xe === null) return;
+  const pal = v.pal;
+  const h = o.y1 - o.y0;
+  const cars = Math.max(1, Math.round((z1 - o.z) / CAR));
+  const len = (z1 - o.z) / cars;
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  sideQuad(ctx, v, xe, o.y0 + h * 0.08, o.y0 + h * 0.2, Math.max(o.z, NEAR), z1);
+  ctx.fill();
+  ctx.fillStyle = pal.hazardLight;
+  sideQuad(ctx, v, xe, o.y0 + h * 0.34, o.y0 + h * 0.4, Math.max(o.z, NEAR), z1);
+  ctx.fill();
+  for (let i = 0; i < cars; i++) {
+    const a = o.z + i * len;
+    const b = a + len;
+    if (b <= NEAR) continue;
+    for (let w = 0; w < 3; w++) {
+      const wa = a + len * (0.12 + w * 0.27);
+      const wb = wa + len * 0.2;
+      if (wb <= NEAR) continue;
+      ctx.fillStyle = 'rgba(20,28,40,0.85)';
+      sideQuad(ctx, v, xe, o.y0 + h * 0.52, o.y0 + h * 0.82, Math.max(wa, NEAR), wb);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      sideQuad(ctx, v, xe, o.y0 + h * 0.7, o.y0 + h * 0.82, Math.max(wa, NEAR), wb);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    sideQuad(ctx, v, xe, o.y0, o.y1, Math.max(a - 0.8, NEAR), a + 0.8);
+    ctx.fill();
+  }
+}
+
 export function drawObstacle(ctx, v, o) {
   if (o.z >= FAR) {
     if (o.kind === 'missile') warn(ctx, v, o);
@@ -363,8 +430,10 @@ export function drawObstacle(ctx, v, o) {
     case 'spikes':
       spikes(ctx, v, o);
       break;
-    case 'train':
-      if (box(ctx, v, v.train, o.x0, o.x1, o.y0, o.y1, o.z, z1)) {
+    case 'train': {
+      const drewFront = box(ctx, v, v.train, o.x0, o.x1, o.y0, o.y1, o.z, z1);
+      trainSide(ctx, v, o, z1);
+      if (drewFront) {
         const { x, y, w, h } = face;
         ctx.fillStyle = pal.hazardLight;
         ctx.fillRect(x + w * 0.12, y + h * 0.14, w * 0.33, h * 0.27);
@@ -381,6 +450,7 @@ export function drawObstacle(ctx, v, o) {
         ctx.strokeRect(x, y, w, h);
       }
       break;
+    }
     case 'drone': {
       const m = (o.x0 + o.x1) / 2;
       if (box(ctx, v, v.hazard, m - 20, m + 20, o.y0, o.y1, o.z, z1)) {
