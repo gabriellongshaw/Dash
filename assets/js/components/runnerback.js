@@ -48,8 +48,6 @@ function stroke(ctx, color, width) {
   ctx.lineJoin = 'round';
 }
 
-// Every character is built from the same rig and then dressed with the things
-// you can see from behind: ears, tails, antennae, packs and so on.
 const SPECS = {
   'char:bot': {
     hw: 12.5,
@@ -532,8 +530,6 @@ const BASE = { hw: 12.5, hh: 11.5, round: 1, tw: 22, legs: true, wing: false };
 
 const defaultPaint = c => ({ head: c.body, torso: c.body, arm: c.body, leg: c.dark, shoe: c.scarf });
 
-// Each hand and leg is placed from a few numbers rather than a skeleton, so the
-// run cycle, jump and roll can be blended together smoothly.
 function armPose(side, za, g) {
   const sx = side * (g.tw / 2 - 0.5);
   const sy = g.sh;
@@ -559,7 +555,6 @@ function armPose(side, za, g) {
     hy = lerp(hy, g.headY - 13, g.roll);
   }
   if (g.lean !== 0) {
-    // the arm on the outside of the turn flings out
     const out = clamp(side * g.lean, 0, 1) * (1 - g.roll);
     hx += side * out * 4.5;
     hy -= out * 5;
@@ -834,7 +829,6 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
 
   for (const a of arms) if (far(a)) drawArm(ctx, a.side, a.za, g, colors.arm);
 
-  // torso
   const tw = spec.tw;
   ctx.fillStyle = colors.torso;
   const tTop = lerp(TORSO_TOP, -19, p);
@@ -871,7 +865,6 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
     ctx.restore();
   }
 
-  // head
   const nod = Math.sin(phase * 2 - 0.8) * 0.7 * run;
   const headY = headY0 - 1.6 * air * -Math.min(0, fall) + nod;
   ctx.save();

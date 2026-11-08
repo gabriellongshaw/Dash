@@ -328,7 +328,6 @@ function shadow(ctx, v, o) {
   ground(ctx, v, x0 - 3, x1 + 3, o.z - 3, o.z + o.d + 3);
 }
 
-
 const CAR = 120;
 
 function sidePoint(v, xe, y, z) {
@@ -349,7 +348,6 @@ function sideQuad(ctx, v, xe, y0, y1, za, zb) {
   ctx.closePath();
 }
 
-// Carriage windows, door seams and a stripe along the visible flank of a train.
 function trainSide(ctx, v, o, z1) {
   const xe = v.x < o.x0 ? o.x0 : v.x > o.x1 ? o.x1 : null;
   if (xe === null) return;
