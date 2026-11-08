@@ -1,3 +1,23 @@
+@media (prefers-color-scheme: dark) {
+  .poll-tool.danger {
+    color: var(--hazard);
+  }
+  .poll-actions .danger {
+    color: var(--hazard);
+  }
+  .player-badge.star {
+    background: #3b2f0a;
+    color: #fcd34d;
+  }
+  .player-actions .danger {
+    color: var(--hazard);
+  }
+  .player-actions .secondary-button.on {
+    background: #3b2f0a;
+    color: #fcd34d;
+  }
+}
+
 @media (min-width: 480px) {
   .leave-label {
     display: inline;
@@ -67,6 +87,27 @@
   }
 }
 
+@media (max-height: 480px) {
+  .home-content {
+    gap: 8px;
+    padding-bottom: 14dvh;
+  }
+  .home-content .button {
+    margin-top: 2px;
+  }
+}
+
+@media (max-height: 520px) {
+  .mode-screen {
+    justify-content: flex-start;
+    gap: 10px;
+    padding-top: 60px;
+  }
+  .mode-art {
+    margin-bottom: 4px;
+  }
+}
+
 @media (hover: hover) {
   .button:hover {
     transform: translateY(-2px);
@@ -100,10 +141,17 @@
   .item-card:hover:active {
     transform: scale(0.97);
   }
+  .mode-card:hover {
+    transform: translateY(-3px);
+  }
+  .mode-card:hover:active {
+    transform: scale(0.98);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .home-content > *,
+  .mode-screen > *,
   .shop-inner > *,
   #play-btn,
   .badge-dot,
@@ -146,6 +194,8 @@
     animation: none;
   }
   .tab-pill,
+  .mode-card,
+  .mode-screen .key-chip,
   .poll-fill,
   .poll-check,
   .poll-compose-icon svg,

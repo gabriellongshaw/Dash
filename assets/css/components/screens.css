@@ -208,13 +208,3 @@ body.leaving .page {
 .credits-link:hover {
   color: var(--accent-soft);
 }
-
-@media (max-height: 480px) {
-  .home-content {
-    gap: 8px;
-    padding-bottom: 14dvh;
-  }
-  .home-content .button {
-    margin-top: 2px;
-  }
-}

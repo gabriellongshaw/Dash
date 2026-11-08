@@ -58,14 +58,6 @@
   background: #fef3c7;
   color: #92400e;
 }
-
-@media (prefers-color-scheme: dark) {
-  .player-badge.star {
-    background: #3b2f0a;
-    color: #fcd34d;
-  }
-}
-
 .player-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -147,25 +139,10 @@
 .player-actions .danger {
   color: var(--hazard-dark);
 }
-
-@media (prefers-color-scheme: dark) {
-  .player-actions .danger {
-    color: var(--hazard);
-  }
-}
-
 .player-actions .secondary-button.on {
   background: #fef3c7;
   color: #92400e;
 }
-
-@media (prefers-color-scheme: dark) {
-  .player-actions .secondary-button.on {
-    background: #3b2f0a;
-    color: #fcd34d;
-  }
-}
-
 .player-actions button:disabled {
   opacity: 0.55;
   cursor: default;

@@ -367,13 +367,6 @@
 .poll-tool.danger {
   color: var(--hazard-dark);
 }
-
-@media (prefers-color-scheme: dark) {
-  .poll-tool.danger {
-    color: var(--hazard);
-  }
-}
-
 .poll-content,
 .poll-view,
 .poll-edit-wrap {
@@ -603,13 +596,6 @@
 .poll-actions .danger {
   color: var(--hazard-dark);
 }
-
-@media (prefers-color-scheme: dark) {
-  .poll-actions .danger {
-    color: var(--hazard);
-  }
-}
-
 .poll-card.skeleton {
   pointer-events: none;
 }
