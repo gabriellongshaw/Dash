@@ -46,7 +46,7 @@ export class Game {
   }
 
   resize() {
-    const view = fitStage(this.canvas);
+    const view = fitStage(this.canvas, this.hooks.fill);
     this.viewW = view.viewW;
     this.viewH = view.viewH;
     this.groundY = view.groundY;

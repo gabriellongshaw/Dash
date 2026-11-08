@@ -345,6 +345,7 @@ export class LaneSpawner {
     this.coins = [];
     this.travel = 0;
     this.nextAt = 150;
+    this.intro = [];
   }
 
   add(o, z, main = true) {
@@ -413,7 +414,7 @@ export class LaneSpawner {
   }
 
   spawn(speed, dist, z) {
-    const kind = pick(POOLS[tierOf(dist)]);
+    const kind = this.intro.length ? this.intro.shift() : pick(POOLS[tierOf(dist)]);
     const first = this.obstacles.length;
     const coins = this.coins.length;
     const width = builders[kind](this, z, speed);

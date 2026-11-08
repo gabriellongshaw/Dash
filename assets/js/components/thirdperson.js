@@ -76,7 +76,7 @@ export class ThirdPersonGame {
   }
 
   resize() {
-    const fit = fitStage(this.canvas);
+    const fit = fitStage(this.canvas, this.hooks.fill);
     const v = this.view;
     this.viewW = fit.viewW;
     this.viewH = fit.viewH;

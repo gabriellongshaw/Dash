@@ -75,7 +75,9 @@ Ads use Google AdSense's game ads (the Ad Placement API) and run only on the pla
 
 ## Third person mode
 
-The home screen stores the chosen view in `localStorage` under `dash:mode` (`classic` or `third`, helpers in `assets/js/core/mode.js`). `assets/js/pages/game.js` reads it and creates either `Game` (Classic) or `ThirdPersonGame` (`assets/js/components/thirdperson.js`). Both expose the same methods and hooks, so the page, HUD, quests and run submission are shared.
+The view screen (`mode/`, opened by the Play button on the home screen, with `assets/js/pages/mode.js`) stores the chosen view in `localStorage` under `dash:mode` (`classic` or `third`, helpers in `assets/js/core/mode.js`). `assets/js/pages/game.js` reads it and creates either `Game` (Classic) or `ThirdPersonGame` (`assets/js/components/thirdperson.js`). Both expose the same methods and hooks, so the page, HUD, quests and run submission are shared.
+
+The cards on the view screen run the real engines as previews (`assets/js/components/modepreview.js`). `ClassicPreview` and `ThirdPreview` extend `Game` and `ThirdPersonGame`, pass `fill: true` so `fitStage` sizes the canvas to the card, and replace `tick` with a silent autopilot version that has no collisions, sounds or scoring. Their obstacles come from the spawner's `intro` list, so the preview only uses crates, spikes, gates and lane pairs. They use your equipped world and character.
 
 - `lanes.js` holds the lane obstacles, coin layouts and spawner. It reuses the tier and spacing curve from `obstacles.js`, so obstacle and coin density per metre matches Classic.
 - `perspective.js` projects the track, obstacles and coins onto the 2D canvas. There is no 3D library.
