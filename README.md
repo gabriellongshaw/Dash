@@ -12,7 +12,7 @@ Run as far as you can. Coins add 5 points each and distance adds the rest. The g
 
 ### Third person
 
-Pick **Third person** above Play on the home screen to run down a three-lane track with the camera behind your runner, like Subway Surfers. Your choice is remembered on that device.
+Press **Play**, then pick **Third person** on the view screen before you start, to run down a three-lane track with the camera behind your runner, like Subway Surfers. Your choice is remembered on that device.
 
 **Desktop:** `←` `→` or `A` `D` change lane. `Space`, `↑` or `W` jump (again in the air to double jump). `↓` or `S` slide. `P` or `Esc` pauses.
 
