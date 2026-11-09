@@ -113,16 +113,10 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 18px color-mix(in srgb, var(--button-bg) 35%, transparent);
   }
-  .button:hover svg {
-    transform: translateX(3px);
-  }
   .secondary-button:hover,
   .icon-button:hover,
   .leave-button:hover {
     transform: translateY(-1px);
-  }
-  .leave-button:hover svg {
-    transform: translateX(-3px);
   }
   .account-chip:hover .account-avatar {
     transform: scale(1.1);
