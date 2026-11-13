@@ -64,6 +64,7 @@ function patternFor(ctx, name) {
 export function texture(ctx, name, ox, oy, scale, alpha) {
   const pat = patternFor(ctx, name);
   if (!pat || !(scale > 0.001)) return;
+  scale = Math.min(scale, 0.7);
   if (pat.setTransform && typeof DOMMatrix !== 'undefined') pat.setTransform(new DOMMatrix().translate(ox, oy).scale(scale));
   const was = ctx.globalAlpha;
   ctx.globalAlpha = was * alpha;
