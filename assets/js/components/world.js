@@ -210,7 +210,7 @@ export class World {
           m.y = rand(0, this.g * 0.3);
         }
       } else if (kind === 'sand') {
-        m.x -= speed * (0.8 + m.v * 0.5) * dt;
+        m.x -= (speed * 0.12 + 40) * (0.8 + m.v * 0.5) * dt;
         if (m.x < -30) {
           m.x = this.w + rand(0, 100);
           m.y = rand(this.g * 0.3, this.g - 8);
