@@ -136,7 +136,11 @@ export const CHARACTERS = [
   { id: 'char:pumpkin', name: 'Pumpkin', price: 450 }
 ];
 
+const PRICE_SCALE = 2.5;
+
 export const ITEMS = [...SKINS, ...CHARACTERS, ...HATS, ...WORLDS];
+
+for (const item of ITEMS) item.price = Math.round((item.price * PRICE_SCALE) / 5) * 5;
 
 export const findItem = id => ITEMS.find(item => item.id === id) || null;
 
