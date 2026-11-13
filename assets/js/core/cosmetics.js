@@ -36,6 +36,26 @@ export const SKINS = [
   { id: 'skin:obsidian', name: 'Obsidian', price: 240, runner: '#1f2937', runnerDark: '#0b1020', visor: '#f472b6', scarf: '#f472b6' },
   { id: 'skin:rosegold', name: 'Rose gold', price: 260, runner: '#f0a8a0', runnerDark: '#b76e79', visor: '#4a1d24', scarf: '#fff1f2' },
   { id: 'skin:neonpink', name: 'Neon pink', price: 300, runner: '#ff2bd6', runnerDark: '#a21caf', visor: '#2a0a2e', scarf: '#22d3ee' },
+  { id: 'skin:banana', name: 'Banana', price: 80, runner: '#fde047', runnerDark: '#ca8a04', visor: '#422006', scarf: '#ffffff' },
+  { id: 'skin:grape', name: 'Grape', price: 100, runner: '#9333ea', runnerDark: '#581c87', visor: '#f3e8ff', scarf: '#e9d5ff' },
+  { id: 'skin:watermelon', name: 'Watermelon', price: 100, runner: '#f43f5e', runnerDark: '#9f1239', visor: '#14532d', scarf: '#86efac' },
+  { id: 'skin:blueberry', name: 'Blueberry', price: 100, runner: '#3b82f6', runnerDark: '#1e3a8a', visor: '#dbeafe', scarf: '#93c5fd' },
+  { id: 'skin:pistachio', name: 'Pistachio', price: 80, runner: '#bef264', runnerDark: '#65a30d', visor: '#1a2e05', scarf: '#fef9c3' },
+  { id: 'skin:cottoncandy', name: 'Cotton candy', price: 120, runner: '#f9a8d4', runnerDark: '#ec4899', visor: '#500724', scarf: '#93c5fd' },
+  { id: 'skin:latte', name: 'Latte', price: 80, runner: '#d6bcab', runnerDark: '#8c6b55', visor: '#3b2a1e', scarf: '#fef3c7' },
+  { id: 'skin:charcoal', name: 'Charcoal', price: 140, runner: '#374151', runnerDark: '#111827', visor: '#fbbf24', scarf: '#fbbf24' },
+  { id: 'skin:pearl', name: 'Pearl', price: 160, runner: '#f5f5f4', runnerDark: '#a8a29e', visor: '#7c3aed', scarf: '#c4b5fd' },
+  { id: 'skin:turquoise', name: 'Turquoise', price: 100, runner: '#14b8a6', runnerDark: '#115e59', visor: '#ccfbf1', scarf: '#fde68a' },
+  { id: 'skin:magma', name: 'Magma', price: 200, runner: '#dc2626', runnerDark: '#7f1d1d', visor: '#fb923c', scarf: '#fb923c' },
+  { id: 'skin:sapphire', name: 'Sapphire', price: 180, runner: '#1d4ed8', runnerDark: '#1e3a8a', visor: '#bfdbfe', scarf: '#60a5fa' },
+  { id: 'skin:ruby', name: 'Ruby', price: 180, runner: '#e11d48', runnerDark: '#881337', visor: '#ffe4e6', scarf: '#fda4af' },
+  { id: 'skin:amber', name: 'Amber', price: 140, runner: '#f59e0b', runnerDark: '#92400e', visor: '#451a03', scarf: '#fef3c7' },
+  { id: 'skin:jade', name: 'Jade', price: 160, runner: '#10b981', runnerDark: '#065f46', visor: '#d1fae5', scarf: '#a7f3d0' },
+  { id: 'skin:amethyst', name: 'Amethyst', price: 180, runner: '#8b5cf6', runnerDark: '#4c1d95', visor: '#ede9fe', scarf: '#f0abfc' },
+  { id: 'skin:bronze', name: 'Bronze', price: 200, runner: '#b45309', runnerDark: '#78350f', visor: '#fde68a', scarf: '#fbbf24' },
+  { id: 'skin:steel', name: 'Steel', price: 140, runner: '#64748b', runnerDark: '#1e293b', visor: '#e2e8f0', scarf: '#38bdf8' },
+  { id: 'skin:sakura', name: 'Sakura', price: 120, runner: '#fbcfe8', runnerDark: '#f472b6', visor: '#831843', scarf: '#ffffff' },
+  { id: 'skin:glacier', name: 'Glacier', price: 160, runner: '#67e8f9', runnerDark: '#0891b2', visor: '#083344', scarf: '#ffffff' },
   { id: 'skin:prism', name: 'Prism', price: 700, runner: '#a78bfa', runnerDark: '#6d28d9', visor: '#1e1b4b', scarf: '#ffffff', rainbow: true }
 ];
 
@@ -69,7 +89,21 @@ export const HATS = [
   { id: 'hat:santa', name: 'Santa', price: 200 },
   { id: 'hat:sombrero', name: 'Sombrero', price: 240 },
   { id: 'hat:knight', name: 'Knight', price: 320 },
-  { id: 'hat:unicorn', name: 'Unicorn', price: 380 }
+  { id: 'hat:unicorn', name: 'Unicorn', price: 380 },
+  { id: 'hat:beret', name: 'Beret', price: 70 },
+  { id: 'hat:hardhat', name: 'Hard hat', price: 90 },
+  { id: 'hat:bucket', name: 'Bucket hat', price: 80 },
+  { id: 'hat:headband', name: 'Headband', price: 60 },
+  { id: 'hat:witch', name: 'Witch', price: 260 },
+  { id: 'hat:pumpkin', name: 'Pumpkin', price: 150 },
+  { id: 'hat:laurel', name: 'Laurel', price: 170 },
+  { id: 'hat:tiara', name: 'Tiara', price: 220 },
+  { id: 'hat:ufo', name: 'UFO', price: 350 },
+  { id: 'hat:rainbow', name: 'Rainbow', price: 300 },
+  { id: 'hat:cloud', name: 'Rain cloud', price: 280 },
+  { id: 'hat:pizza', name: 'Pizza', price: 120 },
+  { id: 'hat:donut', name: 'Donut', price: 130 },
+  { id: 'hat:mohawk', name: 'Mohawk', price: 140 }
 ];
 
 export const CHARACTERS = [
@@ -91,7 +125,15 @@ export const CHARACTERS = [
   { id: 'char:panda', name: 'Panda', price: 350 },
   { id: 'char:owl', name: 'Owl', price: 400 },
   { id: 'char:cyclops', name: 'Cyclops', price: 450 },
-  { id: 'char:snowman', name: 'Snowman', price: 500 }
+  { id: 'char:snowman', name: 'Snowman', price: 500 },
+  { id: 'char:mouse', name: 'Mouse', price: 250 },
+  { id: 'char:tiger', name: 'Tiger', price: 350 },
+  { id: 'char:cow', name: 'Cow', price: 300 },
+  { id: 'char:chick', name: 'Chick', price: 200 },
+  { id: 'char:koala', name: 'Koala', price: 350 },
+  { id: 'char:raccoon', name: 'Raccoon', price: 400 },
+  { id: 'char:turtle', name: 'Turtle', price: 400 },
+  { id: 'char:pumpkin', name: 'Pumpkin', price: 450 }
 ];
 
 export const ITEMS = [...SKINS, ...CHARACTERS, ...HATS, ...WORLDS];

@@ -21,7 +21,15 @@ export const TRAITS = {
   'char:panda': { legs: true, scarf: null },
   'char:owl': { legs: true, scarf: null },
   'char:cyclops': { legs: true, scarf: null },
-  'char:snowman': { legs: true, scarf: null }
+  'char:snowman': { legs: true, scarf: null },
+  'char:mouse': { legs: true, scarf: null },
+  'char:tiger': { legs: true, scarf: null },
+  'char:cow': { legs: true, scarf: null },
+  'char:chick': { legs: true, scarf: null },
+  'char:koala': { legs: true, scarf: null },
+  'char:raccoon': { legs: true, scarf: null },
+  'char:turtle': { legs: true, scarf: null },
+  'char:pumpkin': { legs: true, scarf: null }
 };
 
 export const traitsOf = id => TRAITS[id] || TRAITS['char:bot'];
@@ -45,7 +53,15 @@ const HEAD_RADIUS = {
   'char:panda': [14, 13],
   'char:owl': [15, 13],
   'char:cyclops': [13, 13],
-  'char:snowman': [16, 14]
+  'char:snowman': [16, 14],
+  'char:mouse': [13, 13],
+  'char:tiger': [13, 13],
+  'char:cow': [14, 13],
+  'char:chick': [15, 14],
+  'char:koala': [14, 13],
+  'char:raccoon': [13, 13],
+  'char:turtle': [13, 13],
+  'char:pumpkin': [15, 14]
 };
 
 const MAX_SINK = 4;
@@ -845,6 +861,438 @@ const drawers = {
       ctx.arc(w / 2 - 9, top + lerp(26.5, 23, pose) + i * 3.4 * (1 - pose * 0.6), 1.3, 0, TAU);
       ctx.fill();
     }
+  },
+
+  'char:mouse'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    ctx.strokeStyle = '#fda4af';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 1, top + lerp(26, 18, pose));
+    ctx.bezierCurveTo(-w / 2 - 10, top + 25, -w / 2 - 2, top + 13, -w / 2 - 10, top + 11 + Math.sin(g.time * 9) * 2);
+    ctx.stroke();
+    if (!g.hat) {
+      for (const ex of [-w * 0.2, w * 0.16]) {
+        ctx.fillStyle = g.body;
+        ctx.beginPath();
+        ctx.arc(ex, top + 1, 7.6, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = '#fbcfe8';
+        ctx.beginPath();
+        ctx.arc(ex, top + 1.5, 4.4, 0, TAU);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(14, 13, pose));
+    ctx.fill();
+    shine(ctx, g);
+    const ey = top + lerp(11, 8, pose);
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 15, ey, 2.2, 0, TAU);
+    ctx.arc(w / 2 - 7, ey, 2.2, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 14.4, ey - 0.8, 0.7, 0, TAU);
+    ctx.arc(w / 2 - 6.4, ey - 0.8, 0.7, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#fb7185';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 1.5, ey + 5.5, 2.4, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 4, ey + 7);
+    ctx.lineTo(w / 2 + 6, ey + 5);
+    ctx.moveTo(w / 2 - 4, ey + 9.5);
+    ctx.lineTo(w / 2 + 6, ey + 10.5);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  },
+
+  'char:tiger'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    ctx.strokeStyle = g.body;
+    ctx.lineWidth = 4.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 2, top + lerp(26, 18, pose));
+    ctx.quadraticCurveTo(-w / 2 - 12, top + 22 + Math.sin(g.time * 8) * 4, -w / 2 - 12, top + 7);
+    ctx.stroke();
+    ctx.strokeStyle = '#111827';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 - 6, top + 17);
+    ctx.lineTo(-w / 2 - 10, top + 15);
+    ctx.stroke();
+    if (!g.hat) {
+      for (const ex of [-w * 0.2, w * 0.2]) {
+        ctx.fillStyle = g.body;
+        ctx.beginPath();
+        ctx.arc(ex, top + 2, 5.6, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = '#fef3c7';
+        ctx.beginPath();
+        ctx.arc(ex, top + 2.5, 2.8, 0, TAU);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(13, 13, pose));
+    ctx.fill();
+    ctx.save();
+    bodyPath(ctx, g, lerp(13, 13, pose));
+    ctx.clip();
+    ctx.fillStyle = '#111827';
+    ctx.globalAlpha = 0.55;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 + 5 + i * 8.5, top);
+      ctx.lineTo(-w / 2 + 9 + i * 8.5, top);
+      ctx.lineTo(-w / 2 + 7 + i * 8.5, top + g.bodyH * 0.55);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    shine(ctx, g);
+    const ey = top + lerp(12, 8.5, pose);
+    ctx.fillStyle = '#fef3c7';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 6, ey + 6.5, 8.5, 6.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 15, ey, 2.2, 0, TAU);
+    ctx.arc(w / 2 - 7, ey, 2.2, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#fb7185';
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 8.5, ey + 3.5);
+    ctx.lineTo(w / 2 - 3.5, ey + 3.5);
+    ctx.lineTo(w / 2 - 6, ey + 6.5);
+    ctx.closePath();
+    ctx.fill();
+  },
+
+  'char:cow'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    ctx.strokeStyle = '#111827';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 1, top + lerp(26, 18, pose));
+    ctx.quadraticCurveTo(-w / 2 - 8, top + 24, -w / 2 - 7, top + 14);
+    ctx.stroke();
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(-w / 2 - 7, top + 14, 2.6, 0, TAU);
+    ctx.fill();
+    if (!g.hat) {
+      ctx.fillStyle = '#fef3c7';
+      for (const ex of [-w * 0.16, w * 0.16]) {
+        ctx.beginPath();
+        ctx.moveTo(ex - 2.5, top + 2);
+        ctx.quadraticCurveTo(ex - 3, top - 5, ex + 0.5, top - 7);
+        ctx.quadraticCurveTo(ex + 3, top - 4, ex + 2.5, top + 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = g.body;
+    ctx.beginPath();
+    ctx.ellipse(-w / 2 + 2, top + lerp(14, 10, pose), 7, 3.6, -0.3, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#f8fafc';
+    bodyPath(ctx, g, lerp(14, 13, pose));
+    ctx.fill();
+    ctx.save();
+    bodyPath(ctx, g, lerp(14, 13, pose));
+    ctx.clip();
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.ellipse(-w / 2 + 9, top + g.bodyH * 0.6, 7, 5.5, 0.3, 0, TAU);
+    ctx.ellipse(w / 2 - 18, top + 4, 5, 4, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+    const ey = top + lerp(11, 8, pose);
+    ctx.fillStyle = '#fda4af';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 6, ey + 7, 9, 6.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#be185d';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 9, ey + 7, 1.4, 2, 0, 0, TAU);
+    ctx.ellipse(w / 2 - 3, ey + 7, 1.4, 2, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 15, ey - 0.5, 2.2, 0, TAU);
+    ctx.arc(w / 2 - 7, ey - 0.5, 2.2, 0, TAU);
+    ctx.fill();
+  },
+
+  'char:chick'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    ctx.fillStyle = g.body;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + 2, top + lerp(18, 13, pose));
+    ctx.lineTo(-w / 2 - 6, top + lerp(12, 8, pose));
+    ctx.lineTo(-w / 2 + 2, top + lerp(26, 19, pose));
+    ctx.closePath();
+    ctx.fill();
+    if (!g.hat) {
+      ctx.strokeStyle = g.body;
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = 'round';
+      for (const [dx, dy] of [[-4, -5], [0, -8], [4, -5]]) {
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - 14 + dx * 0.3, top + 1);
+        ctx.quadraticCurveTo(w / 2 - 14 + dx, top + dy, w / 2 - 12 + dx * 1.4, top + dy - 2);
+        ctx.stroke();
+      }
+    }
+    bodyPath(ctx, g, lerp(16, 14, pose));
+    ctx.fill();
+    shine(ctx, g);
+    ctx.fillStyle = g.dark;
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.ellipse(-4, top + g.bodyH * 0.6, 7, lerp(6, 4.5, pose), -0.25 + Math.sin(g.time * 14) * 0.1, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    const ey = top + lerp(11, 8, pose);
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 14, ey, 2.6, 0, TAU);
+    ctx.arc(w / 2 - 6, ey, 2.6, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 13.2, ey - 1, 0.9, 0, TAU);
+    ctx.arc(w / 2 - 5.2, ey - 1, 0.9, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#fb923c';
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 12, ey + 3.5);
+    ctx.lineTo(w / 2 - 1, ey + 5);
+    ctx.lineTo(w / 2 - 12, ey + 8);
+    ctx.closePath();
+    ctx.fill();
+  },
+
+  'char:koala'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    if (!g.hat) {
+      for (const ex of [-w * 0.2, w * 0.22]) {
+        ctx.fillStyle = g.body;
+        ctx.beginPath();
+        ctx.arc(ex, top + 2, 8, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.arc(ex, top + 2.5, 4.6, 0, TAU);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(14, 13, pose));
+    ctx.fill();
+    shine(ctx, g);
+    ctx.fillStyle = '#f1f5f9';
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.ellipse(0, top + g.bodyH - 5, w * 0.3, 4, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    const ey = top + lerp(11, 8, pose);
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 15, ey, 2, 0, TAU);
+    ctx.arc(w / 2 - 6.5, ey, 2, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#1f2937';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 10.5, ey + 5.5, 4.4, 5.6, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 11.8, ey + 3.6, 1.2, 0.8, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  },
+
+  'char:raccoon'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    ctx.save();
+    ctx.translate(-w / 2 - 2, top + lerp(22, 16, pose));
+    ctx.rotate(-0.6 + Math.sin(g.time * 8) * 0.12);
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.ellipse(-4, 0, 11, 5.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#1f2937';
+    for (const bx of [-9, -3, 3]) {
+      ctx.beginPath();
+      ctx.ellipse(bx, 0, 2.4, 5.2, 0, 0, TAU);
+      ctx.fill();
+    }
+    ctx.restore();
+    if (!g.hat) {
+      for (const ex of [-w * 0.24, w * 0.12]) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.moveTo(ex - 1, top + 4);
+        ctx.lineTo(ex + 3, top - 8);
+        ctx.lineTo(ex + 11, top + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.moveTo(ex + 2, top + 3);
+        ctx.lineTo(ex + 4, top - 3);
+        ctx.lineTo(ex + 8, top + 3);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = '#94a3b8';
+    bodyPath(ctx, g, lerp(13, 13, pose));
+    ctx.fill();
+    shine(ctx, g);
+    const ey = top + lerp(11, 8, pose);
+    ctx.fillStyle = '#1f2937';
+    ctx.beginPath();
+    ctx.roundRect(w / 2 - 21, ey - 4.5, 21, 9, 4.5);
+    ctx.fill();
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath();
+    ctx.ellipse(w / 2 - 6, ey + 7, 7, 5, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 15, ey, 2.3, 0, TAU);
+    ctx.arc(w / 2 - 7, ey, 2.3, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 14.3, ey, 1.1, 0, TAU);
+    ctx.arc(w / 2 - 6.3, ey, 1.1, 0, TAU);
+    ctx.ellipse(w / 2 - 3, ey + 5, 2.4, 1.8, 0, 0, TAU);
+    ctx.fill();
+  },
+
+  'char:turtle'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    ctx.fillStyle = g.dark;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 - 6, top + lerp(13, 9, pose), w * 0.72, g.bodyH - lerp(13, 9, pose) - 1, [lerp(16, 13, pose), lerp(16, 13, pose), 6, 6]);
+    ctx.fill();
+    ctx.strokeStyle = g.body;
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    const sx = -w / 2 - 6;
+    const sy = top + lerp(13, 9, pose);
+    ctx.moveTo(sx + 8, sy + 2);
+    ctx.lineTo(sx + 8, sy + g.bodyH * 0.6);
+    ctx.moveTo(sx + 17, sy + 2);
+    ctx.lineTo(sx + 17, sy + g.bodyH * 0.6);
+    ctx.moveTo(sx + 1, sy + g.bodyH * 0.32);
+    ctx.lineTo(sx + w * 0.72 - 1, sy + g.bodyH * 0.32);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = g.body;
+    ctx.beginPath();
+    ctx.roundRect(-w / 2 + 4, top + lerp(10, 6, pose), w - 4, g.bodyH - lerp(10, 6, pose), lerp(12, 12, pose));
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.2;
+    ctx.beginPath();
+    ctx.roundRect(w / 2 - 14, top + lerp(10, 6, pose) + 2, 8, 3, 1.5);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    const ey = top + lerp(14, 10, pose);
+    eye(ctx, w / 2 - 8, ey, 3.8, g.visor);
+    ctx.strokeStyle = g.dark;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(w / 2 - 6, ey + 7, 3.2, 0.2, Math.PI - 0.4);
+    ctx.stroke();
+  },
+
+  'char:pumpkin'(ctx, g) {
+    const { w, h, pose } = g;
+    const top = -h / 2;
+    if (!g.hat) {
+      ctx.fillStyle = '#16a34a';
+      ctx.beginPath();
+      ctx.roundRect(-2, top - 6, 5, 9, 2);
+      ctx.fill();
+      ctx.strokeStyle = '#16a34a';
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(3, top - 3);
+      ctx.quadraticCurveTo(10, top - 6, 9, top + 1);
+      ctx.stroke();
+    }
+    ctx.fillStyle = g.body;
+    bodyPath(ctx, g, lerp(16, 14, pose));
+    ctx.fill();
+    ctx.strokeStyle = g.dark;
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (const rx of [-w * 0.22, 0, w * 0.22]) {
+      ctx.moveTo(rx, top + 2);
+      ctx.quadraticCurveTo(rx + (rx === 0 ? 0 : -rx * 0.3), top + g.bodyH * 0.5, rx, top + g.bodyH - 2);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    shine(ctx, g);
+    const ey = top + lerp(11, 8, pose);
+    const glow = 0.8 + Math.sin(g.time * 7) * 0.2;
+    ctx.fillStyle = '#fde047';
+    ctx.globalAlpha = glow;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 17, ey + 3);
+    ctx.lineTo(w / 2 - 13, ey - 4);
+    ctx.lineTo(w / 2 - 9.5, ey + 3);
+    ctx.closePath();
+    ctx.moveTo(w / 2 - 8, ey + 3);
+    ctx.lineTo(w / 2 - 4, ey - 4);
+    ctx.lineTo(w / 2 - 0.5, ey + 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 17, ey + 8);
+    ctx.lineTo(w / 2 - 13, ey + 10.5);
+    ctx.lineTo(w / 2 - 10, ey + 8);
+    ctx.lineTo(w / 2 - 7, ey + 10.5);
+    ctx.lineTo(w / 2 - 4, ey + 8);
+    ctx.lineTo(w / 2 - 1, ey + 10);
+    ctx.lineTo(w / 2 - 2, ey + 12.5);
+    ctx.lineTo(w / 2 - 6, ey + 11.5);
+    ctx.lineTo(w / 2 - 10, ey + 12.5);
+    ctx.lineTo(w / 2 - 14, ey + 11.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
   }
 };
 

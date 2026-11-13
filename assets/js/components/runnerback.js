@@ -523,6 +523,219 @@ const SPECS = {
       ctx.fill();
       ctx.globalAlpha = 1;
     }
+  },
+
+  'char:mouse': {
+    hw: 13,
+    hh: 11.5,
+    headBehind(ctx, g) {
+      if (g.hat) return;
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = g.c.body;
+        dot(ctx, s * 9.5, -g.hh + 1, 7.4);
+        ctx.fillStyle = '#fbcfe8';
+        dot(ctx, s * 9.5, -g.hh + 1.5, 4.2);
+      }
+    },
+    tail(ctx, g) {
+      stroke(ctx, '#fda4af', 2.2);
+      const w = Math.sin(g.time * 10) * 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 4);
+      ctx.bezierCurveTo(7 + w, 6, 9 + w, -2, 3 + w, -5);
+      ctx.stroke();
+    }
+  },
+
+  'char:tiger': {
+    hw: 13,
+    hh: 11.5,
+    headBehind(ctx, g) {
+      if (g.hat) return;
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = g.c.body;
+        dot(ctx, s * 9.5, -g.hh + 1.5, 5.4);
+        ctx.fillStyle = '#fef3c7';
+        dot(ctx, s * 9.5, -g.hh + 2, 2.6);
+      }
+    },
+    headOver(ctx, g) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(0, 0, g.hw, g.hh, 0, 0, TAU);
+      ctx.clip();
+      ctx.fillStyle = '#111827';
+      ctx.globalAlpha = 0.55;
+      for (const s of [-1, 0, 1]) pill(ctx, s * 6 - 1.4, -g.hh, 2.8, 8, 1.4);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    },
+    tail(ctx, g) {
+      const sw = Math.sin(g.time * 9) * 4;
+      stroke(ctx, g.c.body, 4.4);
+      ctx.beginPath();
+      ctx.moveTo(0, 4);
+      ctx.quadraticCurveTo(8 + sw, 4, 8 + sw, -6);
+      ctx.stroke();
+      stroke(ctx, '#111827', 4.6);
+      ctx.beginPath();
+      ctx.moveTo(8.6 + sw, -1);
+      ctx.lineTo(8.6 + sw, -2.6);
+      ctx.moveTo(7.4 + sw, -7);
+      ctx.lineTo(7.4 + sw, -8.2);
+      ctx.stroke();
+    }
+  },
+
+  'char:cow': {
+    hw: 13.5,
+    hh: 11.5,
+    paint: c => ({ head: '#f8fafc', torso: '#f8fafc', arm: '#f8fafc', leg: '#111827', shoe: '#111827' }),
+    headBehind(ctx, g) {
+      ctx.fillStyle = g.c.body;
+      ctx.beginPath();
+      ctx.ellipse(-g.hw - 3.5, -2, 6, 3.2, 0.4, 0, TAU);
+      ctx.ellipse(g.hw + 3.5, -2, 6, 3.2, -0.4, 0, TAU);
+      ctx.fill();
+      if (g.hat) return;
+      ctx.fillStyle = '#fef3c7';
+      for (const s of [-1, 1]) tri(ctx, s * 5.5 - 2.5, -g.hh + 2, s * 6.5, -g.hh - 7, s * 5.5 + 2.5, -g.hh + 2);
+    },
+    headOver(ctx, g) {
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.ellipse(5, -3, 5, 4, 0.3, 0, TAU);
+      ctx.fill();
+    },
+    tail(ctx, g) {
+      stroke(ctx, '#111827', 1.8);
+      const w = Math.sin(g.time * 9) * 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 3);
+      ctx.quadraticCurveTo(4 + w, 6, 3 + w, 10);
+      ctx.stroke();
+      ctx.fillStyle = '#111827';
+      dot(ctx, 3 + w, 11, 2.6);
+    }
+  },
+
+  'char:chick': {
+    hw: 13.5,
+    hh: 12,
+    wing: true,
+    paint: c => ({ head: c.body, torso: c.body, arm: c.body, leg: '#fb923c', shoe: '#fb923c' }),
+    headOver(ctx, g) {
+      if (g.hat) return;
+      stroke(ctx, g.c.body, 2.6);
+      for (const [dx, dy] of [[-4, -5], [0, -8], [4, -5]]) {
+        ctx.beginPath();
+        ctx.moveTo(dx * 0.3, -g.hh + 1);
+        ctx.quadraticCurveTo(dx, -g.hh + dy, dx * 1.4, -g.hh + dy - 2);
+        ctx.stroke();
+      }
+    },
+    tail(ctx, g) {
+      const s = Math.sin(g.time * 12) * 1.5;
+      ctx.fillStyle = g.c.body;
+      tri(ctx, -5, 3, -3 + s, -4, 0, 3);
+      tri(ctx, 0, 3, 3 - s, -4, 5, 3);
+    }
+  },
+
+  'char:koala': {
+    hw: 13.5,
+    hh: 11.5,
+    headBehind(ctx, g) {
+      if (g.hat) return;
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = g.c.body;
+        dot(ctx, s * 10, -g.hh + 2, 7.8);
+        ctx.fillStyle = '#f1f5f9';
+        dot(ctx, s * 10, -g.hh + 2.5, 4.4);
+      }
+    },
+    tail(ctx, g) {
+      ctx.fillStyle = '#f1f5f9';
+      ctx.globalAlpha = 0.8;
+      dot(ctx, 0, 4.5, 4.2);
+      ctx.globalAlpha = 1;
+    }
+  },
+
+  'char:raccoon': {
+    hw: 13,
+    hh: 11.5,
+    paint: c => ({ head: '#94a3b8', torso: '#94a3b8', arm: '#94a3b8', leg: '#1f2937', shoe: '#1f2937' }),
+    headBehind(ctx, g) {
+      if (g.hat) return;
+      ctx.fillStyle = '#94a3b8';
+      tri(ctx, -g.hw + 0.5, -g.hh + 4, -g.hw + 3, -g.hh - 9, -g.hw + 11, -g.hh + 1);
+      tri(ctx, g.hw - 0.5, -g.hh + 4, g.hw - 3, -g.hh - 9, g.hw - 11, -g.hh + 1);
+      ctx.fillStyle = '#1f2937';
+      tri(ctx, -g.hw + 3.4, -g.hh + 2, -g.hw + 4.6, -g.hh - 4, -g.hw + 8.5, -g.hh + 1);
+      tri(ctx, g.hw - 3.4, -g.hh + 2, g.hw - 4.6, -g.hh - 4, g.hw - 8.5, -g.hh + 1);
+    },
+    tail(ctx, g) {
+      const sw = Math.sin(g.time * 9) * 4;
+      ctx.save();
+      ctx.translate(sw * 0.5, 3);
+      ctx.rotate(sw * 0.03);
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 6.5, 11, 0, 0, TAU);
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      ctx.fillStyle = '#1f2937';
+      for (const by of [-6, 0, 6]) ctx.fillRect(-8, by - 1.5, 16, 3);
+      ctx.restore();
+      ctx.restore();
+    }
+  },
+
+  'char:turtle': {
+    hw: 12.5,
+    hh: 11.5,
+    paint: c => ({ head: c.body, torso: c.body, arm: c.body, leg: c.body, shoe: c.dark }),
+    pack(ctx, g) {
+      ctx.fillStyle = g.c.dark;
+      ctx.beginPath();
+      ctx.ellipse(0, -3, 13.5, 14, 0, 0, TAU);
+      ctx.fill();
+      stroke(ctx, g.c.body, 1.6);
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -16);
+      ctx.lineTo(0, 10);
+      ctx.moveTo(-12, -9);
+      ctx.lineTo(12, -9);
+      ctx.moveTo(-11, 2);
+      ctx.lineTo(11, 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  },
+
+  'char:pumpkin': {
+    hw: 13.5,
+    hh: 11.5,
+    paint: c => ({ head: c.body, torso: c.body, arm: c.dark, leg: c.dark, shoe: c.dark }),
+    headOver(ctx, g) {
+      stroke(ctx, g.c.dark, 1.8);
+      ctx.globalAlpha = 0.45;
+      ctx.beginPath();
+      for (const rx of [-6.5, 0, 6.5]) {
+        ctx.moveTo(rx, -g.hh + 1.5);
+        ctx.lineTo(rx, g.hh - 1.5);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (g.hat) return;
+      ctx.fillStyle = '#16a34a';
+      pill(ctx, -2.5, -g.hh - 6.5, 5, 9, 2);
+      ctx.fill();
+    }
   }
 };
 

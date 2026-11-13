@@ -549,6 +549,276 @@ const hats = {
     ctx.arc(9, -22, 1.6, 0, TAU);
     ctx.fill();
     ctx.globalAlpha = 1;
+  },
+  'hat:beret'(ctx) {
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.ellipse(-1, -4, 17, 8, -0.12, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#b91c1c';
+    ctx.beginPath();
+    ctx.roundRect(-14, -1, 28, 4, 2);
+    ctx.fill();
+    ctx.fillStyle = '#7f1d1d';
+    ctx.beginPath();
+    ctx.arc(-1, -12, 1.8, 0, TAU);
+    ctx.fill();
+  },
+  'hat:hardhat'(ctx) {
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(0, 1, 14, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#eab308';
+    ctx.beginPath();
+    ctx.roundRect(-18, -2, 36, 4.5, 2.2);
+    ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.roundRect(-3.5, -16, 7, 15, 2);
+    ctx.fill();
+  },
+  'hat:bucket'(ctx) {
+    ctx.fillStyle = '#a3a380';
+    ctx.beginPath();
+    ctx.moveTo(-11, -14);
+    ctx.lineTo(11, -14);
+    ctx.lineTo(14, 0);
+    ctx.lineTo(-14, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#8b8b66';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 21, 4.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#d6d3a8';
+    ctx.fillRect(-12.5, -5, 25, 3);
+  },
+  'hat:headband'(ctx, info) {
+    const sw = Math.sin(info.time * 9) * 2.5;
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.roundRect(-15, -5, 30, 6, 3);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(info.back ? 0 : 5, -2, 2.2, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-14, -2);
+    ctx.quadraticCurveTo(-22, 0 + sw, -27, 5 + sw * 1.5);
+    ctx.moveTo(-14, -2);
+    ctx.quadraticCurveTo(-21, -5 + sw, -26, -1 + sw * 1.5);
+    ctx.stroke();
+  },
+  'hat:witch'(ctx, info) {
+    ctx.fillStyle = '#1f1b2e';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 22, 5, 0, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-11, 0);
+    ctx.quadraticCurveTo(-7, -14, 4, -22);
+    ctx.quadraticCurveTo(10 + Math.sin(info.time * 5) * 1.5, -28, 15, -23);
+    ctx.quadraticCurveTo(7, -17, 11, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#a855f7';
+    ctx.fillRect(-10.5, -7, 21, 4);
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(-2, -7.6, 4.5, 5.2);
+    ctx.fillStyle = '#1f1b2e';
+    ctx.fillRect(-0.6, -6.4, 1.8, 2.8);
+  },
+  'hat:pumpkin'(ctx) {
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.roundRect(-2, -19, 4.5, 7, 1.5);
+    ctx.fill();
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.ellipse(-6, -6, 7, 9, 0, 0, TAU);
+    ctx.ellipse(6, -6, 7, 9, 0, 0, TAU);
+    ctx.ellipse(0, -6, 7.5, 10, 0, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = '#c2410c';
+    ctx.lineWidth = 1.4;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(-3, -14);
+    ctx.quadraticCurveTo(-5, -6, -3, 2);
+    ctx.moveTo(3, -14);
+    ctx.quadraticCurveTo(5, -6, 3, 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  },
+  'hat:laurel'(ctx) {
+    ctx.fillStyle = '#16a34a';
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI * (0.98 - i * 0.14);
+        const x = side * Math.cos(a) * -13;
+        const y = -Math.sin(a) * 9 + 1 - i * 0.2;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(side * (0.5 + i * 0.35));
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 2.2, 5, 0, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-14, -1.5, 28, 2.6);
+  },
+  'hat:tiara'(ctx, info) {
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.moveTo(-13, 1);
+    ctx.lineTo(-12, -6);
+    ctx.lineTo(-7, -2);
+    ctx.lineTo(-3.5, -11);
+    ctx.lineTo(0, -4);
+    ctx.lineTo(3.5, -11);
+    ctx.lineTo(7, -2);
+    ctx.lineTo(12, -6);
+    ctx.lineTo(13, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.arc(0, -1, 2.2, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.4 + Math.sin(info.time * 6) * 0.4;
+    ctx.beginPath();
+    ctx.arc(-3.5, -9.5, 1.5, 0, TAU);
+    ctx.arc(3.5, -9.5, 1.5, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  },
+  'hat:ufo'(ctx, info) {
+    ctx.fillStyle = '#a5f3fc';
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(0, -4, 8, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 19, 5.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath();
+    ctx.ellipse(0, -1.5, 15, 3, 0, 0, Math.PI);
+    ctx.fill();
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = Math.floor(info.time * 6 + i) % 2 ? '#fde047' : '#f472b6';
+      ctx.beginPath();
+      ctx.arc(-11 + i * 7.3, -3, 1.4, 0, TAU);
+      ctx.fill();
+    }
+  },
+  'hat:rainbow'(ctx) {
+    const cols = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#38bdf8', '#8b5cf6'];
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'butt';
+    cols.forEach((c, i) => {
+      ctx.strokeStyle = c;
+      ctx.beginPath();
+      ctx.arc(0, 2, 20 - i * 2.5, Math.PI, 0);
+      ctx.stroke();
+    });
+  },
+  'hat:cloud'(ctx, info) {
+    const bob = Math.sin(info.time * 3) * 1.2;
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(-8, -8 + bob, 6.5, 0, TAU);
+    ctx.arc(0, -13 + bob, 8, 0, TAU);
+    ctx.arc(8, -8 + bob, 6.5, 0, TAU);
+    ctx.roundRect(-14, -8 + bob, 28, 7, 3.5);
+    ctx.fill();
+    ctx.fillStyle = '#475569';
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.roundRect(-14, -3 + bob, 28, 2.5, 1.2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#38bdf8';
+    for (let i = 0; i < 3; i++) {
+      const t = (info.time * 1.6 + i / 3) % 1;
+      ctx.globalAlpha = 1 - t;
+      ctx.beginPath();
+      ctx.ellipse(-7 + i * 7, -1 + t * 12, 1.2, 2.2, 0, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  },
+  'hat:pizza'(ctx) {
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.moveTo(-13, 0);
+    ctx.lineTo(13, 0);
+    ctx.lineTo(0, -26);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.moveTo(-10.5, -4);
+    ctx.lineTo(10.5, -4);
+    ctx.lineTo(0, -23);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#dc2626';
+    for (const [x, y] of [[-3, -8], [4, -11], [-1, -16], [2, -5]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 2.3, 0, TAU);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#d97706';
+    ctx.beginPath();
+    ctx.roundRect(-13.5, -2, 27, 3.5, 1.7);
+    ctx.fill();
+  },
+  'hat:donut'(ctx) {
+    ctx.fillStyle = '#d97706';
+    ctx.beginPath();
+    ctx.ellipse(0, -5, 16, 7.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.ellipse(0, -6.5, 15, 6.2, 0, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#fbcfe8';
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 5, 2.2, 0, 0, TAU);
+    ctx.fill();
+    const sprinkles = ['#ffffff', '#fde047', '#38bdf8', '#a3e635'];
+    [[-10, -8], [-6, -11], [6, -11], [10, -7], [-9, -4], [9, -3], [0, -12]].forEach(([x, y], i) => {
+      ctx.fillStyle = sprinkles[i % 4];
+      ctx.fillRect(x - 1.4, y, 2.8, 1.2);
+    });
+  },
+  'hat:mohawk'(ctx, info) {
+    const cols = ['#f43f5e', '#f97316', '#facc15', '#22c55e', '#38bdf8'];
+    for (let i = 0; i < 5; i++) {
+      const x = info.back ? 0 : -9 + i * 4.5;
+      const hgt = 11 + Math.sin(i * 1.7) * 3 + (i === 2 ? 5 : 0);
+      ctx.fillStyle = cols[i];
+      ctx.beginPath();
+      ctx.moveTo(x - 3.2, 1);
+      ctx.lineTo(x + Math.sin(info.time * 6 + i) * 1.2, -hgt);
+      ctx.lineTo(x + 3.2, 1);
+      ctx.closePath();
+      ctx.fill();
+      if (info.back) break;
+    }
   }
 };
 
@@ -581,7 +851,21 @@ const SPEC = {
   'hat:santa': [0.8, 17],
   'hat:sombrero': [0.58, 25],
   'hat:knight': [0.85, 16],
-  'hat:unicorn': [0.85, 14]
+  'hat:unicorn': [0.85, 14],
+  'hat:beret': [0.85, 15],
+  'hat:hardhat': [0.82, 14],
+  'hat:bucket': [0.75, 17],
+  'hat:headband': [0.9, 14.5],
+  'hat:witch': [0.7, 21],
+  'hat:pumpkin': [0.85, 13],
+  'hat:laurel': [0.9, 14],
+  'hat:tiara': [0.85, 13],
+  'hat:ufo': [0.8, 19],
+  'hat:rainbow': [0.8, 18],
+  'hat:cloud': [0.8, 14],
+  'hat:pizza': [0.78, 13],
+  'hat:donut': [0.85, 16],
+  'hat:mohawk': [0.9, 10]
 };
 
 export function hatSpec(id) {
