@@ -16,18 +16,18 @@ const REACH = 12;
 const SHIFT = 22;
 const SLIDE_TIME = 0.55;
 const EYE_MIN = 120;
-const EYE_MAX = 205;
-const PASS = 50;
+const EYE_MAX = 300;
 const FOCAL = 0.9;
 const TALL = 1.15;
-const HORIZON = 0.3;
-const FEET = 0.74;
+const HORIZON = 0.22;
+const FEET = 0.78;
 const RUNNER_H = 340;
 const LANE_FIT = 0.3;
 const FOLLOW = 0.1;
 const CAM_RATE = 9;
 const LOOK = 0.6;
 const START_Z = 800;
+const EXIT = 170;
 
 export class ThirdPersonGame {
   constructor(canvas, hooks) {
@@ -90,7 +90,7 @@ export class ThirdPersonGame {
     this.back = v.F / fit3;
     this.baseEye = clamp(((FEET - HORIZON) * fit.viewH) / fit3, EYE_MIN, EYE_MAX);
     this.eye = this.baseEye;
-    this.spawner.cull = -this.back + 10;
+    this.spawner.cull = -EXIT - 20;
     this.world.resize(v.w, v.h, v.hy);
     this.world.streaks = [];
   }
@@ -369,24 +369,23 @@ export class ThirdPersonGame {
     queue.length = 0;
     for (const o of list) queue.push(o);
     for (const c of coins) if (!c.taken) queue.push(c);
-    if (this.runner.alive || this.state === 'over') queue.push(this.runner);
     const camX = this.camX();
-    const lateral = item => (item === this.runner || item.x0 === undefined ? 0 : Math.abs((item.x0 + item.x1) / 2 - camX));
-    queue.sort((a, b) => (b === this.runner ? 0 : b.z) - (a === this.runner ? 0 : a.z) || lateral(b) - lateral(a));
+    const lateral = item => (item.x0 === undefined ? 0 : Math.abs((item.x0 + item.x1) / 2 - camX));
+    queue.sort((a, b) => b.z - a.z || lateral(b) - lateral(a));
     const back = this.back;
+    v.fade = 1;
     for (const item of queue) {
-      if (item === this.runner) {
-        this.drawRunner(ctx, speed);
-        continue;
-      }
-      const behind = -(item.z + (item.d || 0));
-      v.fade = behind > 0 ? 1 - behind / PASS : 1;
-      if (v.fade <= 0) continue;
+      const passed = -(item.z + (item.d || 0));
+      const t = passed > 0 ? Math.min(1, passed / EXIT) : 0;
+      ctx.save();
+      if (t > 0) ctx.translate(0, v.h * 1.3 * t * t);
       item.z += back;
       if (item.kind) drawObstacle(ctx, v, item);
       else drawCoin(ctx, v, item);
       item.z -= back;
+      ctx.restore();
     }
+    if (this.runner.alive || this.state === 'over') this.drawRunner(ctx, speed);
     v.fade = 1;
     drawRush(ctx, v, speed);
     this.particles.draw(ctx);

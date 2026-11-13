@@ -4,7 +4,7 @@ import { drawProp, propsFor } from './roadside.js';
 import { shade, texture } from './textures.js';
 
 export const NEAR = 8;
-export const FAR = 1600;
+export const FAR = 2800;
 
 const FADE = 120;
 const PROP_FADE = 260;
@@ -171,7 +171,7 @@ export function drawRoad(ctx, v) {
       const z = first + j * row.gap;
       if (z < 50) continue;
       const k = v.F / z;
-      const alpha = clamp((FAR - z) / PROP_FADE, 0, 1) * clamp((z - 50) / 90, 0, 1);
+      const alpha = clamp((FAR - z) / PROP_FADE, 0, 1);
       for (let side = -1; side <= 1; side += 2) {
         const hsh = hash((base + j) * 2 + (side > 0 ? 1 : 0) + row.salt);
         const x = side * (ROAD_HALF + row.off + (hsh % 41));
