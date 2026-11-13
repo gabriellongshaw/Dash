@@ -1,4 +1,4 @@
-import { clamp } from '../core/utils.js';
+import { clamp, mixColor, parseColor, toCss } from '../core/utils.js';
 import { LANE_W } from './lanes.js';
 import { drawProp, propsFor } from './roadside.js';
 import { shade, texture } from './textures.js';
@@ -6,8 +6,9 @@ import { shade, texture } from './textures.js';
 export const NEAR = 8;
 export const FAR = 2800;
 
-const FADE = 120;
-const PROP_FADE = 260;
+const FADE = 1100;
+const PROP_FADE = 1100;
+const ROAD_FAR = 80000;
 const SLEEPER = 38;
 const ROAD_HALF = LANE_W * 1.5;
 const PROP_ROWS = [
@@ -117,13 +118,15 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
 
 export function drawRoad(ctx, v) {
   const { p, w, h, hy } = v;
-  ctx.fillStyle = p.ground;
+  const day = 1 - clamp(v.night * 1.4, 0, 1);
+  const dirt = toCss(mixColor(parseColor(p.ground), parseColor(p.mid), day * 0.55));
+  ctx.fillStyle = dirt;
   ctx.fillRect(-30, hy, w + 60, h - hy + 30);
   ctx.fillStyle = p.groundLine;
   ctx.fillRect(-30, hy, w + 60, 2);
 
   ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, FAR);
+  ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
 
   ctx.fillStyle = 'rgba(255,255,255,0.07)';
   const shift = v.scroll % (STRIPE * 2);
@@ -142,25 +145,29 @@ export function drawRoad(ctx, v) {
   ctx.fillStyle = '#fff';
   ctx.globalAlpha = 0.5;
   for (let a = -1; a <= 1; a++) {
-    ground(ctx, v, a * LANE_W - LANE_W * 0.22, a * LANE_W - LANE_W * 0.178, NEAR, FAR);
-    ground(ctx, v, a * LANE_W + LANE_W * 0.178, a * LANE_W + LANE_W * 0.22, NEAR, FAR);
+    ground(ctx, v, a * LANE_W - LANE_W * 0.22, a * LANE_W - LANE_W * 0.178, NEAR, ROAD_FAR);
+    ground(ctx, v, a * LANE_W + LANE_W * 0.178, a * LANE_W + LANE_W * 0.22, NEAR, ROAD_FAR);
   }
   ctx.fillStyle = p.groundLine;
   ctx.globalAlpha = 0.5;
-  ground(ctx, v, -LANE_W / 2 - 1, -LANE_W / 2 + 1, NEAR, FAR);
-  ground(ctx, v, LANE_W / 2 - 1, LANE_W / 2 + 1, NEAR, FAR);
+  ground(ctx, v, -LANE_W / 2 - 1, -LANE_W / 2 + 1, NEAR, ROAD_FAR);
+  ground(ctx, v, LANE_W / 2 - 1, LANE_W / 2 + 1, NEAR, ROAD_FAR);
   ctx.globalAlpha = 0.9;
-  ground(ctx, v, -ROAD_HALF - 4, -ROAD_HALF, NEAR, FAR);
-  ground(ctx, v, ROAD_HALF, ROAD_HALF + 4, NEAR, FAR);
+  ground(ctx, v, -ROAD_HALF - 4, -ROAD_HALF, NEAR, ROAD_FAR);
+  ground(ctx, v, ROAD_HALF, ROAD_HALF + 4, NEAR, ROAD_FAR);
   ctx.globalAlpha = 1;
 
-  const haze = ctx.createLinearGradient(0, hy, 0, hy + (h - hy) * 0.16);
-  haze.addColorStop(0, p.skyBottom);
-  haze.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.globalAlpha = 0.75;
+  const hazeH = (v.eye * v.F) / 700;
+  const haze = ctx.createLinearGradient(0, hy, 0, hy + hazeH);
+  const fogRgb = mixColor(parseColor(dirt), parseColor(p.skyBottom), 0.4 + 0.6 * (1 - day));
+  const fog = [1, 0.82, 0.55, 0.3, 0.14, 0.05, 0];
+  for (let i = 0; i < fog.length; i++) {
+    const c = fogRgb.slice();
+    c[3] = fog[i];
+    haze.addColorStop(i / (fog.length - 1), toCss(c));
+  }
   ctx.fillStyle = haze;
-  ctx.fillRect(-30, hy, w + 60, (h - hy) * 0.16);
-  ctx.globalAlpha = 1;
+  ctx.fillRect(-30, hy, w + 60, hazeH);
 
   const set = v.props || propsFor(null);
   const o = { r: 0, c: '', n: v.night, t: v.time, snow: false };
