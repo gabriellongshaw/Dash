@@ -412,7 +412,15 @@ const SETS = {
   'world:lavender': [['flowers', ['#a78bfa', '#c084fc', '#e879f9']], ['tree', ['#9d7be0', '#b794f4']], ['flowers', ['#a78bfa']], ['lamp', ['#f0abfc']]],
   'world:storm': [['pylon', ['#475569']], ['rock', ['#475569', '#334155']], ['pylon', ['#475569']], ['spire', ['#334155']]],
   'world:savanna': [['acacia', ['#5f8a2c', '#6b9a34']], ['rock', ['#a8844a']], ['acacia', ['#557a28']], ['mesa', ['#b8893f']]],
-  'world:crystal': [['crystal', ['#38bdf8', '#a78bfa', '#f472b6', '#34d399']], ['crystal', ['#38bdf8', '#a78bfa']], ['rock', ['#334155']]]
+  'world:crystal': [['crystal', ['#38bdf8', '#a78bfa', '#f472b6', '#34d399']], ['crystal', ['#38bdf8', '#a78bfa']], ['rock', ['#334155']]],
+  'world:autumn': [['tree', ['#d9731c', '#e8a317', '#b9461f']], ['flowers', ['#f97316', '#facc15']], ['tree', ['#c2410c', '#ea580c']], ['deadtree', ['#5b3a24']]],
+  'world:blossom': [['tree', ['#f9a8d4', '#f472b6', '#fbcfe8']], ['lamp', ['#fbcfe8']], ['tree', ['#f472b6', '#f9a8d4']], ['flowers', ['#f9a8d4', '#ffffff']]],
+  'world:jungle': [['palm', ['#16a34a', '#22c55e']], ['tree', ['#15803d', '#166534']], ['flowers', ['#f472b6', '#facc15', '#fb923c']], ['palm', ['#15803d']]],
+  'world:haunted': [['deadtree', ['#2b1d3d', '#3a2652']], ['spire', ['#2b1d3d', '#3a2652']], ['lamp', ['#fb923c']], ['deadtree', ['#2b1d3d']]],
+  'world:pyramids': [['mesa', ['#e0b25f', '#d29d46']], ['palm', ['#4d8f3a', '#5da04a']], ['rock', ['#c49a50']], ['mesa', ['#d6a954']]],
+  'world:synthwave': [['neon', ['#ff4fd8', '#22d3ee', '#facc15']], ['lamp', ['#22d3ee']], ['neon', ['#a78bfa', '#ff4fd8']], ['pylon', ['#6d28d9']]],
+  'world:mushroom': [['flowers', ['#fb7185', '#f472b6', '#a78bfa']], ['crystal', ['#a78bfa', '#34d399']], ['flowers', ['#fda4af', '#fde047']], ['tree', ['#7e57c2', '#9575cd']]],
+  'world:abyss': [['crystal', ['#22d3ee', '#34d399', '#38bdf8']], ['ice', ['#67e8f9', '#22d3ee']], ['crystal', ['#34d399', '#a78bfa']], ['rock', ['#0f3d5c']]]
 };
 
 export const propsFor = id => SETS[id] || SETS['world:skyline'];
