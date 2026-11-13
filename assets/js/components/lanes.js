@@ -337,6 +337,7 @@ const POOLS = [
 export class LaneSpawner {
   constructor() {
     this.cull = -60;
+    this.spawnZ = SPAWN_Z;
     this.reset();
   }
 
@@ -399,7 +400,7 @@ export class LaneSpawner {
       if (c.taken || c.z < this.cull) this.coins.splice(i, 1);
     }
     this.travel += dz;
-    if (this.travel >= this.nextAt) this.spawn(speed, dist, SPAWN_Z);
+    if (this.travel >= this.nextAt) this.spawn(speed, dist, this.spawnZ);
   }
 
   guide(first, coins, z, width) {

@@ -2,7 +2,7 @@ import { Runner } from './runner.js';
 import { World } from './world.js';
 import { LaneSpawner, LANE_W } from './lanes.js';
 import { Particles } from './particles.js';
-import { drawCoin, drawObstacle, drawRoad, drawRush, makeColors, makeView } from './perspective.js';
+import { FAR, drawCoin, drawObstacle, drawRoad, drawRush, makeColors, makeView } from './perspective.js';
 import { propsFor } from './roadside.js';
 import { fitStage } from './stage.js';
 import { readPalette, isDark } from '../core/theme.js';
@@ -27,7 +27,6 @@ const FOLLOW = 0.1;
 const CAM_RATE = 9;
 const LOOK = 0.6;
 const START_Z = 800;
-const EXIT = 170;
 
 export class ThirdPersonGame {
   constructor(canvas, hooks) {
@@ -66,6 +65,7 @@ export class ThirdPersonGame {
     this.back = 300;
     this.slideHeld = false;
     this.slideTimer = 0;
+    this.appear = 1;
     this.frame = this.frame.bind(this);
     this.resize();
     this.reset();
@@ -90,7 +90,8 @@ export class ThirdPersonGame {
     this.back = v.F / fit3;
     this.baseEye = clamp(((FEET - HORIZON) * fit.viewH) / fit3, EYE_MIN, EYE_MAX);
     this.eye = this.baseEye;
-    this.spawner.cull = -EXIT - 20;
+    this.spawner.cull = -this.back;
+    this.spawner.spawnZ = FAR - this.back;
     this.world.resize(v.w, v.h, v.hy);
     this.world.streaks = [];
   }
@@ -146,9 +147,11 @@ export class ThirdPersonGame {
   }
 
   start() {
-    this.reset();
+    if (this.state !== 'ready') this.reset();
+    this.appear = 0;
     this.spawner.spawn(this.speed, 0, START_Z);
     this.state = 'playing';
+    this.emitScore();
   }
 
   pause() {
@@ -336,6 +339,7 @@ export class ThirdPersonGame {
       const h = dt / steps;
       for (let i = 0; i < steps; i++) this.tick(h);
       this.particles.update(dt);
+      this.appear = Math.min(1, this.appear + dt * 2.5);
       this.shake = Math.max(0, this.shake - dt * 2.5);
       this.flash = Math.max(0, this.flash - dt * 2);
       const runner = this.runner;
@@ -372,20 +376,16 @@ export class ThirdPersonGame {
     const camX = this.camX();
     const lateral = item => (item.x0 === undefined ? 0 : Math.abs((item.x0 + item.x1) / 2 - camX));
     queue.sort((a, b) => b.z - a.z || lateral(b) - lateral(a));
-    const back = this.back;
-    v.fade = 1;
+    const behind = [];
     for (const item of queue) {
-      const passed = -(item.z + (item.d || 0));
-      const t = passed > 0 ? Math.min(1, passed / EXIT) : 0;
-      ctx.save();
-      if (t > 0) ctx.translate(0, v.h * 1.3 * t * t);
-      item.z += back;
-      if (item.kind) drawObstacle(ctx, v, item);
-      else drawCoin(ctx, v, item);
-      item.z -= back;
-      ctx.restore();
+      if (item.z + (item.d || 0) <= 0) {
+        behind.push(item);
+        continue;
+      }
+      this.place(ctx, item);
     }
     if (this.runner.alive || this.state === 'over') this.drawRunner(ctx, speed);
+    for (const item of behind) this.place(ctx, item);
     v.fade = 1;
     drawRush(ctx, v, speed);
     this.particles.draw(ctx);
@@ -395,6 +395,14 @@ export class ThirdPersonGame {
       ctx.fillRect(-30, -30, v.w + 60, v.h + 60);
       ctx.globalAlpha = 1;
     }
+  }
+
+  place(ctx, item) {
+    this.view.fade = this.appear;
+    item.z += this.back;
+    if (item.kind) drawObstacle(ctx, this.view, item);
+    else drawCoin(ctx, this.view, item);
+    item.z -= this.back;
   }
 
   drawRunner(ctx, speed) {
