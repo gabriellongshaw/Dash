@@ -143,8 +143,6 @@ export class ThirdPreview extends ThirdPersonGame {
     this.world.update(h, SPEED);
     this.autopilot();
     this.x += (this.lane * LANE_W - this.x) * Math.min(1, 22 * h);
-    this.world.farX = this.x * 0.12;
-    this.world.midX = this.x * 0.35;
     r.setSlide(this.slideHeld);
     let low = false;
     for (const o of this.spawner.obstacles) {

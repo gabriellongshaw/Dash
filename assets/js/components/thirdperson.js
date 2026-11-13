@@ -277,8 +277,6 @@ export class ThirdPersonGame {
     this.scroll += this.speed * h;
     this.world.update(h, this.speed);
     this.x += (this.lane * LANE_W - this.x) * Math.min(1, SHIFT * h);
-    this.world.farX = this.x * 0.12;
-    this.world.midX = this.x * 0.35;
 
     this.slideTimer = Math.max(0, this.slideTimer - h);
     runner.setSlide(this.slideHeld || this.slideTimer > 0);
@@ -365,6 +363,8 @@ export class ThirdPersonGame {
     v.time = this.time;
     v.scroll = this.scroll;
     this.paint();
+    this.world.farX = 0;
+    this.world.midX = 0;
     this.world.draw(ctx, 0);
     drawRoad(ctx, v);
     const list = this.spawner.obstacles;
