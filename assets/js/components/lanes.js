@@ -1,5 +1,5 @@
 import { clamp, pick, rand, randInt } from '../core/utils.js';
-import { BODY_LIFT, jumpHeight, jumpTime } from './runner.js';
+import { BASE_SPEED, BODY_LIFT, jumpHeight, jumpReach, jumpTime } from './runner.js';
 import { spacingOf, tierOf } from './obstacles.js';
 
 export const LANE_W = 82;
@@ -28,12 +28,15 @@ const SAW_EXTRA_BASE = 30;
 const SAW_EXTRA_RATE = 0.28;
 const SAW_BASE_SPEED = 300;
 const SAW_SPIN = 14;
-const SAW_SPIN_RATE = 0.06;
+const SAW_SPIN_RATE = 0;
+const PACE_RATE = 0.5;
+const DENSITY = 0.8;
 const MISSILE_D = 46;
 const MISSILE_EXTRA = 320;
 const MISSILE_WARN = 0.75;
 
 const lane = () => randInt(-1, 1);
+const pace = speed => BASE_SPEED + Math.max(0, speed - BASE_SPEED) * PACE_RATE;
 const arrival = (z, speed, extra = 0) => z / (speed + extra);
 const atTime = (t, speed, extra = 0) => t * (speed + extra);
 const sawExtra = speed => SAW_EXTRA_BASE + Math.max(0, speed - SAW_BASE_SPEED) * SAW_EXTRA_RATE;
@@ -116,14 +119,14 @@ const builders = {
     return DRONE_D;
   },
   combo(s, z, speed) {
-    const gap = speed * 0.9 + 80;
+    const gap = pace(speed) * 0.9 + 80;
     s.add(crateOf(-1, 1, BARRIER_D, pick([34, 44])), z);
     s.add(piece('gate', -1, 1, GATE_CLEARANCE, GATE_TOP, GATE_D), z + BARRIER_D + gap);
     s.jumpCoins(0, z + BARRIER_D / 2, speed);
     return BARRIER_D + gap + GATE_D;
   },
   wallGate(s, z, speed) {
-    const gap = speed * 1.05 + 90;
+    const gap = pace(speed) * 1.05 + 90;
     builders.wall(s, z, speed);
     s.add(piece('gate', -1, 1, GATE_CLEARANCE, GATE_TOP, GATE_D), z + WALL_D + gap);
     return WALL_D + gap + GATE_D;
@@ -132,7 +135,7 @@ const builders = {
     const a = lane();
     const d = randInt(28, 32);
     const h = pick([30, 36]);
-    const gap = speed * 0.62 + 50;
+    const gap = pace(speed) * 0.62 + 50;
     for (let i = 0; i < 3; i++) s.add(crateOf(a, a, d, h), z + i * (d + gap));
     return d * 3 + gap * 2;
   },
@@ -168,7 +171,7 @@ const builders = {
   },
   crateDrone(s, z, speed) {
     const a = lane();
-    const gap = speed * 0.9 + 80;
+    const gap = pace(speed) * 0.9 + 80;
     s.add(crateOf(a, a, CRATE_D, pick([34, 44])), z);
     s.add(drone(a, false), z + CRATE_D + gap);
     s.jumpCoins(a, z + CRATE_D / 2, speed);
@@ -176,21 +179,21 @@ const builders = {
   },
   droneCrate(s, z, speed) {
     const a = lane();
-    const gap = speed * 0.9 + 80;
+    const gap = pace(speed) * 0.9 + 80;
     s.add(drone(a, false), z);
     s.add(crateOf(a, a, CRATE_D, pick([34, 44])), z + DRONE_D + gap);
     return DRONE_D + gap + CRATE_D;
   },
   spikeDrone(s, z, speed) {
     const a = lane();
-    const gap = speed * 0.9 + 80;
+    const gap = pace(speed) * 0.9 + 80;
     s.add(piece('spikes', a, a, 0, SPIKE_H, SPIKE_D), z);
     s.add(drone(a, false), z + SPIKE_D + gap);
     s.jumpCoins(a, z + SPIKE_D / 2, speed);
     return SPIKE_D + gap + DRONE_D;
   },
   wallDrone(s, z, speed) {
-    const gap = speed * 1.05 + 90;
+    const gap = pace(speed) * 1.05 + 90;
     builders.wall(s, z, speed);
     s.add(drone(lane(), Math.random() < 0.5), z + WALL_D + gap);
     return WALL_D + gap + DRONE_D;
@@ -233,14 +236,14 @@ const builders = {
     return mz - z + MISSILE_D;
   },
   gauntlet(s, z, speed) {
-    const gap = speed * 0.85 + 70;
+    const gap = pace(speed) * 0.85 + 70;
     const parts = ['crate', 'spikes', 'drone', 'gate', 'pair', 'barrier'];
     let at = z;
     for (let i = 0; i < 3; i++) at += builders[pick(parts)](s, at, speed) + gap;
     return at - z - gap;
   },
   marathon(s, z, speed) {
-    const gap = speed * 0.72 + 60;
+    const gap = pace(speed) * 0.72 + 60;
     const parts = ['crate', 'spikes', 'drone', 'gate', 'pair', 'barrier', 'field'];
     const count = randInt(4, 5);
     let at = z;
@@ -357,7 +360,7 @@ export class LaneSpawner {
   }
 
   coin(a, z, up) {
-    this.coins.push({ x: a * LANE_W, z, up, taken: false });
+    this.coins.push({ x: a * LANE_W, z, up, taken: false, ph: z * 0.011 });
   }
 
   coinLine(a, z, count) {
@@ -371,14 +374,14 @@ export class LaneSpawner {
     const n = 6;
     for (let i = 0; i < n; i++) {
       const t = T * (0.1 + (0.8 * i) / (n - 1));
-      this.coin(a, zc + speed * (t - T / 2), BODY_LIFT + jumpHeight(t));
+      this.coin(a, zc + jumpReach(speed) * (t / T - 0.5), BODY_LIFT + jumpHeight(t));
     }
   }
 
   ladderCoins(a, zc, speed) {
     if (Math.random() > 0.85) return;
     const n = 6;
-    const span = speed * 0.7;
+    const span = jumpReach(speed) * 1.3;
     const peak = WALL_H + 34;
     for (let i = 0; i < n; i++) {
       const t = i / (n - 1);
@@ -421,6 +424,6 @@ export class LaneSpawner {
     const width = builders[kind](this, z, speed);
     this.guide(first, coins, z, width);
     this.travel = 0;
-    this.nextAt = width + speed * rand(0.8, 1.25) * spacingOf(dist) + 90;
+    this.nextAt = width + pace(speed) * rand(0.8, 1.25) * spacingOf(dist) * DENSITY + 90;
   }
 }

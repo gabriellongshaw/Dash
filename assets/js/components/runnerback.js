@@ -980,7 +980,7 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
   const hat = !!look.hat && look.hat !== 'hat:none';
   const roll = clamp(r.vis, 0, 1.1);
   const air = clamp(r.airK, 0, 1) * (1 - Math.min(1, roll));
-  const fall = clamp(r.vy / 800, -1, 1);
+  const fall = clamp(r.vy / (800 * (r.airTempo || 1)), -1, 1);
   const phase = r.clock;
   const k = Math.min(1, speed / 700);
   const p = Math.min(1, roll);

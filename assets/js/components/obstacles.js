@@ -1,5 +1,5 @@
 import { pick, rand, randInt } from '../core/utils.js';
-import { BODY_LIFT, jumpHeight, jumpTime } from './runner.js';
+import { BODY_LIFT, jumpHeight, jumpReach, jumpTime } from './runner.js';
 
 const SPIKE_W = 26;
 const SPIKE_H = 28;
@@ -765,7 +765,7 @@ export class Spawner {
     const n = 6;
     for (let i = 0; i < n; i++) {
       const t = T * (0.1 + (0.8 * i) / (n - 1));
-      this.coins.push(new Coin(cx + speed * (t - T / 2), BODY_LIFT + jumpHeight(t)));
+      this.coins.push(new Coin(cx + jumpReach(speed) * (t / T - 0.5), BODY_LIFT + jumpHeight(t)));
     }
   }
 

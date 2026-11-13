@@ -7,6 +7,8 @@ export const GRAVITY = 2700;
 export const JUMP_SPEED = 735;
 export const DOUBLE_JUMP_SPEED = 700;
 export const BODY_LIFT = 22;
+export const BASE_SPEED = 300;
+const MAX_TEMPO = 2.4;
 const FAST_FALL = 2.4;
 const BUFFER_TIME = 0.12;
 const MIN_SLIDE = 0.2;
@@ -15,6 +17,8 @@ const SPRING_K = 380;
 const SPRING_D = 20;
 
 export const jumpTime = () => (2 * JUMP_SPEED) / GRAVITY;
+export const tempoAt = speed => Math.min(MAX_TEMPO, Math.max(1, speed / BASE_SPEED));
+export const jumpReach = (speed = BASE_SPEED) => (speed * jumpTime()) / tempoAt(speed);
 export const jumpHeight = t => JUMP_SPEED * t - (GRAVITY * t * t) / 2;
 
 export class Runner {
@@ -27,6 +31,8 @@ export class Runner {
     this.groundY = groundY;
     this.y = groundY;
     this.vy = 0;
+    this.tempo = 1;
+    this.airTempo = 1;
     this.jumps = 0;
     this.jumpCount = 0;
     this.doubleCount = 0;
@@ -52,7 +58,8 @@ export class Runner {
       return null;
     }
     const first = this.jumps === 0;
-    this.vy = -(first ? JUMP_SPEED : DOUBLE_JUMP_SPEED);
+    this.airTempo = this.tempo;
+    this.vy = -(first ? JUMP_SPEED : DOUBLE_JUMP_SPEED) * this.airTempo;
     this.jumps++;
     this.jumpCount++;
     if (!first) this.doubleCount++;
@@ -69,9 +76,10 @@ export class Runner {
   update(dt, speed, forceLow = false) {
     this.landed = false;
     this.slid = false;
+    this.tempo = tempoAt(speed);
 
     if (!this.grounded) {
-      const gravity = GRAVITY * (this.slideHeld ? FAST_FALL : 1);
+      const gravity = GRAVITY * this.airTempo * this.airTempo * (this.slideHeld ? FAST_FALL : 1);
       this.vy += gravity * dt;
       this.y += this.vy * dt;
       if (this.y >= this.groundY) {
@@ -104,7 +112,7 @@ export class Runner {
           this.squash = -0.18;
         }
       }
-      this.clock += dt * (8 + speed / 60);
+      this.clock += dt * (8 + speed / 200);
     } else {
       this.sliding = false;
     }
