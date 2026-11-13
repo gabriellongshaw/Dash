@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showDouble = null;
     doubleBtn.classList.add('hidden');
     overReady = false;
-    hint.classList.add('hidden');
+    hideEl(hint);
     hideEl(pauseOverlay);
     hideEl(overOverlay);
     audio.duck(0.6);
@@ -215,10 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const TAP_MOVE = 14;
   const TAP_TIME = 280;
   const DOMINANCE = 1.25;
-  let touch = null;
+  const touches = new Map();
 
   if (third) {
     const canvas = $('game-canvas');
+    const release = id => {
+      const t = touches.get(id);
+      if (t && t.sliding) game.slide(false);
+      touches.delete(id);
+      return t;
+    };
     canvas.addEventListener('pointerdown', e => {
       e.preventDefault();
       if (game.state !== 'playing') {
@@ -226,34 +232,43 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       canvas.setPointerCapture(e.pointerId);
-      touch = { x: e.clientX, y: e.clientY, at: performance.now(), done: false, drift: 0 };
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY, at: performance.now(), acted: false, drift: 0, sliding: false });
     });
-    canvas.addEventListener('pointermove', e => {
-      if (!touch) return;
-      const dx = e.clientX - touch.x;
-      const dy = e.clientY - touch.y;
+    const swipe = (dx, dy, hold) => {
       const ax = Math.abs(dx);
       const ay = Math.abs(dy);
-      touch.drift = Math.max(touch.drift, ax, ay);
-      if (touch.done || game.state !== 'playing') return;
-      if (ax >= SWIPE && ax > ay * DOMINANCE) game.move(dx < 0 ? -1 : 1);
-      else if (ay >= SWIPE && ay > ax * DOMINANCE) {
+      if (ax >= ay * DOMINANCE) game.move(dx < 0 ? -1 : 1);
+      else if (ay >= ax * DOMINANCE) {
         if (dy < 0) game.jump();
-        else {
+        else if (hold) {
           game.slide(true);
-          touch.sliding = true;
-        }
-      } else return;
-      touch.done = true;
+          return 'slide';
+        } else game.slide(true, true);
+      } else return null;
+      return 'done';
+    };
+    canvas.addEventListener('pointermove', e => {
+      const t = touches.get(e.pointerId);
+      if (!t) return;
+      const dx = e.clientX - t.x;
+      const dy = e.clientY - t.y;
+      t.drift = Math.max(t.drift, Math.abs(dx), Math.abs(dy));
+      if (t.acted || game.state !== 'playing' || Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE) return;
+      const result = swipe(dx, dy, true);
+      if (!result) return;
+      t.acted = true;
+      t.sliding = result === 'slide';
     });
-    canvas.addEventListener('pointerup', () => {
-      if (touch && touch.sliding) game.slide(false);
-      if (touch && !touch.done && touch.drift < TAP_MOVE && performance.now() - touch.at < TAP_TIME) action();
-      touch = null;
+    canvas.addEventListener('pointerup', e => {
+      const t = release(e.pointerId);
+      if (!t || t.acted || game.state !== 'playing') return;
+      const quick = performance.now() - t.at < TAP_TIME;
+      if (!quick) return;
+      if (t.drift < TAP_MOVE) action();
+      else swipe(e.clientX - t.x, e.clientY - t.y, false);
     });
-    canvas.addEventListener('pointercancel', () => {
-      if (touch && touch.sliding) game.slide(false);
-      touch = null;
+    canvas.addEventListener('pointercancel', e => {
+      release(e.pointerId);
     });
   } else {
     $('game-canvas').addEventListener('pointerdown', e => {

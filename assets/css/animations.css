@@ -83,6 +83,11 @@
   to   { opacity: 0; transform: translateY(-8px); }
 }
 
+.start-hint.closing {
+  pointer-events: none;
+  animation: fadeOut 0.18s ease both;
+}
+
 .overlay.closing {
   pointer-events: none;
   animation: fadeOut 0.18s ease both;
