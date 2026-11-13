@@ -272,6 +272,42 @@ function disc(ctx, v, o, radius, lift) {
   ctx.restore();
 }
 
+function barrel(ctx, v, o, radius, lift) {
+  const z = Math.max(o.z + o.d / 2, NEAR);
+  const k = v.F / z;
+  const x = v.cx + ((o.x0 + o.x1) / 2 - v.x) * k;
+  const y = v.hy + (v.eye - lift) * k;
+  const hw = ((o.x1 - o.x0) / 2) * k;
+  const r = radius * k;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x - hw, y - r, hw * 2, r * 2, Math.min(r * 0.45, hw));
+  ctx.clip();
+  ctx.fillStyle = v.pal.hazard;
+  ctx.fillRect(x - hw, y - r, hw * 2, r * 2);
+  ctx.fillStyle = v.pal.hazardDark;
+  const bands = 6;
+  for (let i = 0; i < bands; i++) {
+    const a = o.spin + (i / bands) * Math.PI * 2;
+    const c = Math.cos(a % (Math.PI * 2));
+    if (c <= 0) continue;
+    const t = r * 0.2 * c;
+    ctx.fillRect(x - hw, y + Math.sin(a) * r - t / 2, hw * 2, t);
+  }
+  const g = ctx.createLinearGradient(0, y - r, 0, y + r);
+  g.addColorStop(0, 'rgba(255,255,255,0.28)');
+  g.addColorStop(0.5, 'rgba(255,255,255,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.3)');
+  ctx.fillStyle = g;
+  ctx.fillRect(x - hw, y - r, hw * 2, r * 2);
+  ctx.restore();
+  ctx.strokeStyle = v.pal.hazardDark;
+  ctx.lineWidth = Math.max(1, r * 0.1);
+  ctx.beginPath();
+  ctx.roundRect(x - hw, y - r, hw * 2, r * 2, Math.min(r * 0.45, hw));
+  ctx.stroke();
+}
+
 function spikes(ctx, v, o) {
   box(ctx, v, v.hazard, o.x0, o.x1, 0, 4, o.z, o.z + o.d);
   ctx.fillStyle = v.pal.hazard;
@@ -470,7 +506,7 @@ export function drawObstacle(ctx, v, o) {
       disc(ctx, v, o, 22, 20);
       break;
     case 'roller':
-      disc(ctx, v, o, 17, 17);
+      barrel(ctx, v, o, 17, 17);
       break;
     case 'missile': {
       const m = (o.x0 + o.x1) / 2;
@@ -493,12 +529,13 @@ export function drawObstacle(ctx, v, o) {
 export function drawCoin(ctx, v, c) {
   if (c.z >= FAR || c.z <= NEAR) return;
   const k = v.F / c.z;
-  const bob = Math.sin(v.time * 3 + c.z * 0.02) * 1.5;
+  const ph = c.ph || 0;
+  const bob = Math.sin(v.time * 3 + ph * 2) * 1.5;
   const x = v.cx + (c.x - v.x) * k;
   const y = v.hy + (v.eye - c.up - bob) * k;
   const gy = v.hy + v.eye * k;
   const fade = clamp((FAR - c.z) / FADE, 0, 1) * v.fade;
-  const spin = Math.abs(Math.cos(v.time * 4 + c.z * 0.01));
+  const spin = Math.abs(Math.cos(v.time * 4 + ph));
   const r = 13 * k;
   ctx.globalAlpha = fade * clamp(0.32 - c.up / 400, 0.1, 0.32);
   ctx.fillStyle = '#000';
