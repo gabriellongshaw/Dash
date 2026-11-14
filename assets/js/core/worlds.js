@@ -867,5 +867,265 @@ export const WORLDS = [
       cap: '#0e7490',
       mote: 'rgba(103,232,249,0.95)'
     }
+  },
+  {
+    id: 'world:mars',
+    name: 'Mars',
+    price: 450,
+    scenery: 'mesa',
+    seed: 33,
+    hills: [30, 14, 8, 0.004, 0.009],
+    motes: 'sand',
+    stars: 1,
+    day: {
+      skyTop: '#f6b79a',
+      skyBottom: '#ffe7d6',
+      sun: '#fff1e6',
+      cloud: 'rgba(255,235,220,0.7)',
+      far: '#e59b7b',
+      mid: '#c9714f',
+      ground: '#2e1610',
+      groundLine: '#f97316',
+      dust: '#f2c3a8',
+      mote: 'rgba(210,120,80,0.7)'
+    },
+    night: {
+      skyTop: '#12060a',
+      skyBottom: '#3d1420',
+      sun: '#ffd9c2',
+      cloud: 'rgba(255,160,120,0.1)',
+      far: '#2a0f14',
+      mid: '#40161c',
+      ground: '#10060a',
+      groundLine: '#ea580c',
+      dust: '#d08a6a',
+      mote: 'rgba(220,130,90,0.55)'
+    }
+  },
+  {
+    id: 'world:aurora',
+    name: 'Aurora',
+    price: 500,
+    scenery: 'peaks',
+    seed: 41,
+    hills: [36, 20, 12, 0.006, 0.012],
+    motes: 'snow',
+    stars: 1,
+    day: {
+      skyTop: '#b9e6f5',
+      skyBottom: '#effafc',
+      sun: '#ffffff',
+      cloud: 'rgba(255,255,255,0.9)',
+      far: '#b5dce8',
+      mid: '#8fc3d6',
+      ground: '#10222b',
+      groundLine: '#2dd4bf',
+      dust: '#e6f7fb',
+      mote: 'rgba(255,255,255,0.8)'
+    },
+    night: {
+      skyTop: '#04141c',
+      skyBottom: '#0f4a4a',
+      sun: '#c8fff0',
+      cloud: 'rgba(94,234,212,0.14)',
+      far: '#0c2a33',
+      mid: '#12414a',
+      ground: '#040d11',
+      groundLine: '#34d399',
+      dust: '#99f6e4',
+      mote: 'rgba(167,243,208,0.8)'
+    }
+  },
+  {
+    id: 'world:oasis',
+    name: 'Oasis',
+    price: 400,
+    scenery: 'islands',
+    seed: 52,
+    hills: [26, 6, 4, 0.02, 0.04],
+    stars: 1,
+    day: {
+      skyTop: '#9fe3e0',
+      skyBottom: '#fff7d6',
+      sun: '#fffbe6',
+      cloud: 'rgba(255,255,255,0.85)',
+      far: '#7fd1c2',
+      mid: '#43b8a0',
+      ground: '#12302a',
+      groundLine: '#fbbf24',
+      dust: '#fef3c7'
+    },
+    night: {
+      skyTop: '#071a2a',
+      skyBottom: '#1b4a55',
+      sun: '#fef3c7',
+      cloud: 'rgba(253,230,138,0.1)',
+      far: '#0f3036',
+      mid: '#15464a',
+      ground: '#06151a',
+      groundLine: '#f59e0b',
+      dust: '#99d9c9'
+    }
+  },
+  {
+    id: 'world:steampunk',
+    name: 'Steampunk',
+    price: 450,
+    scenery: 'city',
+    seed: 63,
+    hills: [34, 18, 10, 0.006, 0.013],
+    stars: 0.6,
+    day: {
+      skyTop: '#e8cfa5',
+      skyBottom: '#fbf1dc',
+      sun: '#fff8e8',
+      cloud: 'rgba(255,248,230,0.8)',
+      far: '#d8b98a',
+      mid: '#b98f5c',
+      ground: '#2a1c10',
+      groundLine: '#d4a24a',
+      dust: '#f1e1c2'
+    },
+    night: {
+      skyTop: '#1a0f08',
+      skyBottom: '#4a2c14',
+      sun: '#f5deb3',
+      cloud: 'rgba(240,190,120,0.1)',
+      far: '#2b1a0e',
+      mid: '#40260f',
+      ground: '#0e0804',
+      groundLine: '#c2872c',
+      dust: '#c9a46a'
+    }
+  },
+  {
+    id: 'world:moon',
+    name: 'Moon',
+    price: 500,
+    scenery: 'orbs',
+    seed: 74,
+    hills: [30, 12, 9, 0.009, 0.02],
+    stars: 1,
+    day: {
+      skyTop: '#aab2c4',
+      skyBottom: '#e2e6f0',
+      sun: '#ffffff',
+      cloud: 'rgba(255,255,255,0.5)',
+      far: '#9aa3b8',
+      mid: '#7b8499',
+      ground: '#1c202b',
+      groundLine: '#cbd5e1',
+      dust: '#e5e7eb'
+    },
+    night: {
+      skyTop: '#02030a',
+      skyBottom: '#14182a',
+      sun: '#f1f5f9',
+      cloud: 'rgba(203,213,225,0.08)',
+      far: '#171b2b',
+      mid: '#1f2538',
+      ground: '#04050a',
+      groundLine: '#94a3b8',
+      dust: '#cbd5e1'
+    }
+  },
+  {
+    id: 'world:reef',
+    name: 'Coral reef',
+    price: 420,
+    scenery: 'islands',
+    seed: 85,
+    hills: [26, 6, 4, 0.02, 0.04],
+    stars: 0.8,
+    day: {
+      skyTop: '#ffc2cf',
+      skyBottom: '#fff0e6',
+      sun: '#fffaf5',
+      cloud: 'rgba(255,255,255,0.85)',
+      far: '#f7a8b8',
+      mid: '#f08aa0',
+      ground: '#2a1520',
+      groundLine: '#2dd4bf',
+      dust: '#ffe4ea'
+    },
+    night: {
+      skyTop: '#150a24',
+      skyBottom: '#4a1f4a',
+      sun: '#ffd6e0',
+      cloud: 'rgba(251,182,206,0.1)',
+      far: '#2a1238',
+      mid: '#3d1a4a',
+      ground: '#0e0614',
+      groundLine: '#14b8a6',
+      dust: '#f0abfc'
+    }
+  },
+  {
+    id: 'world:dunes',
+    name: 'Golden dunes',
+    price: 380,
+    scenery: 'mesa',
+    seed: 96,
+    hills: [24, 10, 6, 0.003, 0.007],
+    motes: 'sand',
+    stars: 1,
+    day: {
+      skyTop: '#ffe39a',
+      skyBottom: '#fff9e0',
+      sun: '#ffffff',
+      cloud: 'rgba(255,255,255,0.8)',
+      far: '#f5d27a',
+      mid: '#e8b04a',
+      ground: '#3a2a0c',
+      groundLine: '#f59e0b',
+      dust: '#fdeeb5',
+      mote: 'rgba(230,180,80,0.7)'
+    },
+    night: {
+      skyTop: '#1a1030',
+      skyBottom: '#5a3a2a',
+      sun: '#fde9b0',
+      cloud: 'rgba(255,214,150,0.1)',
+      far: '#33200f',
+      mid: '#4a2e12',
+      ground: '#120b06',
+      groundLine: '#d97706',
+      dust: '#d9b56a',
+      mote: 'rgba(217,181,106,0.55)'
+    }
+  },
+  {
+    id: 'world:bamboo',
+    name: 'Bamboo',
+    price: 350,
+    scenery: 'pines',
+    seed: 107,
+    hills: [34, 16, 10, 0.007, 0.015],
+    motes: 'firefly',
+    stars: 0.8,
+    day: {
+      skyTop: '#d3f0c0',
+      skyBottom: '#f6fbe9',
+      sun: '#ffffff',
+      cloud: 'rgba(255,255,255,0.85)',
+      far: '#b6e09a',
+      mid: '#86c76a',
+      ground: '#152a14',
+      groundLine: '#84cc16',
+      dust: '#ecf8dc',
+      mote: 'rgba(190,230,110,0.8)'
+    },
+    night: {
+      skyTop: '#06120a',
+      skyBottom: '#173a22',
+      sun: '#e2f7cf',
+      cloud: 'rgba(190,242,100,0.1)',
+      far: '#0e2a16',
+      mid: '#14391d',
+      ground: '#040d06',
+      groundLine: '#65a30d',
+      dust: '#a3e635',
+      mote: 'rgba(190,242,100,0.8)'
+    }
   }
 ];

@@ -420,7 +420,15 @@ const SETS = {
   'world:pyramids': [['mesa', ['#e0b25f', '#d29d46']], ['palm', ['#4d8f3a', '#5da04a']], ['rock', ['#c49a50']], ['mesa', ['#d6a954']]],
   'world:synthwave': [['neon', ['#ff4fd8', '#22d3ee', '#facc15']], ['lamp', ['#22d3ee']], ['neon', ['#a78bfa', '#ff4fd8']], ['pylon', ['#6d28d9']]],
   'world:mushroom': [['flowers', ['#fb7185', '#f472b6', '#a78bfa']], ['crystal', ['#a78bfa', '#34d399']], ['flowers', ['#fda4af', '#fde047']], ['tree', ['#7e57c2', '#9575cd']]],
-  'world:abyss': [['crystal', ['#22d3ee', '#34d399', '#38bdf8']], ['ice', ['#67e8f9', '#22d3ee']], ['crystal', ['#34d399', '#a78bfa']], ['rock', ['#0f3d5c']]]
+  'world:abyss': [['crystal', ['#22d3ee', '#34d399', '#38bdf8']], ['ice', ['#67e8f9', '#22d3ee']], ['crystal', ['#34d399', '#a78bfa']], ['rock', ['#0f3d5c']]],
+  'world:mars': [['rock', ['#b5593a', '#9c4a30']], ['mesa', ['#c9714f', '#b8603f']], ['spire', ['#7a3524', '#8c4030']], ['rock', ['#a24d33']]],
+  'world:aurora': [['pine', ['#2f7f7a', '#3b9088'], { snow: true }], ['ice', ['#a5f3fc', '#99f6e4']], ['pine', ['#2f7f7a'], { snow: true }], ['crystal', ['#5eead4', '#a78bfa']]],
+  'world:oasis': [['palm', ['#22a06b', '#2dbd7e']], ['flowers', ['#fbbf24', '#f472b6']], ['palm', ['#1f9a63']], ['rock', ['#c9a86a']]],
+  'world:steampunk': [['building', ['#a67c4a', '#8c6a3c', '#b98f5c']], ['lamp', ['#fbbf24']], ['pylon', ['#7c5a2c']], ['building', ['#946b3a', '#7a5a30']]],
+  'world:moon': [['rock', ['#8a93a8', '#707a91']], ['asteroid', ['#8a93a8', '#6b7488']], ['crystal', ['#cbd5e1', '#94a3b8']], ['rock', ['#7b8499']]],
+  'world:reef': [['crystal', ['#fb7185', '#f472b6', '#fda4af']], ['flowers', ['#fb7185', '#fdba74', '#f9a8d4']], ['buoy', ['#ef4444', '#f97316']], ['crystal', ['#2dd4bf', '#f472b6']]],
+  'world:dunes': [['cactus', ['#6b8e23', '#7aa22c']], ['mesa', ['#e8b04a', '#d9a038']], ['rock', ['#c99a45']], ['acacia', ['#8aa33a']]],
+  'world:bamboo': [['tree', ['#6fb04a', '#84c45a']], ['pine', ['#4f9a3a', '#5fae48']], ['flowers', ['#fde047', '#f9a8d4']], ['tree', ['#5fa23f']]]
 };
 
 export const propsFor = id => SETS[id] || SETS['world:skyline'];
