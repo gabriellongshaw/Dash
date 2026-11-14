@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     editing = next;
     draft = { name: profile.state.displayName || '', user: profile.state.username || '' };
     if (built && status === 'ready') {
-      popIn(swapTop());
+      swapTop(true);
       return;
     }
     render();
@@ -177,12 +177,37 @@ document.addEventListener('DOMContentLoaded', () => {
     return editing && person && person.relation === 'self' ? editorCard() : heroCard();
   }
 
-  function swapTop() {
-    const card = topCard();
+  let swapId = 0;
+
+  function swapTop(animate) {
+    const id = ++swapId;
     const old = content.firstElementChild;
-    if (old) old.replaceWith(card);
-    else content.prepend(card);
-    return card;
+    const place = () => {
+      const card = topCard();
+      if (old && old.parentNode === content) old.replaceWith(card);
+      else content.prepend(card);
+      return card;
+    };
+    if (!animate || reducedMotion() || !old) {
+      const card = place();
+      if (animate) popIn(card);
+      return card;
+    }
+    old.classList.add('leaving');
+    old.style.pointerEvents = 'none';
+    setTimeout(() => {
+      if (id !== swapId || old.parentNode !== content) return;
+      const before = old.offsetHeight;
+      const card = place();
+      popIn(card);
+      const after = card.offsetHeight;
+      if (before !== after && card.animate) {
+        card.animate(
+          [{ height: `${before}px`, overflow: 'hidden' }, { height: `${after}px`, overflow: 'hidden' }],
+          { duration: 300, easing: 'cubic-bezier(0.33, 1, 0.68, 1)' }
+        );
+      }
+    }, 150);
   }
 
   function popIn(card) {
