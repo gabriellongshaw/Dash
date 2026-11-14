@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderMe() {
     me.innerHTML = '';
     const needsSetup = !profile.state.username;
-    me.classList.toggle('hidden', !needsSetup);
+    setShown(me, needsSetup);
     if (!needsSetup) return;
     const title = document.createElement('p');
     title.className = 'friend-title';
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const list = $('requests');
     list.innerHTML = '';
     const total = data.incoming.length + data.outgoing.length;
-    section.classList.toggle('hidden', total === 0);
+    setShown(section, total > 0);
     if (total && !shown.requests) reveal(section);
     shown.requests = total > 0;
     let index = 0;
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!signedIn) return;
     renderMe();
     const hasName = !!profile.state.username;
-    socialBox.classList.toggle('hidden', !hasName);
+    setShown(socialBox, hasName);
     if (hasName && !shown.social) reveal(socialBox);
     shown.social = hasName;
     if (!profile.state.username) return;
@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderResults() {
     resultsBox.innerHTML = '';
     const active = searched.length >= 2;
-    resultsBox.classList.toggle('hidden', !active);
+    setShown(resultsBox, active);
     if (!active) return;
     if (!results.length) {
       const empty = document.createElement('p');
