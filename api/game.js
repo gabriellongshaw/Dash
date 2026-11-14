@@ -6,6 +6,7 @@ import { findItem } from '../assets/js/core/cosmetics.js';
 import { distanceAt } from '../assets/js/core/difficulty.js';
 import { cleanPrivacy, defaultPrivacy } from '../assets/js/core/privacy.js';
 import { createSocial, pickPhoto, profileFixups } from '../server/social.js';
+import { createAnnouncements } from '../server/announcements.js';
 import { createPolls, isAdmin } from '../server/polls.js';
 import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, progressOf, rollQuests, weekBoardScore } from '../assets/js/core/quests.js';
 
@@ -27,7 +28,7 @@ const ACTIONS_PER_SECOND = 6;
 
 const PHOTO_MODES = ['google', 'custom', 'none'];
 
-const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'doubleCoins', 'claimQuest', 'buyItem', 'viewProfile', 'listPosts', 'listReplies']);
+const ANON_ACTIONS = new Set(['syncProfile', 'startRun', 'submitRun', 'doubleCoins', 'claimQuest', 'buyItem', 'viewProfile', 'listPosts', 'listReplies', 'listAnnouncements']);
 
 const DEFAULT_OWNED = ['skin:emerald', 'hat:none', 'char:bot', 'world:skyline'];
 
@@ -225,10 +226,12 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
   };
 
   const polls = createPolls({ db, load, Fail, now });
+  const announcements = createAnnouncements({ db, Fail, now });
 
   const actions = {
     ...social,
     ...polls,
+    ...announcements,
     setPhoto: republish(social.setPhoto),
     setPrivacy: republish(social.setPrivacy),
 

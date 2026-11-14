@@ -36,7 +36,10 @@ export const MESSAGES = {
   'replies-full': 'This post has the most replies it can hold.',
   'reply-rate': 'You can reply 20 times a day. Try again tomorrow.',
   limit: 'You have 10 posts already. Delete one to post again.',
-  rate: 'You can post 3 times a day. Try again tomorrow.'
+  rate: 'You can post 3 times a day. Try again tomorrow.',
+  announcement: 'Add a title for the announcement.',
+  'no-announcement': 'That announcement no longer exists.',
+  'pinned-full': 'You can pin 3 announcements. Unpin one first.'
 };
 
 export const messageFor = e => MESSAGES[e && e.code] || `Something went wrong${e && e.code ? ` (${e.code})` : ''}. Try again.`;
