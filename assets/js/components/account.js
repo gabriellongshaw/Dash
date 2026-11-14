@@ -13,6 +13,7 @@ export function showToast(text) {
     document.body.appendChild(toastEl);
   }
   toastEl.textContent = text;
+  void toastEl.offsetWidth;
   toastEl.classList.add('visible');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('visible'), 3800);
