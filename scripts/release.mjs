@@ -7,6 +7,9 @@ const apiUrl = process.env.DASH_API_URL || '';
 const secret = process.env.RELEASE_SECRET || '';
 const dry = process.argv.includes('--dry');
 const backfill = process.argv.includes('--backfill');
+const announceMode = process.argv.includes('--announce');
+const countArg = process.argv.find(arg => arg.startsWith('--count='));
+const count = Math.max(1, Math.min(30, Number(countArg ? countArg.slice(8) : 3) || 3));
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
 
@@ -101,7 +104,7 @@ async function createRelease(payload) {
   if (!res.ok) throw new Error(`release ${payload.tag_name} failed: ${res.status} ${await res.text()}`);
 }
 
-async function announce(version, title, body) {
+async function announce(version, title, body, at) {
   if (!apiUrl || !secret) {
     console.log('announcement skipped: DASH_API_URL or RELEASE_SECRET not set');
     return;
@@ -109,7 +112,7 @@ async function announce(version, title, body) {
   const res = await fetch(apiUrl, {
     method: 'POST',
     headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'publishRelease', version: version.slice(1), title, body })
+    body: JSON.stringify({ action: 'publishRelease', version: version.slice(1), title, body, ...(at ? { at } : {}) })
   });
   console.log(`announcement ${version}: ${res.status}`);
   if (!res.ok) throw new Error(`announcement failed: ${res.status} ${await res.text()}`);
@@ -140,6 +143,21 @@ async function releaseNext() {
   await announce(version, title, summary(commits));
 }
 
+async function announceRecent() {
+  const list = tags();
+  for (const tag of list.slice(-count)) {
+    const index = list.indexOf(tag);
+    const prev = index ? list[index - 1] : null;
+    const commits = commitsBetween(prev, tag);
+    const title = titles[tag] ? `Dash ${tag.slice(1)}: ${titles[tag]}` : headline(tag, commits);
+    const body = summary(commits);
+    const at = Number(git('log', '-1', '--format=%ct', tag)) * 1000;
+    console.log(`announce ${tag}: ${title}`);
+    if (dry) continue;
+    await announce(tag, title, body, at);
+  }
+}
+
 async function backfillAll() {
   const list = tags();
   for (let i = 0; i < list.length; i++) {
@@ -164,7 +182,7 @@ if (!repo || (!token && !dry)) {
   process.exit(1);
 }
 
-(backfill ? backfillAll() : releaseNext()).catch(e => {
+(announceMode ? announceRecent() : backfill ? backfillAll() : releaseNext()).catch(e => {
   console.error(e.message);
   process.exit(1);
 });

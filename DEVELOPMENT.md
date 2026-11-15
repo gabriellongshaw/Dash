@@ -120,7 +120,7 @@ Setup:
 
 Without the secret and variable the release is still created and only the announcement is skipped.
 
-The workflow can also be run by hand from the Actions tab with a mode: `release`, `dry-run` (prints the next version and notes only) or `backfill` (creates releases with notes for existing tags that have none, using the titles in `scripts/release-titles.json`).
+The workflow can also be run by hand from the Actions tab with a mode: `release`, `dry-run` (prints the next version and notes only) `backfill` (creates releases with notes for existing tags that have none, using the titles in `scripts/release-titles.json`) or `announce` (posts announcements for the latest releases, count set by the `count` input, with each release's original date; a version already announced is skipped).
 
 ## Not found page
 
