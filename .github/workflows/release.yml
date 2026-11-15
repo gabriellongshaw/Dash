@@ -17,6 +17,10 @@ on:
           - release
           - dry-run
           - backfill
+          - announce
+      count:
+        description: Releases to announce in announce mode
+        default: '3'
 
 permissions:
   contents: write
@@ -43,9 +47,11 @@ jobs:
           DASH_API_URL: ${{ vars.DASH_API_URL }}
           RELEASE_SECRET: ${{ secrets.RELEASE_SECRET }}
           MODE: ${{ inputs.mode }}
+          COUNT: ${{ inputs.count }}
         run: |
           case "$MODE" in
             backfill) node scripts/release.mjs --backfill ;;
+            announce) node scripts/release.mjs --announce --count="$COUNT" ;;
             dry-run) node scripts/release.mjs --dry ;;
             *) node scripts/release.mjs ;;
           esac
