@@ -4,6 +4,15 @@
   gap: 10px;
 }
 
+.ann-form > .friend-input {
+  flex: none;
+  width: 100%;
+}
+
+.ann-form > .poll-text {
+  min-height: 140px;
+}
+
 .ann-kind-tabs .tab {
   padding: 8px 2px;
   font-size: 0.76rem;
