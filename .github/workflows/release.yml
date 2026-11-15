@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - '.github/**'
+      - 'scripts/**'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Run mode
+        type: choice
+        default: release
+        options:
+          - release
+          - dry-run
+          - backfill
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DASH_API_URL: ${{ vars.DASH_API_URL }}
+          RELEASE_SECRET: ${{ secrets.RELEASE_SECRET }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          case "$MODE" in
+            backfill) node scripts/release.mjs --backfill ;;
+            dry-run) node scripts/release.mjs --dry ;;
+            *) node scripts/release.mjs ;;
+          esac

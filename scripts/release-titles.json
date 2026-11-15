@@ -1,0 +1,23 @@
+{
+  "v0.1.0": "Dash endless runner",
+  "v0.2.0": "Characters, worlds and animated tabs",
+  "v0.3.0": "Quests and leaderboard",
+  "v0.4.0": "Game API validating runs, coins and items",
+  "v0.4.1": "Game API host fix",
+  "v0.5.0": "Friends and gifting",
+  "v0.6.0": "Display names, photos and player search",
+  "v0.7.0": "Music, sound effects and separate settings",
+  "v0.8.0": "Late-game difficulty, new obstacles and persistent music",
+  "v0.9.0": "Player profiles, blocking and privacy settings",
+  "v1.0.0": "Anonymous guests, 50 new cosmetics and player-facing readme",
+  "v1.1.0": "Blur setting, 404 page and header polish",
+  "v1.2.0": "Ads, rewarded coin doubling and privacy page",
+  "v1.3.0": "Polls",
+  "v1.4.0": "Poll replies, undo votes and voter list",
+  "v1.5.0": "Third person mode with its own leaderboard",
+  "v1.6.0": "Trains, coin trails and textured 3D surfaces",
+  "v1.7.0": "Mode selection page, live previews and CSS cleanup",
+  "v1.7.1": "Menu view styles fix",
+  "v1.8.0": "Fog, far-spawned obstacles, touch controls and new items",
+  "v1.8.1": "Obstacle spawning and touch input fixes"
+}
