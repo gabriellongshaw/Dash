@@ -42,7 +42,8 @@ export function createAnnouncements({ db, Fail, now }) {
       body: typeof data.body === 'string' ? data.body : '',
       pinned: data.pinned === true,
       at: whole(data.at),
-      editedAt: whole(data.editedAt)
+      editedAt: whole(data.editedAt),
+      version: typeof data.version === 'string' && VERSION.test(data.version) ? data.version : ''
     };
   };
 
@@ -103,11 +104,11 @@ export function createAnnouncements({ db, Fail, now }) {
       const at = Number.isFinite(body.at) && body.at > 0 && body.at <= current ? Math.floor(body.at) : current;
       if (snap.exists && body.update !== true) return { item: shape(ref.id, snap.data()), existing: true };
       if (snap.exists) {
-        const change = { title: post.title, body: post.body, at };
+        const change = { title: post.title, body: post.body, at, version: body.version };
         await ref.update(change);
         return { item: shape(ref.id, { ...snap.data(), ...change }), existing: true, updated: true };
       }
-      const doc = { ...post, at };
+      const doc = { ...post, at, version: body.version };
       await ref.set(doc);
       return { item: shape(ref.id, doc), existing: false };
     },
