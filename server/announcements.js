@@ -4,7 +4,7 @@ import { cleanText } from './polls.js';
 export const TAGS = ['update', 'event', 'fix', 'news'];
 
 export const ANNOUNCEMENT_LIMITS = {
-  title: 80,
+  title: 120,
   body: 1500,
   listed: 50,
   pinned: 3

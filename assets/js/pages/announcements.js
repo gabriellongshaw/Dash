@@ -33,7 +33,7 @@ const EMPTY = {
   fix: 'No fixes posted yet.',
   news: 'No news yet.'
 };
-const LIMITS = { title: 80, body: 1500 };
+const LIMITS = { title: 120, body: 1500 };
 const RELEASES = 'https://github.com/gabriellongshaw/Dash/releases/tag/';
 
 const PLUS =
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
       view.appendChild(make('h2', 'poll-title', item.title));
       if (item.body) view.appendChild(make('p', 'poll-body', item.body));
       if (item.version) {
-        const link = make('a', 'ann-release');
+        const link = make('a', 'poll-tool ann-release');
         link.href = `${RELEASES}v${item.version}`;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
