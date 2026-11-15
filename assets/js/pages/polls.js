@@ -7,12 +7,29 @@ import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 import { button, messageFor } from '../components/ui.js';
+import { createListTools } from '../components/listtools.js';
+import { mountVersion } from '../components/version.js';
 
 const $ = id => document.getElementById(id);
+
+const settle = el => (el.shownAnim ? el.shownAnim.finished.then(() => {}, () => {}) : Promise.resolve());
 
 const FILTERS = ['all', 'poll', 'feedback', 'suggestion'];
 const LABELS = { poll: 'Poll', feedback: 'Feedback', suggestion: 'Suggestion' };
 const TITLES = { poll: 'Ask a question', feedback: 'What did you think?', suggestion: 'What should we add?' };
+const SORTS = [
+  { id: 'newest', label: 'Newest first' },
+  { id: 'oldest', label: 'Oldest first' },
+  { id: 'votes', label: 'Most votes' },
+  { id: 'replies', label: 'Most replies' }
+];
+const SHOWS = [
+  { id: 'all', label: 'All posts' },
+  { id: 'open', label: 'Open' },
+  { id: 'closed', label: 'Closed' },
+  { id: 'unvoted', label: 'Not voted yet' },
+  { id: 'mine', label: 'My posts' }
+];
 const EMPTY = {
   all: 'Nothing here yet. Check back soon.',
   poll: 'No polls right now.',
@@ -86,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudio(1);
   mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
+  mountVersion(document.querySelector('.shop-inner'), { href: '../announcements/' });
 
   const note = $('note');
   const tabs = $('tabs');
@@ -663,7 +681,39 @@ document.addEventListener('DOMContentLoaded', () => {
     return card;
   }
 
-  const visible = () => data.posts.filter(post => filter === 'all' || post.kind === filter);
+  const tools = createListTools({
+    search: 'Search posts',
+    sorts: SORTS,
+    filters: SHOWS,
+    onChange: reason => {
+      if (reason !== 'query') seen.clear();
+      renderList();
+    }
+  });
+  list.before(tools.el);
+
+  const shows = {
+    all: () => true,
+    open: post => !post.closed,
+    closed: post => post.closed,
+    unvoted: post => post.kind === 'poll' && !post.closed && post.mine.vote === null,
+    mine: post => (data.admin ? post.kind === 'poll' : post.canDelete)
+  };
+
+  const visible = () => {
+    const { sort, filter: show } = tools.state;
+    const order = {
+      newest: (a, b) => b.at - a.at,
+      oldest: (a, b) => a.at - b.at,
+      votes: (a, b) => b.total - a.total || b.at - a.at,
+      replies: (a, b) => b.replies - a.replies || b.at - a.at
+    }[sort];
+    return data.posts
+      .filter(post => filter === 'all' || post.kind === filter)
+      .filter(shows[show])
+      .filter(post => tools.matches(`${post.title} ${post.body} ${post.author} ${post.options.map(option => option.text).join(' ')}`))
+      .sort(order);
+  };
 
   function skeleton() {
     for (let i = 0; i < 2; i++) {
@@ -685,7 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const posts = visible();
     if (!posts.length) {
-      const empty = make('p', 'quest-empty reveal', EMPTY[filter]);
+      const empty = make('p', 'quest-empty reveal', tools.active() ? 'No matches.' : EMPTY[filter]);
       list.appendChild(empty);
       return;
     }
@@ -831,6 +881,7 @@ document.addEventListener('DOMContentLoaded', () => {
           item.input.value = '';
         });
         open(false);
+        await settle(panel);
         setFilter(kind);
         load();
       });
@@ -854,6 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderComposer() {
+    if (profile.session.syncing) return;
     const sig = `${profile.social}:${data.admin}:${!!profile.state.username}`;
     if (sig === composerSig) return;
     composerSig = sig;
