@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let loading = false;
   let busy = false;
   let editing = false;
+  let staggered = false;
   let built = false;
   let draft = { name: '', user: '' };
   let palette = readPalette();
@@ -615,6 +616,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (person.relation !== 'self') content.appendChild(actionsRow());
     else settingsCards().forEach(card => content.appendChild(card));
     built = true;
+    if (!staggered && !reducedMotion()) {
+      staggered = true;
+      content.classList.add('stagger');
+      setTimeout(() => content.classList.remove('stagger'), 900);
+    }
   }
 
   $('note-signin').addEventListener('click', () => signInFlow());
