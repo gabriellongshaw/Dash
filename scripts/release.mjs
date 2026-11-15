@@ -87,9 +87,16 @@ function notesFor(list, from, to, date) {
   return parts.join('\n\n');
 }
 
+function clip(text, max) {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,;:.-]+$/, '')}\u2026`;
+}
+
 function headline(version, list, fallback) {
   const lead = fallback || (list.find(c => c.type === 'feat') || list.find(c => c.type === 'fix') || list[0] || {}).text;
-  return lead ? `Dash ${version.slice(1)}: ${capital(lead)}`.slice(0, 80) : `Dash ${version.slice(1)}`;
+  return lead ? clip(`Dash ${version.slice(1)}: ${capital(lead)}`, 120) : `Dash ${version.slice(1)}`;
 }
 
 function summary(list) {
