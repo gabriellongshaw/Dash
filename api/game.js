@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
@@ -12,6 +12,7 @@ import { allQuests, applyRun, cleanQuests, freshQuests, isClaimed, markClaimed, 
 
 const ORIGINS = ['https://gabriellongshaw.co.uk', 'https://www.gabriellongshaw.co.uk'];
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const RELEASE_SECRET = process.env.RELEASE_SECRET || '';
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const PX_PER_METER = 30;
@@ -171,7 +172,7 @@ const shortName = full => {
   return parts.length === 1 ? first : `${first} ${[...parts[parts.length - 1]][0].toUpperCase()}.`;
 };
 
-export function createApi({ db, verify, secret, now = () => Date.now(), adminEmail = ADMIN_EMAIL }) {
+export function createApi({ db, verify, secret, now = () => Date.now(), adminEmail = ADMIN_EMAIL, releaseSecret = RELEASE_SECRET }) {
   const profileRef = uid => db.doc(`dashProfiles/${uid}`);
   const allTimeRef = uid => db.doc(`dashBoard/${uid}`);
   const weekRef = (week, uid) => db.doc(`dashWeeks/${week}/entries/${uid}`);
@@ -226,7 +227,7 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
   };
 
   const polls = createPolls({ db, load, Fail, now });
-  const announcements = createAnnouncements({ db, Fail, now });
+  const { publishRelease, ...announcements } = createAnnouncements({ db, Fail, now });
 
   const actions = {
     ...social,
@@ -372,7 +373,14 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
     }
   };
 
+  const digest = value => createHash('sha256').update(String(value)).digest();
+  const releaseAllowed = token => !!releaseSecret && !!token && timingSafeEqual(digest(token), digest(releaseSecret));
+
   return async function handle(token, body) {
+    if (body && body.action === 'publishRelease') {
+      if (!releaseAllowed(token)) throw new Fail(403, 'secret');
+      return publishRelease(body);
+    }
     const user = await verify(token);
     if (!user) throw new Fail(401, 'auth');
     const run = body && typeof body.action === 'string' ? actions[body.action] : null;

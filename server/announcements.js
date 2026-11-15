@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { cleanText } from './polls.js';
 
 export const TAGS = ['update', 'event', 'fix', 'news'];
@@ -10,6 +11,9 @@ export const ANNOUNCEMENT_LIMITS = {
 };
 
 const ID = /^[A-Za-z0-9]{20}$/;
+const VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,4}$/;
+
+const releaseId = version => createHash('sha1').update(`release:${version}`).digest('hex').slice(0, 20);
 
 const whole = v => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
@@ -87,6 +91,18 @@ export function createAnnouncements({ db, Fail, now }) {
       const change = { ...post, editedAt: now() };
       await itemRef(id).update(change);
       return { item: shape(id, { ...snap.data(), ...change }) };
+    },
+
+    async publishRelease(body) {
+      if (!body || typeof body.version !== 'string' || !VERSION.test(body.version)) throw new Fail(400, 'announcement');
+      const post = cleanAnnouncement({ tag: 'update', title: body.title || `Dash ${body.version}`, body: body.body, pinned: false });
+      if (!post) throw new Fail(400, 'announcement');
+      const ref = itemRef(releaseId(body.version));
+      const snap = await ref.get();
+      if (snap.exists) return { item: shape(ref.id, snap.data()), existing: true };
+      const doc = { ...post, at: now() };
+      await ref.set(doc);
+      return { item: shape(ref.id, doc), existing: false };
     },
 
     async deleteAnnouncement(user, body) {
