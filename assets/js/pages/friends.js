@@ -10,6 +10,7 @@ import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 import { openGift } from '../components/gift.js';
 import { button, messageFor } from '../components/ui.js';
+import { mountVersion } from '../components/version.js';
 
 const $ = id => document.getElementById(id);
 
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudio(1);
   mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
+  mountVersion(document.querySelector('.shop-inner'), { href: '../announcements/' });
 
   const note = $('note');
   const content = $('content');

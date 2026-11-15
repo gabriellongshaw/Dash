@@ -213,3 +213,27 @@ body.leaving .page {
 .credits-link:hover {
   color: var(--accent-soft);
 }
+
+.version-tag {
+  display: block;
+  margin: 4px auto 0;
+  color: var(--meta-text);
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  text-decoration: none;
+}
+
+.credits-link.version-tag {
+  display: inline;
+  margin: 0;
+  color: var(--ground-text);
+  font-size: inherit;
+  font-weight: inherit;
+  text-decoration: underline;
+}
+
+a.version-tag:active {
+  opacity: 0.7;
+}

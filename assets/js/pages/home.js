@@ -10,6 +10,7 @@ import { clamp } from '../core/utils.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
+import { mountVersion } from '../components/version.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   detectTouch();
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudio(1);
   mountSound(document.querySelector('.home-nav'));
   mountAccount(document.getElementById('account'), './');
+  mountVersion(document.querySelector('.credits-container'), { href: 'announcements/', inline: true });
 
   const bestEl = document.getElementById('home-best');
   const showStats = () => {

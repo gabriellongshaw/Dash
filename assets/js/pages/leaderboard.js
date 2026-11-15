@@ -10,6 +10,7 @@ import { colourFor } from '../components/avatar.js';
 import { initGraphics } from '../core/graphics.js';
 import { initAudio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
+import { mountVersion } from '../components/version.js';
 
 const $ = id => document.getElementById(id);
 
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudio(1);
   mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
+  mountVersion(document.querySelector('.shop-inner'), { href: '../announcements/' });
 
   const list = $('rank-list');
   const tabs = $('tabs');
