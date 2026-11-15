@@ -19,5 +19,8 @@
   "v1.7.0": "Mode selection page, live previews and CSS cleanup",
   "v1.7.1": "Menu view styles fix",
   "v1.8.0": "Fog, far-spawned obstacles, touch controls and new items",
-  "v1.8.1": "Obstacle spawning and touch input fixes"
+  "v1.8.1": "Obstacle spawning and touch input fixes",
+  "v1.9.0": "50 new items, announcements page and UI animations",
+  "v1.10.0": "Release automation and announcement fixes",
+  "v1.10.1": "Release announce and refresh modes"
 }

@@ -99,9 +99,14 @@ export function createAnnouncements({ db, Fail, now }) {
       if (!post) throw new Fail(400, 'announcement');
       const ref = itemRef(releaseId(body.version));
       const snap = await ref.get();
-      if (snap.exists) return { item: shape(ref.id, snap.data()), existing: true };
       const current = now();
       const at = Number.isFinite(body.at) && body.at > 0 && body.at <= current ? Math.floor(body.at) : current;
+      if (snap.exists && body.update !== true) return { item: shape(ref.id, snap.data()), existing: true };
+      if (snap.exists) {
+        const change = { title: post.title, body: post.body, at };
+        await ref.update(change);
+        return { item: shape(ref.id, { ...snap.data(), ...change }), existing: true, updated: true };
+      }
       const doc = { ...post, at };
       await ref.set(doc);
       return { item: shape(ref.id, doc), existing: false };

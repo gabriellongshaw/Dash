@@ -18,6 +18,7 @@ on:
           - dry-run
           - backfill
           - announce
+          - refresh
       count:
         description: Releases to announce in announce mode
         default: '3'
@@ -51,6 +52,7 @@ jobs:
         run: |
           case "$MODE" in
             backfill) node scripts/release.mjs --backfill ;;
+            refresh) node scripts/release.mjs --backfill --refresh && node scripts/release.mjs --announce --refresh --count="$COUNT" ;;
             announce) node scripts/release.mjs --announce --count="$COUNT" ;;
             dry-run) node scripts/release.mjs --dry ;;
             *) node scripts/release.mjs ;;

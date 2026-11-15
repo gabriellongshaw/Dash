@@ -118,9 +118,11 @@ Setup:
 - GitHub repository secrets: add `RELEASE_SECRET` with the same value.
 - GitHub repository variables: add `DASH_API_URL` set to the deployed `/api/game` address.
 
+If a release commit is undone, amended or force pushed, the next push moves the existing tag to the new commit and updates its release and announcement in place instead of making another version. Add `[skip release]` to a commit message to stop a push from releasing.
+
 Without the secret and variable the release is still created and only the announcement is skipped.
 
-The workflow can also be run by hand from the Actions tab with a mode: `release`, `dry-run` (prints the next version and notes only) `backfill` (creates releases with notes for existing tags that have none, using the titles in `scripts/release-titles.json`) or `announce` (posts announcements for the latest releases, count set by the `count` input, with each release's original date; a version already announced is skipped).
+The workflow can also be run by hand from the Actions tab with a mode: `release`, `dry-run` (prints the next version and notes only) `backfill` (creates releases with notes for existing tags that have none, using the titles in `scripts/release-titles.json`) or `announce` (posts announcements for the latest releases, count set by the `count` input, with each release's original date; a version already announced is skipped) or `refresh` (rewrites the notes, titles and dates of existing releases and announcements).
 
 ## Not found page
 
