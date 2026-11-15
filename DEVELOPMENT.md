@@ -101,6 +101,27 @@ The cards on the view screen run the real engines as previews (`assets/js/compon
 - Camera: it follows the runner sideways with a small delay and barely rises on jumps, so lane changes and jumps read clearly. The camera height is set from the screen size so the runner always sits in the lower part of the view.
 - Coins: `LaneSpawner.guide` puts a coin trail in a lane the new obstacles do not block, starting a little before them, so coins lead you to the safe lane. `snake` builds a trail that weaves between lanes, and `train` and `trainPair` add long carriages that must be dodged by changing lane.
 
+## Announcements and releases
+
+Announcements are posted from the Announcements page by the admin account. Each post has a tag (update, event, fix or news), a headline, details and an optional pin (up to three pinned).
+
+Releases are automatic. Every push to `main` runs `.github/workflows/release.yml`, which runs `scripts/release.mjs`:
+
+- It finds the latest `v*` tag and reads the conventional commits since it.
+- `feat` bumps the minor version, `fix` and `perf` bump the patch, and `!` or a `BREAKING CHANGE` footer bumps the major. Other types alone do not release.
+- It creates the tag and a GitHub Release with notes grouped into features, fixes and maintenance.
+- It posts an update announcement through the API action `publishRelease`, once per version.
+
+Setup:
+
+- Vercel: add `RELEASE_SECRET` as an environment variable (any long random string).
+- GitHub repository secrets: add `RELEASE_SECRET` with the same value.
+- GitHub repository variables: add `DASH_API_URL` set to the deployed `/api/game` address.
+
+Without the secret and variable the release is still created and only the announcement is skipped.
+
+The workflow can also be run by hand from the Actions tab with a mode: `release`, `dry-run` (prints the next version and notes only) or `backfill` (creates releases with notes for existing tags that have none, using the titles in `scripts/release-titles.json`).
+
 ## Not found page
 
 `404.html` sends visitors to the not-found page on gabriellongshaw.co.uk, the same as the other sites.
@@ -117,7 +138,9 @@ The cards on the view screen run the real engines as previews (`assets/js/compon
 - `profile/` — player profiles, friend actions and your privacy settings
 - `leaderboard/` — weekly and all-time rankings
 - `assets/js/core/` — audio and music, difficulty curve, theme, profile (guest and cloud saves), Firebase loader, cosmetics, worlds, quests, leaderboard, utilities
-- `server/` — friends, gifting, privacy, blocking and polls logic used by the API
+- `server/` — friends, gifting, privacy, blocking, polls and announcements logic used by the API
+- `scripts/` — release automation
+- `.github/workflows/` — release workflow
 - `api/` — Vercel API that validates runs and owns coins, items, quests and scores
 - `assets/js/components/` — game engines (Classic and third person), runner, characters, hats, obstacles, lanes, perspective renderer, world, particles, account UI
 - `assets/js/pages/` — page entry points
