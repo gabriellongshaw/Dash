@@ -144,10 +144,7 @@
 }
 
 .home-account {
-  position: absolute;
-  top: max(12px, env(safe-area-inset-top));
-  right: max(12px, env(safe-area-inset-right));
-  z-index: 20;
+  flex: 0 0 auto;
 }
 
 .sound-btn {

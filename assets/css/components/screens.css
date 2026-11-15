@@ -67,13 +67,31 @@ body.leaving .page {
   margin-top: 6px;
 }
 
-.home-nav {
+.home-top {
   position: absolute;
   top: max(12px, env(safe-area-inset-top));
   left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
   z-index: 20;
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
+  pointer-events: none;
+}
+
+.home-top > * {
+  pointer-events: auto;
+}
+
+.home-nav {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  container-type: inline-size;
+  container-name: homenav;
 }
 
 .nav-button {

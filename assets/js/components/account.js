@@ -112,6 +112,7 @@ export function mountAccount(el, root = '../') {
     chip = null;
     const btn = document.createElement('button');
     btn.className = 'secondary-button account-btn';
+    btn.setAttribute('aria-label', 'Sign in');
     btn.innerHTML = GOOGLE_ICON + '<span class="account-btn-label">Sign in</span>';
     btn.addEventListener('click', () => {
       btn.blur();

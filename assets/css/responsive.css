@@ -18,6 +18,26 @@
   }
 }
 
+@media (max-width: 479px) {
+  .account-btn {
+    width: 40px;
+    padding: 0;
+  }
+  .account-btn-label {
+    display: none;
+  }
+}
+
+/* Only show nav labels once the nav itself has room for them */
+@container homenav (min-width: 580px) {
+  .nav-button {
+    padding: 0 16px 0 12px;
+  }
+  .nav-label {
+    display: inline;
+  }
+}
+
 @media (min-width: 480px) {
   .leave-label {
     display: inline;
@@ -52,15 +72,6 @@
   }
 }
 
-@media (min-width: 640px) {
-  .nav-button {
-    padding: 0 16px 0 12px;
-  }
-  .nav-label {
-    display: inline;
-  }
-}
-
 @media (min-width: 768px) {
   .hud {
     padding-top: 18px;
@@ -81,8 +92,9 @@
     padding-left: 22px;
     padding-right: 22px;
   }
-  .home-account {
+  .home-top {
     top: 18px;
+    left: 22px;
     right: 22px;
   }
 }
