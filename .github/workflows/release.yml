@@ -20,8 +20,8 @@ on:
           - announce
           - refresh
       count:
-        description: Releases to announce in announce mode
-        default: '3'
+        description: How many of the latest releases to announce or refresh (a number, or all)
+        default: all
 
 permissions:
   contents: write
@@ -57,3 +57,13 @@ jobs:
             dry-run) node scripts/release.mjs --dry ;;
             *) node scripts/release.mjs ;;
           esac
+      - name: Publish version
+        if: inputs.mode == '' || inputs.mode == 'release'
+        run: |
+          if [ -n "$(git status --porcelain version.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add version.json
+            git commit -m "chore(release): update version [skip release]"
+            git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" || echo "version push skipped"
+          fi

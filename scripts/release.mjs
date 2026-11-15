@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -10,7 +10,8 @@ const backfill = process.argv.includes('--backfill');
 const announceMode = process.argv.includes('--announce');
 const refresh = process.argv.includes('--refresh');
 const countArg = process.argv.find(arg => arg.startsWith('--count='));
-const count = Math.max(1, Math.min(30, Number(countArg ? countArg.slice(8) : 3) || 3));
+const countValue = countArg ? countArg.slice(8).trim().toLowerCase() : 'all';
+const count = countValue === 'all' || countValue === '' ? Infinity : Math.max(1, Number(countValue) || 1);
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
 
@@ -133,6 +134,8 @@ async function announce(version, title, body, at, update) {
   if (!res.ok) throw new Error(`announcement failed: ${res.status} ${await res.text()}`);
 }
 
+const writeVersion = version => writeFileSync(new URL('../version.json', import.meta.url), `${JSON.stringify({ version: version.slice(1) }, null, 2)}\n`);
+
 async function releaseNext() {
   const head = git('rev-parse', 'HEAD');
   if (/\[skip release\]/i.test(git('log', '-1', '--format=%B', head))) {
@@ -174,16 +177,18 @@ async function releaseNext() {
       await createRelease({ tag_name: version, name: title, body: notes, draft: false, prerelease: false });
     }
     console.log(`updated ${version}`);
+    writeVersion(version);
   } else {
     await createRelease({ tag_name: version, target_commitish: head, name: title, body: notes, draft: false, prerelease: false });
     console.log(`released ${version}`);
+    writeVersion(version);
   }
   await announce(version, title, summary(commits), commitTime(head), replaced);
 }
 
 async function announceRecent() {
   const list = tags();
-  for (const tag of list.slice(-count)) {
+  for (const tag of Number.isFinite(count) ? list.slice(-count) : list) {
     const index = list.indexOf(tag);
     const prev = index ? list[index - 1] : null;
     const commits = commitsBetween(prev, tag);
