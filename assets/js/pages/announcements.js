@@ -7,12 +7,25 @@ import { initGraphics } from '../core/graphics.js';
 import { initAudio, audio } from '../core/audio.js';
 import { mountSound } from '../components/sound.js';
 import { button, messageFor } from '../components/ui.js';
+import { createListTools } from '../components/listtools.js';
+import { mountVersion } from '../components/version.js';
 
 const $ = id => document.getElementById(id);
+
+const settle = el => (el.shownAnim ? el.shownAnim.finished.then(() => {}, () => {}) : Promise.resolve());
 
 const FILTERS = ['all', 'update', 'event', 'fix', 'news'];
 const TAGS = ['update', 'event', 'fix', 'news'];
 const LABELS = { update: 'Update', event: 'Event', fix: 'Fix', news: 'News' };
+const SORTS = [
+  { id: 'newest', label: 'Newest first' },
+  { id: 'oldest', label: 'Oldest first' }
+];
+const SHOWS = [
+  { id: 'all', label: 'Everything' },
+  { id: 'release', label: 'Releases only' },
+  { id: 'post', label: 'Posts only' }
+];
 const EMPTY = {
   all: 'No announcements yet. Check back soon.',
   update: 'No updates yet.',
@@ -21,9 +34,12 @@ const EMPTY = {
   news: 'No news yet.'
 };
 const LIMITS = { title: 80, body: 1500 };
+const RELEASES = 'https://github.com/gabriellongshaw/Dash/releases/tag/';
 
 const PLUS =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
+const LINK =
+  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
 const PIN =
   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3Z"/></svg>';
 
@@ -53,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAudio(1);
   mountSound(document.querySelector('.shop-bar-right'), { first: true });
   mountAccount($('account'));
+  mountVersion(document.querySelector('.shop-inner'));
 
   const tabs = $('tabs');
   const composer = $('composer');
@@ -65,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let again = false;
   let busy = false;
   let loadedKey = null;
-  let composerSig = '';
+  let composerBuilt = false;
   const seen = new Set();
 
   tabs.style.setProperty('--count', FILTERS.length);
@@ -174,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const head = make('div', 'poll-head');
     head.appendChild(make('span', `poll-kind ann-tag ann-tag-${item.tag}`, LABELS[item.tag]));
+    if (item.version) head.appendChild(make('span', 'poll-state ann-version', `v${item.version}`));
     if (item.pinned) {
       const badge = make('span', 'poll-state ann-pinned');
       badge.innerHTML = PIN;
@@ -189,21 +207,31 @@ document.addEventListener('DOMContentLoaded', () => {
       view.innerHTML = '';
       view.appendChild(make('h2', 'poll-title', item.title));
       if (item.body) view.appendChild(make('p', 'poll-body', item.body));
+      if (item.version) {
+        const link = make('a', 'ann-release');
+        link.href = `${RELEASES}v${item.version}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.innerHTML = `<span>View release on GitHub</span>${LINK}`;
+        view.appendChild(link);
+      }
       if (!data.admin) return;
       const tools = make('div', 'poll-tools');
       tools.appendChild(
-        button('Edit', 'poll-tool', () => {
+        button('Edit', 'poll-tool', async () => {
           const form = buildForm(item, 'Save', async payload => {
             const out = await act(() => profile.api('editAnnouncement', { id: item.id, ...payload }), 'Saved.', 'claim');
             if (!out) return;
             Object.assign(item, out.item);
             load();
-          }, () => {
+          }, async () => {
             setShown(edit, false);
+            await settle(edit);
             setShown(view, true);
           });
           edit.replaceChildren(form.el);
           setShown(view, false);
+          await settle(view);
           setShown(edit, true);
         })
       );
@@ -233,7 +261,26 @@ document.addEventListener('DOMContentLoaded', () => {
     return el;
   }
 
-  const visible = () => data.items.filter(item => filter === 'all' || item.tag === filter);
+  const tools = createListTools({
+    search: 'Search announcements',
+    sorts: SORTS,
+    filters: SHOWS,
+    onChange: reason => {
+      if (reason !== 'query') seen.clear();
+      renderList();
+    }
+  });
+  list.before(tools.el);
+
+  const visible = () => {
+    const { sort, filter: show } = tools.state;
+    const direction = sort === 'oldest' ? 1 : -1;
+    return data.items
+      .filter(item => filter === 'all' || item.tag === filter)
+      .filter(item => show === 'all' || (show === 'release' ? !!item.version : !item.version))
+      .filter(item => tools.matches(`${item.title} ${item.body} ${item.version ? `v${item.version}` : ''}`))
+      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || direction * (a.at - b.at));
+  };
 
   function skeleton() {
     for (let i = 0; i < 2; i++) {
@@ -254,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const items = visible();
     if (!items.length) {
-      list.appendChild(make('p', 'quest-empty reveal', EMPTY[filter]));
+      list.appendChild(make('p', 'quest-empty reveal', tools.active() ? 'No matches.' : EMPTY[filter]));
       return;
     }
     items.forEach((item, i) => list.appendChild(card(item, i)));
@@ -262,9 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildComposer() {
     composer.innerHTML = '';
-    const allowed = profile.social && data.admin;
-    setShown(composer, !!allowed);
-    if (!allowed) return;
     const toggle = make('button', 'secondary-button poll-compose-toggle');
     toggle.type = 'button';
     const label = make('span', '', 'New announcement');
@@ -277,6 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!out) return;
       form.reset();
       open(false);
+      await settle(panel);
       seen.delete(out.item && out.item.id);
       if (filter !== 'all' && filter !== payload.tag) setFilter(payload.tag);
       load();
@@ -294,10 +339,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderComposer() {
-    const sig = `${profile.social}:${data.admin}`;
-    if (sig === composerSig) return;
-    composerSig = sig;
-    buildComposer();
+    if (profile.session.syncing) return;
+    const allowed = !!(profile.social && data.admin);
+    if (allowed && !composerBuilt) {
+      composerBuilt = true;
+      buildComposer();
+    }
+    setShown(composer, allowed);
   }
 
   function setFilter(next) {

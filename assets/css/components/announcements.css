@@ -65,3 +65,31 @@
 .announcements-page .poll-body {
   white-space: pre-wrap;
 }
+
+.ann-release {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--secondary-bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.ann-release:active {
+  transform: scale(0.97);
+}
+
+.ann-release svg {
+  flex: none;
+}
+
+.ann-version {
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
