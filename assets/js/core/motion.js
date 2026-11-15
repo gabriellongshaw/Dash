@@ -113,6 +113,7 @@ export function setShown(el, show) {
   const now = animating ? el.shownTarget : !el.classList.contains('hidden');
   if (now === show) return;
   el.shownTarget = show;
+  el.style.animation = 'none';
   if (reduced() || quiet) {
     if (animating) el.shownAnim.cancel();
     el.shownAnim = null;
