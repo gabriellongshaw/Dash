@@ -193,15 +193,24 @@ async function releaseNext() {
   await announce(version, title, summary(commits), commitTime(head), replaced);
 }
 
+function orderedTimes(list) {
+  let last = 0;
+  return new Map(list.map(tag => {
+    last = Math.max(commitTime(tag), last + 1000);
+    return [tag, last];
+  }));
+}
+
 async function announceRecent() {
   const list = tags();
+  const times = orderedTimes(list);
   for (const tag of Number.isFinite(count) ? list.slice(-count) : list) {
     const index = list.indexOf(tag);
     const prev = index ? list[index - 1] : null;
     const commits = commitsBetween(prev, tag);
     const title = titles[tag] ? `Dash ${tag.slice(1)}: ${titles[tag]}` : headline(tag, commits);
     const body = summary(commits);
-    const at = commitTime(tag);
+    const at = times.get(tag);
     console.log(`announce ${tag}: ${title}`);
     if (dry) continue;
     await announce(tag, title, body, at, refresh);
