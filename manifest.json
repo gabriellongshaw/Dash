@@ -1,7 +1,7 @@
 {
   "name": "Dash",
   "short_name": "Dash",
-  "description": "A fast, modern 2D endless runner.",
+  "description": "A fast, modern endless runner. Jump, slide and double jump in side view or third person.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
