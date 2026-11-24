@@ -24,6 +24,7 @@ export class Game {
     this.palette = this.buildPalette();
     if (this.theme) this.world.setTheme(this.theme, isDark());
     this.runner = new Runner();
+    this.runner.scaleTempo = false;
     this.spawner = new Spawner();
     this.particles = new Particles();
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -23,6 +23,7 @@ export const jumpHeight = t => JUMP_SPEED * t - (GRAVITY * t * t) / 2;
 
 export class Runner {
   constructor() {
+    this.scaleTempo = true;
     this.reset(90, 0);
   }
 
@@ -58,7 +59,7 @@ export class Runner {
       return null;
     }
     const first = this.jumps === 0;
-    this.airTempo = this.tempo;
+    this.airTempo = this.scaleTempo ? this.tempo : 1;
     this.vy = -(first ? JUMP_SPEED : DOUBLE_JUMP_SPEED) * this.airTempo;
     this.jumps++;
     this.jumpCount++;
