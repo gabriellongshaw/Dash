@@ -37,10 +37,10 @@ Coins, quests and the shop are shared between both modes, but third person has i
 
 Coins from every run go into your wallet. Spend them in the shop on:
 
-- **Colours:** 54, from Emerald to an animated rainbow Prism.
+- **Colours:** 66, from Emerald to an animated rainbow Prism.
 - **Characters:** 27, including Bot, Slime, Frog, Ninja, Fox, Ghost, Dino, Alien, Snowman, Tiger, Raccoon, Turtle and Pumpkin. Any character works with any colour and hat.
-- **Hats:** 43, from a sprout to a unicorn horn, a witch hat, a UFO and a rain cloud.
-- **Worlds:** 25, including Skyline, Desert, Arctic, Neon, Volcano, Space, Matrix, Crystal Cave, Autumn, Blossom, Jungle, Haunted, Pyramids, Synthwave, Mushroom grove and Abyss. Each has its own scenery, weather and obstacle colours.
+- **Hats:** 74, from a sprout to a unicorn horn, a witch hat, a UFO and a rain cloud.
+- **Worlds:** 33, including Skyline, Desert, Arctic, Neon, Volcano, Space, Matrix, Crystal Cave, Autumn, Blossom, Jungle, Haunted, Pyramids, Synthwave, Mushroom grove and Abyss. Each has its own scenery, weather and obstacle colours.
 
 Backgrounds change as you run. The sky moves through day, dusk and night, and stars and auroras fade in.
 
