@@ -30,11 +30,13 @@ const SAW_BASE_SPEED = 300;
 const SAW_SPIN = 14;
 const SAW_SPIN_RATE = 0;
 const PACE_RATE = 0.5;
-const DENSITY = 0.8;
+const DENSITY = 0.6;
 const MISSILE_D = 46;
 const MISSILE_EXTRA = 320;
 const MISSILE_WARN = 0.75;
 
+const ROLLER_R = 17;
+const rollRate = surface => Math.min(30, surface / ROLLER_R);
 const lane = () => randInt(-1, 1);
 const pace = speed => BASE_SPEED + Math.max(0, speed - BASE_SPEED) * PACE_RATE;
 const arrival = (z, speed, extra = 0) => z / (speed + extra);
@@ -141,7 +143,7 @@ const builders = {
   },
   roller(s, z) {
     const a = lane();
-    s.add(piece('roller', a, a, 0, 34, 34, { half: 18, closing: ROLLER_EXTRA, spin: 0, tick(dt) { this.spin += dt * 9; } }), z);
+    s.add(piece('roller', a, a, 0, 34, 34, { half: 18, closing: ROLLER_EXTRA, spin: 0, tick(dt, speed) { this.spin += dt * rollRate(speed + ROLLER_EXTRA); } }), z);
     return 34;
   },
   saw(s, z, speed) {
@@ -394,7 +396,7 @@ export class LaneSpawner {
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const o = this.obstacles[i];
       o.z -= dz + o.closing * dt;
-      if (o.tick) o.tick(dt);
+      if (o.tick) o.tick(dt, speed);
       if (o.z + o.d < this.cull) this.obstacles.splice(i, 1);
     }
     for (let i = this.coins.length - 1; i >= 0; i--) {
