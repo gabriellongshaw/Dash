@@ -228,15 +228,26 @@ function tape(ctx, v, band, a, b) {
 function disc(ctx, v, o, radius, lift) {
   const z = Math.max(o.z + o.d / 2, NEAR);
   const k = v.F / z;
-  const x = v.cx + ((o.x0 + o.x1) / 2 - v.x) * k;
+  const m = (o.x0 + o.x1) / 2;
+  const x = v.cx + (m - v.x) * k;
   const y = v.hy + (v.eye - lift) * k;
+  const gy = v.hy + v.eye * k;
   const r = radius * k;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(-o.spin);
-  ctx.fillStyle = v.pal.hazardDark;
-  ctx.beginPath();
-  if (o.kind === 'saw') {
+  const dx = clamp((m - v.x) * 0.05, -4, 4) * k;
+  const dy = -4 * k;
+  const pal = v.pal;
+
+  ctx.fillStyle = pal.hazardDark;
+  ctx.fillRect(x - r * 0.1, y, r * 0.2, gy - y);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(x - r * 0.45, gy - r * 0.12, r * 0.9, r * 0.12);
+
+  const teeth = (cx, cy, tint) => {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-o.spin);
+    ctx.fillStyle = tint;
+    ctx.beginPath();
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2;
       ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
@@ -245,88 +256,158 @@ function disc(ctx, v, o, radius, lift) {
     }
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = v.pal.hazard;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.66, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    ctx.fillStyle = v.pal.hazard;
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = v.pal.hazardDark;
-    for (let i = 0; i < 3; i++) {
-      ctx.rotate((Math.PI * 2) / 3);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(r * 0.9, -r * 0.3);
-      ctx.lineTo(r * 0.9, r * 0.3);
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-  ctx.fillStyle = v.pal.hazardLight;
-  ctx.globalAlpha *= 0.6;
+    ctx.restore();
+  };
+  const was = ctx.globalAlpha;
+  ctx.globalAlpha = was * 0.55;
+  teeth(x - dx, y - dy, '#000');
+  ctx.globalAlpha = was;
+  ctx.fillStyle = pal.hazardDark;
   ctx.beginPath();
-  ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
+  ctx.arc(x - dx * 0.5, y - dy * 0.5, r * 0.7, 0, Math.PI * 2);
+  ctx.fill();
+  teeth(x, y, pal.hazardDark);
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-o.spin);
+  ctx.fillStyle = pal.hazard;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.66, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = pal.hazardDark;
+  ctx.lineWidth = Math.max(1, r * 0.07);
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.46, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = pal.hazardDark;
+  for (let i = 0; i < 4; i++) {
+    ctx.rotate(Math.PI / 2);
+    ctx.beginPath();
+    ctx.arc(r * 0.3, 0, r * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = pal.hazardLight;
+  ctx.globalAlpha = was * 0.8;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.14, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+  ctx.globalAlpha = was * 0.35;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = Math.max(1, r * 0.06);
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.58, Math.PI * 1.1, Math.PI * 1.45);
+  ctx.stroke();
+  ctx.globalAlpha = was;
 }
 
 function barrel(ctx, v, o, radius, lift) {
   const z = Math.max(o.z + o.d / 2, NEAR);
   const k = v.F / z;
-  const x = v.cx + ((o.x0 + o.x1) / 2 - v.x) * k;
+  const m = (o.x0 + o.x1) / 2;
+  const x = v.cx + (m - v.x) * k;
   const y = v.hy + (v.eye - lift) * k;
   const hw = ((o.x1 - o.x0) / 2) * k;
   const r = radius * k;
+  const pal = v.pal;
+  const side = v.x < m ? -1 : 1;
+  const cap = Math.min(r * 0.3, hw * 0.5);
+  const rr = Math.min(r * 0.45, hw);
+  const was = ctx.globalAlpha;
+
+  ctx.fillStyle = pal.hazardDark;
+  ctx.beginPath();
+  ctx.ellipse(x + side * hw, y, cap, r, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = pal.hazard;
+  ctx.beginPath();
+  ctx.ellipse(x + side * hw, y, cap * 0.55, r * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.save();
   ctx.beginPath();
-  ctx.roundRect(x - hw, y - r, hw * 2, r * 2, Math.min(r * 0.45, hw));
+  ctx.roundRect(x - hw, y - r, hw * 2, r * 2, rr);
   ctx.clip();
-  ctx.fillStyle = v.pal.hazard;
+  ctx.fillStyle = pal.hazard;
   ctx.fillRect(x - hw, y - r, hw * 2, r * 2);
-  ctx.fillStyle = v.pal.hazardDark;
-  const bands = 6;
+  const bands = 5;
+  const turn = o.spin % (Math.PI * 2);
   for (let i = 0; i < bands; i++) {
-    const a = o.spin + (i / bands) * Math.PI * 2;
-    const c = Math.cos(a % (Math.PI * 2));
+    const a = turn + (i / bands) * Math.PI * 2;
+    const c = Math.cos(a);
     if (c <= 0) continue;
-    const t = r * 0.2 * c;
-    ctx.fillRect(x - hw, y + Math.sin(a) * r - t / 2, hw * 2, t);
+    const half = (Math.PI / bands) * 0.5;
+    const top = y + Math.sin(a - half) * r;
+    const bot = y + Math.sin(a + half) * r;
+    ctx.fillStyle = pal.hazardDark;
+    ctx.fillRect(x - hw, top, hw * 2, Math.max(1, bot - top));
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(x - hw, top, hw * 2, Math.max(1, (bot - top) * 0.25));
   }
   const g = ctx.createLinearGradient(0, y - r, 0, y + r);
-  g.addColorStop(0, 'rgba(255,255,255,0.28)');
-  g.addColorStop(0.5, 'rgba(255,255,255,0)');
-  g.addColorStop(1, 'rgba(0,0,0,0.3)');
+  g.addColorStop(0, 'rgba(255,255,255,0.32)');
+  g.addColorStop(0.45, 'rgba(255,255,255,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.38)');
   ctx.fillStyle = g;
   ctx.fillRect(x - hw, y - r, hw * 2, r * 2);
   ctx.restore();
-  ctx.strokeStyle = v.pal.hazardDark;
+  ctx.strokeStyle = pal.hazardDark;
   ctx.lineWidth = Math.max(1, r * 0.1);
   ctx.beginPath();
-  ctx.roundRect(x - hw, y - r, hw * 2, r * 2, Math.min(r * 0.45, hw));
+  ctx.roundRect(x - hw, y - r, hw * 2, r * 2, rr);
   ctx.stroke();
+  ctx.globalAlpha = was;
 }
 
 function spikes(ctx, v, o) {
   box(ctx, v, v.hazard, o.x0, o.x1, 0, 4, o.z, o.z + o.d);
-  ctx.fillStyle = v.pal.hazard;
+  const pal = v.pal;
+  const HW = 9;
+  const SH = 24;
   for (const t of [0.75, 0.25]) {
-    const z = o.z + o.d * t;
-    if (z <= NEAR) continue;
-    const k = v.F / z;
-    const base = v.hy + v.eye * k;
-    const apex = v.hy + (v.eye - 24) * k;
-    ctx.beginPath();
+    const zc = o.z + o.d * t;
+    const z0 = zc - HW;
+    const z1 = zc + HW;
+    if (z0 <= NEAR) continue;
     for (let a = o.a; a <= o.b; a++) {
       for (let i = -1; i <= 1; i++) {
-        const x = v.cx + (a * LANE_W + i * LANE_W * 0.28 - v.x) * k;
-        ctx.moveTo(x - 9 * k, base);
-        ctx.lineTo(x, apex);
-        ctx.lineTo(x + 9 * k, base);
+        const xc = a * LANE_W + i * LANE_W * 0.28;
+        const nl = sidePoint(v, xc - HW, 4, z0);
+        const nr = sidePoint(v, xc + HW, 4, z0);
+        const fl = sidePoint(v, xc - HW, 4, z1);
+        const fr = sidePoint(v, xc + HW, 4, z1);
+        const ap = sidePoint(v, xc, SH, zc);
+        const left = v.x < xc;
+        ctx.fillStyle = pal.hazardDark;
+        ctx.beginPath();
+        if (left) {
+          ctx.moveTo(nl[0], nl[1]);
+          ctx.lineTo(fl[0], fl[1]);
+        } else {
+          ctx.moveTo(nr[0], nr[1]);
+          ctx.lineTo(fr[0], fr[1]);
+        }
+        ctx.lineTo(ap[0], ap[1]);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = pal.hazard;
+        ctx.beginPath();
+        ctx.moveTo(nl[0], nl[1]);
+        ctx.lineTo(nr[0], nr[1]);
+        ctx.lineTo(ap[0], ap[1]);
+        ctx.closePath();
+        ctx.fill();
+        const g = ctx.createLinearGradient(0, ap[1], 0, nl[1]);
+        g.addColorStop(0, 'rgba(255,255,255,0.45)');
+        g.addColorStop(1, 'rgba(0,0,0,0.2)');
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.strokeStyle = pal.hazardDark;
+        ctx.lineWidth = Math.max(0.6, (nr[0] - nl[0]) * 0.05);
+        ctx.stroke();
       }
     }
-    ctx.fill();
   }
 }
 
@@ -369,6 +450,58 @@ function shadow(ctx, v, o) {
   }
   ctx.fillStyle = o.kind === 'drone' || o.kind === 'gate' || o.kind === 'missile' ? 'rgba(0,0,0,0.16)' : 'rgba(0,0,0,0.3)';
   ground(ctx, v, x0 - 3, x1 + 3, o.z - 3, o.z + o.d + 3);
+}
+
+const MARKED = { crate: 1, wall: 1, spikes: 1, saw: 1, roller: 1, field: 1, drone: 0 };
+
+function marks(ctx, v, o) {
+  if (!MARKED[o.kind]) return;
+  const pal = v.pal;
+  const base = ctx.globalAlpha;
+  const x0 = o.kind === 'saw' || o.kind === 'roller' ? (o.x0 + o.x1) / 2 - 20 : o.x0;
+  const x1 = o.kind === 'saw' || o.kind === 'roller' ? (o.x0 + o.x1) / 2 + 20 : o.x1;
+  const za = Math.max(o.z - 2, NEAR);
+  const zb = o.z + o.d + 2;
+  if (zb > NEAR) {
+    const ka = v.F / za;
+    const kb = v.F / zb;
+    ctx.strokeStyle = pal.hazard;
+    ctx.globalAlpha = base * 0.7;
+    ctx.lineWidth = Math.max(1, 2.2 * ka);
+    ctx.beginPath();
+    ctx.moveTo(v.cx + (x0 - v.x) * ka, v.hy + v.eye * ka);
+    ctx.lineTo(v.cx + (x1 - v.x) * ka, v.hy + v.eye * ka);
+    ctx.lineTo(v.cx + (x1 - v.x) * kb, v.hy + v.eye * kb);
+    ctx.lineTo(v.cx + (x0 - v.x) * kb, v.hy + v.eye * kb);
+    ctx.closePath();
+    ctx.stroke();
+  }
+  ctx.strokeStyle = pal.hazard;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let j = 0; j < 3; j++) {
+    const zc = o.z - 14 - j * 18;
+    if (zc <= NEAR) continue;
+    const k = v.F / zc;
+    const kb = v.F / (zc + 9);
+    ctx.globalAlpha = base * (0.6 - j * 0.17);
+    ctx.lineWidth = Math.max(1, 3.4 * k);
+    const a0 = o.kind === 'saw' || o.kind === 'roller' ? Math.round(o.a) : o.a;
+    const a1 = o.kind === 'saw' || o.kind === 'roller' ? Math.round(o.a) : o.b;
+    for (let a = a0; a <= a1; a++) {
+      const xc = a * LANE_W;
+      const y = v.hy + v.eye * k;
+      const yb = v.hy + v.eye * kb;
+      ctx.beginPath();
+      ctx.moveTo(v.cx + (xc - 17 - v.x) * kb, yb);
+      ctx.lineTo(v.cx + (xc - v.x) * k, y);
+      ctx.lineTo(v.cx + (xc + 17 - v.x) * kb, yb);
+      ctx.stroke();
+    }
+  }
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'miter';
+  ctx.globalAlpha = base;
 }
 
 const CAR = 120;
@@ -425,6 +558,82 @@ function trainSide(ctx, v, o, z1) {
   }
 }
 
+function crateFace(ctx, pal, wall) {
+  const { x, y, w, h } = face;
+  const lw = clamp(w * 0.03, 1, 6);
+  ctx.fillStyle = pal.hazardDark;
+  ctx.globalAlpha *= 0.22;
+  if (wall) {
+    const rows = 6;
+    for (let r = 0; r < rows; r++) {
+      if (r % 2 === 0) ctx.fillRect(x, y + (h / rows) * r, w, h / rows - lw);
+    }
+  } else {
+    const planks = 4;
+    for (let r = 0; r < planks; r++) {
+      if (r % 2 === 0) ctx.fillRect(x + w * 0.08, y + h * 0.08 + ((h * 0.84) / planks) * r, w * 0.84, (h * 0.84) / planks);
+    }
+  }
+  ctx.globalAlpha /= 0.22;
+  ctx.strokeStyle = pal.hazardDark;
+  ctx.lineWidth = lw;
+  if (wall) {
+    const rows = 6;
+    ctx.beginPath();
+    for (let r = 1; r < rows; r++) {
+      ctx.moveTo(x, y + (h / rows) * r);
+      ctx.lineTo(x + w, y + (h / rows) * r);
+      const off = r % 2 ? 0.25 : 0.75;
+      ctx.moveTo(x + w * off, y + (h / rows) * r);
+      ctx.lineTo(x + w * off, y + (h / rows) * (r + 1));
+    }
+    ctx.stroke();
+    const sw = Math.max(4, h * 0.05);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, sw * 2);
+    ctx.clip();
+    ctx.fillStyle = pal.hazardDark;
+    ctx.fillRect(x, y, w, sw * 2);
+    ctx.fillStyle = pal.hazardLight;
+    for (let sx = x - sw * 2; sx < x + w; sx += sw * 2) {
+      ctx.beginPath();
+      ctx.moveTo(sx, y + sw * 2);
+      ctx.lineTo(sx + sw, y + sw * 2);
+      ctx.lineTo(sx + sw * 3, y);
+      ctx.lineTo(sx + sw * 2, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  } else {
+    ctx.strokeRect(x + w * 0.08, y + h * 0.08, w * 0.84, h * 0.84);
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.08, y + h * 0.92);
+    ctx.lineTo(x + w * 0.92, y + h * 0.08);
+    const planks = 4;
+    for (let r = 1; r < planks; r++) {
+      ctx.moveTo(x + w * 0.08, y + h * 0.08 + ((h * 0.84) / planks) * r);
+      ctx.lineTo(x + w * 0.92, y + h * 0.08 + ((h * 0.84) / planks) * r);
+    }
+    ctx.stroke();
+    ctx.fillStyle = pal.hazardDark;
+    const rv = Math.max(1.5, w * 0.035);
+    for (const [cx, cy] of [[0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85]]) {
+      ctx.beginPath();
+      ctx.arc(x + w * cx, y + h * cy, rv, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.fillStyle = pal.hazardLight;
+  ctx.globalAlpha *= 0.4;
+  ctx.fillRect(x, y, w, Math.max(2, h * 0.06));
+  ctx.globalAlpha /= 0.4;
+  ctx.strokeStyle = pal.hazardDark;
+  ctx.lineWidth = Math.max(1, w * 0.025);
+  ctx.strokeRect(x, y, w, h);
+}
+
 export function drawObstacle(ctx, v, o) {
   if (o.z >= FAR) {
     if (o.kind === 'missile') warn(ctx, v, o);
@@ -435,35 +644,11 @@ export function drawObstacle(ctx, v, o) {
   const pal = v.pal;
   const z1 = o.z + o.d;
   shadow(ctx, v, o);
+  marks(ctx, v, o);
   switch (o.kind) {
     case 'crate':
     case 'wall':
-      if (box(ctx, v, v.hazard, o.x0, o.x1, o.y0, o.y1, o.z, z1)) {
-        const { x, y, w, h } = face;
-        ctx.strokeStyle = pal.hazardDark;
-        ctx.lineWidth = clamp(w * 0.03, 1, 6);
-        ctx.strokeRect(x + w * 0.08, y + h * 0.08, w * 0.84, h * 0.84);
-        ctx.beginPath();
-        ctx.moveTo(x + w * 0.08, y + h * 0.08);
-        ctx.lineTo(x + w * 0.92, y + h * 0.92);
-        ctx.moveTo(x + w * 0.92, y + h * 0.08);
-        ctx.lineTo(x + w * 0.08, y + h * 0.92);
-        ctx.stroke();
-        ctx.fillStyle = pal.hazardLight;
-        ctx.globalAlpha *= 0.35;
-        ctx.fillRect(x, y, w, Math.max(2, h * 0.07));
-        ctx.globalAlpha /= 0.35;
-        ctx.fillStyle = pal.hazardDark;
-        const rv = Math.max(1.5, w * 0.035);
-        for (const [cx, cy] of [[0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85]]) {
-          ctx.beginPath();
-          ctx.arc(x + w * cx, y + h * cy, rv, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.strokeStyle = pal.hazardDark;
-        ctx.lineWidth = Math.max(1, w * 0.012);
-        ctx.strokeRect(x, y, w, h);
-      }
+      if (box(ctx, v, v.hazard, o.x0, o.x1, o.y0, o.y1, o.z, z1)) crateFace(ctx, pal, o.kind === 'wall');
       break;
     case 'gate':
       if (box(ctx, v, v.gate, o.x0, o.x1, o.y0, o.y1, o.z, z1)) tape(ctx, v, (face.h * 20) / (o.y1 - o.y0), pal.hazardDark, pal.hazardLight);
@@ -530,23 +715,23 @@ export function drawCoin(ctx, v, c) {
   if (c.z >= FAR || c.z <= NEAR) return;
   const k = v.F / c.z;
   const ph = c.ph || 0;
-  const bob = Math.sin(v.time * 3 + ph * 2) * 1.5;
+  const bob = Math.sin(v.time * 2 + ph * 0.3) * 0.6;
   const x = v.cx + (c.x - v.x) * k;
   const y = v.hy + (v.eye - c.up - bob) * k;
   const gy = v.hy + v.eye * k;
   const fade = clamp((FAR - c.z) / FADE, 0, 1) * v.fade;
-  const spin = Math.abs(Math.cos(v.time * 4 + ph));
+  const spin = 0.6 + 0.4 * Math.abs(Math.cos(v.time * 1.5 + ph * 0.2));
   const r = 13 * k;
   ctx.globalAlpha = fade * clamp(0.32 - c.up / 400, 0.1, 0.32);
   ctx.fillStyle = '#000';
   ctx.beginPath();
   ctx.ellipse(x, gy, r * 0.8, r * 0.28, 0, 0, Math.PI * 2);
   ctx.fill();
-  const w = Math.max(r * 0.3, r * (0.25 + spin * 0.75));
-  ctx.globalAlpha = fade * 0.22;
+  const w = r * (0.25 + spin * 0.75);
+  ctx.globalAlpha = fade * 0.14;
   ctx.fillStyle = v.pal.coin;
   ctx.beginPath();
-  ctx.ellipse(x, y, w * 1.7, r * 1.7, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y, w * 1.35, r * 1.35, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = fade;
   ctx.fillStyle = v.pal.coinDark;
