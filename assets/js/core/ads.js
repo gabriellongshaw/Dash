@@ -1,4 +1,4 @@
-const CLIENT = '';
+const CLIENT = 'ca-pub-5106818844097250';
 const FREQUENCY = '60s';
 const FALLBACK_MS = 2000;
 
