@@ -220,6 +220,8 @@ class Drone {
   }
 }
 
+const rollRate = (surface, radius) => Math.min(26, surface / radius);
+
 class Roller {
   constructor(x) {
     this.kind = 'roller';
@@ -230,9 +232,9 @@ class Roller {
     this.hint = null;
   }
 
-  tick(dt) {
+  tick(dt, speed) {
     this.x -= ROLLER_EXTRA * dt;
-    this.spin += dt * 9;
+    this.spin += dt * rollRate(speed + ROLLER_EXTRA, ROLLER_R);
   }
 
   box(g) {
@@ -328,9 +330,9 @@ class Bouncer {
     this.hint = null;
   }
 
-  tick(dt) {
+  tick(dt, speed) {
     this.t += dt;
-    this.spin += dt * 7;
+    this.spin += dt * rollRate(speed + BOUNCER_EXTRA, BOUNCER_R);
     this.x -= BOUNCER_EXTRA * dt;
   }
 
@@ -355,7 +357,7 @@ class Bouncer {
     ctx.save();
     ctx.translate(this.x + BOUNCER_R, g - lift - BOUNCER_R);
     ctx.scale(1 / squash, squash);
-    ctx.rotate(this.spin);
+    ctx.rotate(-this.spin);
     ctx.fillStyle = p.hazardDark;
     ctx.beginPath();
     for (let i = 0; i < 8; i++) {
@@ -790,7 +792,7 @@ export class Spawner {
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const o = this.obstacles[i];
       o.x -= dx;
-      if (o.tick) o.tick(dt);
+      if (o.tick) o.tick(dt, speed);
       if (o.x + o.w < -80) this.obstacles.splice(i, 1);
     }
     for (let i = this.coins.length - 1; i >= 0; i--) {
