@@ -298,7 +298,6 @@ const builders = {
 
 function drone(a, bob) {
   return piece('drone', a, a, DRONE_LIFT, DRONE_LIFT + DRONE_H, DRONE_D, {
-    half: 22,
     bob,
     t: rand(0, 6),
     tick(dt) {
