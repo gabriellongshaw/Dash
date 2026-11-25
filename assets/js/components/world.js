@@ -18,7 +18,7 @@ const SHAPES = {
   orbs: { w0: 60, w1: 90, h0: 20, h1: 90, step: 1.6, gap: 90 }
 };
 
-function buildFar(scenery, seed) {
+function buildFar(scenery, seed, dense = 1) {
   const next = seeded(seed);
   const cfg = SHAPES[scenery];
   const list = [];
@@ -34,7 +34,7 @@ function buildFar(scenery, seed) {
       item.lit = Array.from({ length: cols * rows }, () => next() > 0.55);
     }
     list.push(item);
-    x += w * cfg.step + next() * cfg.gap;
+    x += (w * cfg.step + next() * cfg.gap) / dense;
   }
   return list;
 }
@@ -62,6 +62,7 @@ export class World {
     this.offset = 0;
     this.sky = 'light';
     this.onSky = null;
+    this.dense = 1;
     this.farX = 0;
     this.midX = 0;
     this.nearX = 0;
@@ -76,11 +77,16 @@ export class World {
   setTheme(theme, dark) {
     this.theme = theme;
     this.colors = prepare(theme);
-    this.far = buildFar(theme.scenery, theme.seed);
+    this.far = buildFar(theme.scenery, theme.seed, this.dense);
     this.offset = dark ? 0.5 : 0;
     this.key = -1;
     this.seedMotes();
     this.refresh();
+  }
+
+  setDensity(dense) {
+    this.dense = dense;
+    this.far = buildFar(this.theme.scenery, this.theme.seed, dense);
   }
 
   restart() {
