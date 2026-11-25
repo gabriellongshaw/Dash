@@ -1,6 +1,6 @@
 import { clamp, mixColor, parseColor, toCss } from '../core/utils.js';
 import { LANE_W } from './lanes.js';
-import { drawProp, propsFor } from './roadside.js';
+import { drawProp, propsFor, tone } from './roadside.js';
 import { shade, texture } from './textures.js';
 
 export const NEAR = 8;
@@ -11,9 +11,14 @@ const PROP_FADE = 1100;
 const ROAD_FAR = 80000;
 const SLEEPER = 38;
 const ROAD_HALF = LANE_W * 1.5;
+const PROP_SCALE = 1.7;
+const PROP_HALF = 46 * PROP_SCALE;
+const BUILD_GAP = 30;
 const PROP_ROWS = [
-  { off: 150, gap: 190, salt: 977 },
-  { off: 48, gap: 130, salt: 0 }
+  { off: 0, gap: 110, salt: 0 },
+  { off: 70, gap: 130, salt: 977 },
+  { off: 170, gap: 160, salt: 311 },
+  { off: 290, gap: 200, salt: 733 }
 ];
 const STRIPE = 100;
 const DASH = 60;
@@ -47,7 +52,7 @@ function ground(ctx, v, x0, x1, za, zb) {
   ctx.fill();
 }
 
-function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
+function box(ctx, v, c, x0, x1, y0, y1, z0, z1, flat = false) {
   if (z1 <= NEAR) return false;
   const ka = v.F / Math.max(z0, NEAR);
   const kb = v.F / z1;
@@ -69,7 +74,7 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
     ctx.closePath();
     ctx.fill();
     shade(ctx, ax0, 0, bx0, 0, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.32)');
-    texture(ctx, 'brushed', ax0, ay1, ka * 0.3, 0.5);
+    if (!flat) texture(ctx, 'brushed', ax0, ay1, ka * 0.3, 0.5);
   } else if (v.x > x1) {
     ctx.beginPath();
     ctx.moveTo(ax1, ay1);
@@ -79,7 +84,7 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
     ctx.closePath();
     ctx.fill();
     shade(ctx, ax1, 0, bx1, 0, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.32)');
-    texture(ctx, 'brushed', ax1, ay1, ka * 0.3, 0.5);
+    if (!flat) texture(ctx, 'brushed', ax1, ay1, ka * 0.3, 0.5);
   }
   if (v.eye > y1) {
     ctx.fillStyle = c.top;
@@ -91,7 +96,7 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
     ctx.closePath();
     ctx.fill();
     shade(ctx, 0, ay1, 0, by1, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)');
-    texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.5);
+    if (!flat) texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.5);
   } else if (v.eye < y0) {
     ctx.beginPath();
     ctx.moveTo(ax0, ay0);
@@ -108,12 +113,50 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
   ctx.beginPath();
   ctx.rect(ax0, ay1, ax1 - ax0, ay0 - ay1);
   shade(ctx, 0, ay1, 0, ay0, 'rgba(255,255,255,0.16)', 'rgba(0,0,0,0.22)');
-  texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.55);
+  if (!flat) texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.55);
   face.x = ax0;
   face.y = ay1;
   face.w = ax1 - ax0;
   face.h = ay0 - ay1;
   return true;
+}
+
+function sideWall(ctx, v) {
+  const { p } = v;
+  const H = 22;
+  for (let side = -1; side <= 1; side += 2) {
+    const xi = side * (ROAD_HALF + 8);
+    const xo = side * (ROAD_HALF + 16);
+    ctx.fillStyle = p.mid;
+    sideQuad(ctx, v, xi, 0, H, NEAR, FAR);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fill();
+    ctx.fillStyle = p.groundLine;
+    ctx.globalAlpha = 0.55;
+    sideQuad(ctx, v, xi, H * 0.55, H * 0.7, NEAR, FAR);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    const shift = v.scroll % 64;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    for (let z = -shift; z < FAR; z += 64) {
+      if (z + 5 <= NEAR) continue;
+      sideQuad(ctx, v, xi, 0, H, Math.max(z, NEAR), z + 5);
+      ctx.fill();
+    }
+    const a = sidePoint(v, xi, H, NEAR);
+    const b = sidePoint(v, xo, H, NEAR);
+    const c = sidePoint(v, xo, H, FAR);
+    const d = sidePoint(v, xi, H, FAR);
+    ctx.fillStyle = p.far;
+    ctx.beginPath();
+    ctx.moveTo(a[0], a[1]);
+    ctx.lineTo(b[0], b[1]);
+    ctx.lineTo(c[0], c[1]);
+    ctx.lineTo(d[0], d[1]);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 export function drawRoad(ctx, v) {
@@ -169,32 +212,110 @@ export function drawRoad(ctx, v) {
   ctx.fillStyle = haze;
   ctx.fillRect(-30, hy, w + 60, hazeH);
 
+  sideWall(ctx, v);
+
   const set = v.props || propsFor(null);
   const o = { r: 0, c: '', n: v.night, t: v.time, snow: false };
+  const list = [];
   for (const row of PROP_ROWS) {
     const first = row.gap - (v.scroll % row.gap);
     const base = Math.floor(v.scroll / row.gap) + 1;
     for (let j = Math.floor((FAR - first) / row.gap); j >= 0; j--) {
       const z = first + j * row.gap;
-      if (z < 50) continue;
+      if (z < 60) continue;
       const k = v.F / z;
-      const alpha = clamp((FAR - z) / PROP_FADE, 0, 1);
       for (let side = -1; side <= 1; side += 2) {
         const hsh = hash((base + j) * 2 + (side > 0 ? 1 : 0) + row.salt);
-        const x = side * (ROAD_HALF + row.off + (hsh % 41));
+        const entry = set[(hsh >>> 3) % set.length];
+        const inner = ROAD_HALF + BUILD_GAP + row.off + (hsh % 41);
+        if (entry[0] === 'building') {
+          list.push({ z, side, hsh, entry, inner, k, tall: true });
+          continue;
+        }
+        const x = side * (inner + PROP_HALF);
         const sx = v.cx + (x - v.x) * k;
-        if (sx < -160 * k - 60 || sx > v.w + 160 * k + 60) continue;
-        o.r = ((hsh >>> 8) % 1000) / 1000;
-        ctx.save();
-        ctx.translate(sx, v.hy + v.eye * k);
-        ctx.scale(k, k);
-        ctx.globalAlpha = alpha;
-        drawProp(ctx, set[(hsh >>> 3) % set.length], o);
-        ctx.restore();
+        if (sx < -160 * k * PROP_SCALE - 60 || sx > v.w + 160 * k * PROP_SCALE + 60) continue;
+        list.push({ z, k, sx, hsh, entry });
       }
     }
   }
+  list.sort((a, b) => b.z - a.z);
+  for (const it of list) {
+    o.r = ((it.hsh >>> 8) % 1000) / 1000;
+    ctx.globalAlpha = clamp((FAR - it.z) / PROP_FADE, 0, 1);
+    if (it.tall) {
+      o.c = it.entry[1][Math.floor(o.r * 997) % it.entry[1].length];
+      tower(ctx, v, it, o);
+      continue;
+    }
+    ctx.save();
+    ctx.translate(it.sx, v.hy + v.eye * it.k);
+    ctx.scale(it.k * PROP_SCALE, it.k * PROP_SCALE);
+    drawProp(ctx, it.entry, o);
+    ctx.restore();
+  }
   ctx.globalAlpha = 1;
+}
+
+function tower(ctx, v, it, o) {
+  const w = 90 + o.r * 80;
+  const d = 80 + (((it.hsh >>> 12) % 1000) / 1000) * 70;
+  const h = 300 + (((it.hsh >>> 4) % 1000) / 1000) * 520;
+  const xa = it.side > 0 ? it.inner : -(it.inner + w);
+  const xb = xa + w;
+  const za = it.z - d / 2;
+  const zb = it.z + d / 2;
+  if (za < NEAR + 20) return;
+  const c = { front: tone(o.c, v.night), side: tone(o.c, v.night + 0.3), top: tone(o.c, v.night * 0.5) };
+  const ok = box(ctx, v, c, xa, xb, 0, h, za, zb, true);
+  const night = v.night > 0.35;
+  const cols = Math.max(2, Math.floor(w / 22));
+  const rows = Math.floor(h / 26);
+  const lit = (i, j) => (i * 7 + j * 13 + it.hsh) % 5 > 1;
+  const color = night ? '#fde68a' : 'rgba(255,255,255,0.55)';
+  const was = ctx.globalAlpha;
+  if (ok && face.w > 10) {
+    const { x, y, w: fw, h: fh } = face;
+    const cw = fw / cols;
+    const rh = fh / rows;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = was * (night ? 0.9 : 0.6);
+    ctx.beginPath();
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
+        if (!lit(i, j)) continue;
+        ctx.rect(x + cw * (i + 0.22), y + rh * (j + 0.25), cw * 0.56, rh * 0.5);
+      }
+    }
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.globalAlpha = was;
+    ctx.fillRect(x, y, fw, Math.max(2, fh * 0.012));
+  }
+  const xe = v.x < xa ? xa : v.x > xb ? xb : null;
+  if (xe !== null && za < 1300) {
+    const nz = Math.max(2, Math.floor(d / 22));
+    const dz = d / nz;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = was * (night ? 0.85 : 0.45);
+    ctx.beginPath();
+    for (let i = 0; i < nz; i++) {
+      for (let j = 0; j < rows; j++) {
+        if (!lit(i + 3, j)) continue;
+        const p0 = sidePoint(v, xe, (j + 0.25) * 26, za + dz * (i + 0.22));
+        const p1 = sidePoint(v, xe, (j + 0.75) * 26, za + dz * (i + 0.22));
+        const p2 = sidePoint(v, xe, (j + 0.75) * 26, za + dz * (i + 0.78));
+        const p3 = sidePoint(v, xe, (j + 0.25) * 26, za + dz * (i + 0.78));
+        ctx.moveTo(p0[0], p0[1]);
+        ctx.lineTo(p1[0], p1[1]);
+        ctx.lineTo(p2[0], p2[1]);
+        ctx.lineTo(p3[0], p3[1]);
+        ctx.closePath();
+      }
+    }
+    ctx.fill();
+  }
+  ctx.globalAlpha = was;
 }
 
 function hash(n) {
@@ -433,10 +554,7 @@ function shadow(ctx, v, o) {
   const m = (o.x0 + o.x1) / 2;
   let x0 = o.x0;
   let x1 = o.x1;
-  if (o.kind === 'drone') {
-    x0 = m - 20;
-    x1 = m + 20;
-  } else if (o.kind === 'missile') {
+  if (o.kind === 'missile') {
     x0 = m - 9;
     x1 = m + 9;
   } else if (o.kind === 'saw' || o.kind === 'roller') {
@@ -448,7 +566,9 @@ function shadow(ctx, v, o) {
     ctx.fill();
     return;
   }
-  ctx.fillStyle = o.kind === 'drone' || o.kind === 'gate' || o.kind === 'missile' ? 'rgba(0,0,0,0.16)' : 'rgba(0,0,0,0.3)';
+  const dark = o.kind === 'drone' || o.kind === 'gate' || o.kind === 'missile' ? 0.1 : 0.2;
+  ctx.fillStyle = `rgba(0,0,0,${dark})`;
+  ground(ctx, v, x0 - 8, x1 + 8, o.z - 8, o.z + o.d + 8);
   ground(ctx, v, x0 - 3, x1 + 3, o.z - 3, o.z + o.d + 3);
 }
 
@@ -558,80 +678,115 @@ function trainSide(ctx, v, o, z1) {
   }
 }
 
-function crateFace(ctx, pal, wall) {
+function wallFace(ctx, pal) {
   const { x, y, w, h } = face;
   const lw = clamp(w * 0.03, 1, 6);
+  const rows = 6;
   ctx.fillStyle = pal.hazardDark;
   ctx.globalAlpha *= 0.22;
-  if (wall) {
-    const rows = 6;
-    for (let r = 0; r < rows; r++) {
-      if (r % 2 === 0) ctx.fillRect(x, y + (h / rows) * r, w, h / rows - lw);
-    }
-  } else {
-    const planks = 4;
-    for (let r = 0; r < planks; r++) {
-      if (r % 2 === 0) ctx.fillRect(x + w * 0.08, y + h * 0.08 + ((h * 0.84) / planks) * r, w * 0.84, (h * 0.84) / planks);
-    }
-  }
+  for (let r = 0; r < rows; r += 2) ctx.fillRect(x, y + (h / rows) * r, w, h / rows - lw);
   ctx.globalAlpha /= 0.22;
   ctx.strokeStyle = pal.hazardDark;
   ctx.lineWidth = lw;
-  if (wall) {
-    const rows = 6;
-    ctx.beginPath();
-    for (let r = 1; r < rows; r++) {
-      ctx.moveTo(x, y + (h / rows) * r);
-      ctx.lineTo(x + w, y + (h / rows) * r);
-      const off = r % 2 ? 0.25 : 0.75;
-      ctx.moveTo(x + w * off, y + (h / rows) * r);
-      ctx.lineTo(x + w * off, y + (h / rows) * (r + 1));
-    }
-    ctx.stroke();
-    const sw = Math.max(4, h * 0.05);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, w, sw * 2);
-    ctx.clip();
-    ctx.fillStyle = pal.hazardDark;
-    ctx.fillRect(x, y, w, sw * 2);
-    ctx.fillStyle = pal.hazardLight;
-    for (let sx = x - sw * 2; sx < x + w; sx += sw * 2) {
-      ctx.beginPath();
-      ctx.moveTo(sx, y + sw * 2);
-      ctx.lineTo(sx + sw, y + sw * 2);
-      ctx.lineTo(sx + sw * 3, y);
-      ctx.lineTo(sx + sw * 2, y);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
-  } else {
-    ctx.strokeRect(x + w * 0.08, y + h * 0.08, w * 0.84, h * 0.84);
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.08, y + h * 0.92);
-    ctx.lineTo(x + w * 0.92, y + h * 0.08);
-    const planks = 4;
-    for (let r = 1; r < planks; r++) {
-      ctx.moveTo(x + w * 0.08, y + h * 0.08 + ((h * 0.84) / planks) * r);
-      ctx.lineTo(x + w * 0.92, y + h * 0.08 + ((h * 0.84) / planks) * r);
-    }
-    ctx.stroke();
-    ctx.fillStyle = pal.hazardDark;
-    const rv = Math.max(1.5, w * 0.035);
-    for (const [cx, cy] of [[0.15, 0.15], [0.85, 0.15], [0.15, 0.85], [0.85, 0.85]]) {
-      ctx.beginPath();
-      ctx.arc(x + w * cx, y + h * cy, rv, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  ctx.beginPath();
+  for (let r = 1; r < rows; r++) {
+    ctx.moveTo(x, y + (h / rows) * r);
+    ctx.lineTo(x + w, y + (h / rows) * r);
+    const off = r % 2 ? 0.25 : 0.75;
+    ctx.moveTo(x + w * off, y + (h / rows) * r);
+    ctx.lineTo(x + w * off, y + (h / rows) * (r + 1));
   }
+  ctx.stroke();
+  const sw = Math.max(4, h * 0.05);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, sw * 2);
+  ctx.clip();
+  ctx.fillStyle = pal.hazardDark;
+  ctx.fillRect(x, y, w, sw * 2);
   ctx.fillStyle = pal.hazardLight;
-  ctx.globalAlpha *= 0.4;
-  ctx.fillRect(x, y, w, Math.max(2, h * 0.06));
-  ctx.globalAlpha /= 0.4;
+  for (let sx = x - sw * 2; sx < x + w; sx += sw * 2) {
+    ctx.beginPath();
+    ctx.moveTo(sx, y + sw * 2);
+    ctx.lineTo(sx + sw, y + sw * 2);
+    ctx.lineTo(sx + sw * 3, y);
+    ctx.lineTo(sx + sw * 2, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
   ctx.strokeStyle = pal.hazardDark;
   ctx.lineWidth = Math.max(1, w * 0.025);
   ctx.strokeRect(x, y, w, h);
+}
+
+function barrierFace(ctx, v, pal) {
+  const { x, y, w, h } = face;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = pal.hazardLight;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = pal.hazardDark;
+  const sw = Math.max(4, h * 0.3);
+  for (let sx = x - h; sx < x + w; sx += sw * 2) {
+    ctx.beginPath();
+    ctx.moveTo(sx, y + h);
+    ctx.lineTo(sx + sw, y + h);
+    ctx.lineTo(sx + sw + h, y);
+    ctx.lineTo(sx + h, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.fillStyle = pal.hazardDark;
+  ctx.fillRect(x, y, w, Math.max(2, h * 0.16));
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillRect(x, y + h * 0.16, w, Math.max(1, h * 0.04));
+  ctx.strokeStyle = pal.hazardDark;
+  ctx.lineWidth = Math.max(1, w * 0.03);
+  ctx.strokeRect(x, y, w, h);
+}
+
+function signFace(ctx, v, pal, band) {
+  const { x, y, w, h } = face;
+  tape(ctx, v, band, pal.hazardDark, pal.hazardLight);
+  const ph = h - band;
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.fillRect(x + w * 0.05, y + ph * 0.12, w * 0.9, ph * 0.76);
+  ctx.strokeStyle = pal.hazardLight;
+  ctx.globalAlpha *= 0.7;
+  ctx.lineWidth = Math.max(1, w * 0.015);
+  ctx.strokeRect(x + w * 0.05, y + ph * 0.12, w * 0.9, ph * 0.76);
+  ctx.globalAlpha /= 0.7;
+  const cx = x + w / 2;
+  const cy = y + ph * 0.5;
+  const t = Math.min(ph * 0.26, w * 0.14);
+  ctx.fillStyle = pal.hazardLight;
+  ctx.beginPath();
+  ctx.moveTo(cx - t, cy - t * 0.7);
+  ctx.lineTo(cx + t, cy - t * 0.7);
+  ctx.lineTo(cx, cy + t * 0.8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = pal.hazard;
+  for (const lx of [0.1, 0.9]) {
+    ctx.beginPath();
+    ctx.arc(x + w * lx, y + ph * 0.5, Math.max(1.5, w * 0.018), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = pal.hazardDark;
+  ctx.lineWidth = Math.max(1, w * 0.02);
+  ctx.strokeRect(x, y, w, h);
+}
+
+function posts(ctx, v, o, height, za, zb) {
+  const c = { front: v.pal.hazardDark, top: v.pal.hazard, side: v.pal.hazardDark };
+  for (const [xa, xb] of [[o.x0, o.x0 + 7], [o.x1 - 7, o.x1]]) {
+    box(ctx, v, c, xa - 2, xb + 2, 0, 3, za - 2, zb + 2);
+    box(ctx, v, c, xa, xb, 3, height, za, zb);
+  }
 }
 
 export function drawObstacle(ctx, v, o) {
@@ -647,11 +802,14 @@ export function drawObstacle(ctx, v, o) {
   marks(ctx, v, o);
   switch (o.kind) {
     case 'crate':
+      if (box(ctx, v, v.hazard, o.x0, o.x1, o.y0, o.y1, o.z, z1)) barrierFace(ctx, v, pal);
+      break;
     case 'wall':
-      if (box(ctx, v, v.hazard, o.x0, o.x1, o.y0, o.y1, o.z, z1)) crateFace(ctx, pal, o.kind === 'wall');
+      if (box(ctx, v, v.hazard, o.x0, o.x1, o.y0, o.y1, o.z, z1)) wallFace(ctx, pal);
       break;
     case 'gate':
-      if (box(ctx, v, v.gate, o.x0, o.x1, o.y0, o.y1, o.z, z1)) tape(ctx, v, (face.h * 20) / (o.y1 - o.y0), pal.hazardDark, pal.hazardLight);
+      posts(ctx, v, o, o.y0 + 8, o.z + o.d * 0.38, o.z + o.d * 0.62);
+      if (box(ctx, v, v.gate, o.x0, o.x1, o.y0, o.y1, o.z, z1)) signFace(ctx, v, pal, (face.h * 22) / (o.y1 - o.y0));
       break;
     case 'spikes':
       spikes(ctx, v, o);
@@ -661,32 +819,63 @@ export function drawObstacle(ctx, v, o) {
       trainSide(ctx, v, o, z1);
       if (drewFront) {
         const { x, y, w, h } = face;
-        ctx.fillStyle = pal.hazardLight;
-        ctx.fillRect(x + w * 0.12, y + h * 0.14, w * 0.33, h * 0.27);
-        ctx.fillRect(x + w * 0.55, y + h * 0.14, w * 0.33, h * 0.27);
         ctx.fillStyle = pal.hazard;
-        ctx.fillRect(x, y + h * 0.58, w, h * 0.1);
+        ctx.fillRect(x, y + h * 0.5, w, h * 0.12);
+        ctx.fillStyle = 'rgba(20,28,40,0.9)';
+        ctx.beginPath();
+        ctx.roundRect(x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.34, w * 0.04);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath();
+        ctx.moveTo(x + w * 0.16, y + h * 0.42);
+        ctx.lineTo(x + w * 0.34, y + h * 0.12);
+        ctx.lineTo(x + w * 0.46, y + h * 0.12);
+        ctx.lineTo(x + w * 0.28, y + h * 0.42);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = pal.hazardDark;
+        ctx.fillRect(x + w * 0.485, y + h * 0.1, w * 0.03, h * 0.34);
+        ctx.fillStyle = pal.hazardLight;
+        ctx.fillRect(x + w * 0.38, y + h * 0.02, w * 0.24, h * 0.05);
+        ctx.fillStyle = pal.hazardLight;
+        ctx.fillRect(x + w * 0.4, y + h * 0.68, w * 0.2, h * 0.1);
         ctx.fillStyle = '#fff4b8';
         ctx.beginPath();
-        ctx.arc(x + w * 0.22, y + h * 0.84, w * 0.07, 0, Math.PI * 2);
-        ctx.arc(x + w * 0.78, y + h * 0.84, w * 0.07, 0, Math.PI * 2);
+        ctx.arc(x + w * 0.2, y + h * 0.78, w * 0.07, 0, Math.PI * 2);
+        ctx.arc(x + w * 0.8, y + h * 0.78, w * 0.07, 0, Math.PI * 2);
         ctx.fill();
+        ctx.globalAlpha *= 0.3;
+        ctx.beginPath();
+        ctx.arc(x + w * 0.2, y + h * 0.78, w * 0.12, 0, Math.PI * 2);
+        ctx.arc(x + w * 0.8, y + h * 0.78, w * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha /= 0.3;
+        const sw = Math.max(3, h * 0.05);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y + h * 0.9, w, h * 0.1);
+        ctx.clip();
+        ctx.fillStyle = pal.hazardLight;
+        for (let sx = x - h * 0.1; sx < x + w; sx += sw * 2) {
+          ctx.beginPath();
+          ctx.moveTo(sx, y + h);
+          ctx.lineTo(sx + sw, y + h);
+          ctx.lineTo(sx + sw + h * 0.1, y + h * 0.9);
+          ctx.lineTo(sx + h * 0.1, y + h * 0.9);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
         ctx.strokeStyle = 'rgba(0,0,0,0.55)';
         ctx.lineWidth = Math.max(1, w * 0.02);
         ctx.strokeRect(x, y, w, h);
       }
       break;
     }
-    case 'drone': {
-      const m = (o.x0 + o.x1) / 2;
-      if (box(ctx, v, v.hazard, m - 20, m + 20, o.y0, o.y1, o.z, z1)) {
-        ctx.fillStyle = pal.hazardLight;
-        ctx.fillRect(face.x + face.w * 0.2, face.y + face.h * 0.3, face.w * 0.18, face.h * 0.34);
-        ctx.fillRect(face.x + face.w * 0.62, face.y + face.h * 0.3, face.w * 0.18, face.h * 0.34);
-      }
-      box(ctx, v, v.gate, m - 32, m + 32, o.y1, o.y1 + 3, o.z + o.d * 0.3, o.z + o.d * 0.7);
+    case 'drone':
+      posts(ctx, v, o, o.bob ? 112 : o.y1 + 10, o.z + o.d * 0.4, o.z + o.d * 0.6);
+      if (box(ctx, v, v.gate, o.x0, o.x1, o.y0, o.y1, o.z + o.d * 0.12, o.z + o.d * 0.88)) tape(ctx, v, face.h, pal.hazardDark, pal.hazardLight);
       break;
-    }
     case 'saw':
       disc(ctx, v, o, 22, 20);
       break;
