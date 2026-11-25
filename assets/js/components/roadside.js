@@ -3,7 +3,7 @@ import { parseColor, tintColor, toCss } from '../core/utils.js';
 const TAU = Math.PI * 2;
 const cache = new Map();
 
-function tone(c, night) {
+export function tone(c, night) {
   const key = `${c}|${Math.round(night * 16)}`;
   let out = cache.get(key);
   if (!out) {
