@@ -19,7 +19,7 @@ const EYE_MIN = 120;
 const EYE_MAX = 340;
 const FOCAL = 0.9;
 const TALL = 1.15;
-const HORIZON = 0.1;
+const HORIZON = 0.16;
 const FEET = 0.8;
 const BACK_SCALE = 0.9;
 const RUNNER_H = 340;
@@ -28,6 +28,9 @@ const FOLLOW = 0.1;
 const CAM_RATE = 9;
 const LOOK = 0.6;
 const START_Z = 800;
+const FAR_DENSITY = 2.2;
+const ROLL_RATE = 7;
+const ROLL_MAX = 0.025;
 
 export class ThirdPersonGame {
   constructor(canvas, hooks) {
@@ -36,6 +39,7 @@ export class ThirdPersonGame {
     this.hooks = hooks;
     this.best = hooks.best || 0;
     this.world = new World();
+    this.world.setDensity(FAR_DENSITY);
     this.world.bindSky(mode => {
       document.documentElement.dataset.sky = mode;
     });
@@ -61,6 +65,7 @@ export class ThirdPersonGame {
     this.lane = 0;
     this.x = 0;
     this.camPos = 0;
+    this.roll = 0;
     this.baseEye = 112;
     this.eye = 112;
     this.back = 300;
@@ -343,6 +348,8 @@ export class ThirdPersonGame {
       this.flash = Math.max(0, this.flash - dt * 2);
       const runner = this.runner;
       this.camPos += (this.x * LOOK - this.camPos) * Math.min(1, CAM_RATE * dt);
+      const bank = this.state === 'playing' ? clamp((this.lane * LANE_W - this.x) / LANE_W, -1, 1) : 0;
+      this.roll += (bank - this.roll) * Math.min(1, ROLL_RATE * dt);
       const target = this.baseEye + Math.max(0, -runner.y) * FOLLOW;
       this.eye += (target - this.eye) * Math.min(1, 10 * dt);
     }
@@ -354,6 +361,11 @@ export class ThirdPersonGame {
     const ctx = this.ctx;
     const v = this.view;
     ctx.setTransform(this.pxScale, 0, 0, this.pxScale, 0, 0);
+    if (!this.reducedMotion && Math.abs(this.roll) > 0.001) {
+      ctx.translate(v.cx, v.h * 0.8);
+      ctx.rotate(-this.roll * ROLL_MAX);
+      ctx.translate(-v.cx, -v.h * 0.8);
+    }
     if (this.shake > 0) {
       ctx.translate((Math.random() - 0.5) * this.shake * 10, (Math.random() - 0.5) * this.shake * 10);
     }
