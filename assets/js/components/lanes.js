@@ -1,5 +1,5 @@
 import { clamp, pick, rand, randInt } from '../core/utils.js';
-import { BASE_SPEED, BODY_LIFT, jumpHeight, jumpReach, jumpTime } from './runner.js';
+import { BASE_SPEED, BODY_LIFT, jumpHeight, jumpTime } from './runner.js';
 import { spacingOf, tierOf } from './obstacles.js';
 
 export const LANE_W = 82;
@@ -27,6 +27,9 @@ const ROLLER_EXTRA = 130;
 const SAW_EXTRA_BASE = 30;
 const SAW_EXTRA_RATE = 0.28;
 const SAW_BASE_SPEED = 300;
+const OVERTAKE_MARGIN = 40;
+const MAX_PUSH = 800;
+const RETRY_DISTANCE = 60;
 const SAW_SPIN = 14;
 const SAW_SPIN_RATE = 0;
 const PACE_RATE = 0.5;
@@ -298,6 +301,7 @@ const builders = {
 
 function drone(a, bob) {
   return piece('drone', a, a, DRONE_LIFT, DRONE_LIFT + DRONE_H, DRONE_D, {
+    half: bob ? 22 : undefined,
     bob,
     t: rand(0, 6),
     tick(dt) {
@@ -375,14 +379,14 @@ export class LaneSpawner {
     const n = 6;
     for (let i = 0; i < n; i++) {
       const t = T * (0.1 + (0.8 * i) / (n - 1));
-      this.coin(a, zc + jumpReach(speed) * (t / T - 0.5), BODY_LIFT + jumpHeight(t));
+      this.coin(a, zc + speed * T * (t / T - 0.5), BODY_LIFT + jumpHeight(t));
     }
   }
 
   ladderCoins(a, zc, speed) {
     if (Math.random() > 0.85) return;
     const n = 6;
-    const span = jumpReach(speed) * 1.3;
+    const span = speed * jumpTime() * 1.3;
     const peak = WALL_H + 34;
     for (let i = 0; i < n; i++) {
       const t = i / (n - 1);
@@ -418,13 +422,48 @@ export class LaneSpawner {
     for (let i = 0; i < count; i++) this.coin(a, z - 3 * COIN_GAP + i * COIN_GAP, COIN_UP);
   }
 
+  clearance(first, coinsFirst, speed) {
+    let push = 0;
+    for (let n = first; n < this.obstacles.length; n++) {
+      const m = this.obstacles[n];
+      if (m.closing <= 0) continue;
+      for (let i = 0; i < first; i++) {
+        const o = this.obstacles[i];
+        if (o.b < m.a || o.a > m.b || o.z + o.d < 0) continue;
+        const rate = m.closing - o.closing;
+        if (rate <= 0) continue;
+        const gap = m.z - (o.z + o.d);
+        const need = (rate * (o.z + o.d + OVERTAKE_MARGIN)) / (speed + o.closing) - gap;
+        if (need > push) push = need;
+      }
+      for (let i = 0; i < coinsFirst; i++) {
+        const c = this.coins[i];
+        if (c.taken || c.z < 0 || c.x < m.x0 || c.x > m.x1) continue;
+        const need = (m.closing * (c.z + OVERTAKE_MARGIN)) / speed - (m.z - c.z);
+        if (need > push) push = need;
+      }
+    }
+    return push;
+  }
+
   spawn(speed, dist, z) {
-    const kind = this.intro.length ? this.intro.shift() : pick(POOLS[tierOf(dist)]);
+    const fromIntro = this.intro.length > 0;
+    const kind = fromIntro ? this.intro.shift() : pick(POOLS[tierOf(dist)]);
     const first = this.obstacles.length;
     const coins = this.coins.length;
     const width = builders[kind](this, z, speed);
-    this.guide(first, coins, z, width);
+    const push = this.clearance(first, coins, speed);
+    if (push > MAX_PUSH) {
+      this.obstacles.length = first;
+      this.coins.length = coins;
+      this.nextAt = this.travel + RETRY_DISTANCE;
+      if (fromIntro) this.intro.unshift(kind);
+      return;
+    }
+    for (let i = first; i < this.obstacles.length; i++) this.obstacles[i].z += push;
+    for (let i = coins; i < this.coins.length; i++) this.coins[i].z += push;
+    this.guide(first, coins, z + push, width);
     this.travel = 0;
-    this.nextAt = width + pace(speed) * rand(0.8, 1.25) * spacingOf(dist) * DENSITY + 90;
+    this.nextAt = width + push + pace(speed) * rand(0.8, 1.25) * spacingOf(dist) * DENSITY + 90;
   }
 }
