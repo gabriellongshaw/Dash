@@ -18,7 +18,6 @@ const SPRING_D = 20;
 
 export const jumpTime = () => (2 * JUMP_SPEED) / GRAVITY;
 export const tempoAt = speed => Math.min(MAX_TEMPO, Math.max(1, speed / BASE_SPEED));
-export const jumpReach = (speed = BASE_SPEED) => (speed * jumpTime()) / tempoAt(speed);
 export const jumpHeight = t => JUMP_SPEED * t - (GRAVITY * t * t) / 2;
 
 export class Runner {
@@ -144,15 +143,15 @@ export class Runner {
     const visorColor = skin.visor || p.visor;
     const scarfColor = skin.rainbow ? `hsl(${(hue + 140) % 360} 90% 70%)` : skin.scarf || p.scarf;
     const pose = this.vis;
-    const w = lerp(34, 46, pose);
-    const h = lerp(46, 28, pose);
+    const w = lerp(34, 48, pose);
+    const h = lerp(46, 22, pose);
     const traits = traitsOf(look.char);
     const legRegion = traits.legs ? lerp(9, 0, pose) : 0;
     const bodyH = h - legRegion;
     const sx = 1 + this.squash * 0.45;
     const sy = 1 - this.squash * 0.45;
     const air = this.grounded ? 0 : clamp(this.vy / 3500, -0.18, 0.25);
-    const lean = -0.34 * pose;
+    const lean = -0.18 * pose;
     const dip = Math.abs(Math.sin(lean)) * (w / 2) - (h / 2) * (1 - Math.cos(lean));
 
     ctx.save();
