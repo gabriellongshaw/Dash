@@ -47,6 +47,7 @@ export class ThirdPersonGame {
     this.palette = this.buildPalette();
     if (this.theme) this.world.setTheme(this.theme, isDark());
     this.runner = new Runner();
+    this.runner.scaleTempo = false;
     this.spawner = new LaneSpawner();
     this.particles = new Particles();
     this.view = makeView();
