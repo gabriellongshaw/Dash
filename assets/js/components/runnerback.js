@@ -762,10 +762,10 @@ function armPose(side, za, g) {
     hy = lerp(hy, sy + jy, g.air);
   }
   if (g.roll > 0) {
-    ex = lerp(ex, sx + side * 5.5, g.roll);
-    ey = lerp(ey, sy - 4, g.roll);
-    hx = lerp(hx, side * 6.5, g.roll);
-    hy = lerp(hy, g.headY - 13, g.roll);
+    ex = lerp(ex, sx + side * 4, g.roll);
+    ey = lerp(ey, sy + 4, g.roll);
+    hx = lerp(hx, sx + side * 1.5, g.roll);
+    hy = lerp(hy, sy + 11, g.roll);
   }
   if (g.lean !== 0) {
     const out = clamp(side * g.lean, 0, 1) * (1 - g.roll);
@@ -815,8 +815,8 @@ function legPose(side, p, g) {
     fy = lerp(fy, ay, g.air);
   }
   if (g.roll > 0) {
-    fx = lerp(fx, side * 7.5, g.roll);
-    fy = lerp(fy, -3, g.roll);
+    fx = lerp(fx, side * 10, g.roll);
+    fy = lerp(fy, -29, g.roll);
   }
   return { fx, fy, z, lift: lerp(Math.max(0, -fy) / 10.5, 0.85, g.roll) };
 }
@@ -825,12 +825,12 @@ function drawLeg(ctx, side, leg, hipY, g, c) {
   const hx = side * (5.6 + g.roll * 1.2);
   const mx = (hx + leg.fx) / 2 + side * Math.min(3.5, leg.lift * 3);
   const my = (hipY + leg.fy) / 2;
-  stroke(ctx, c.leg, 7.6 + g.roll * 1.4);
+  stroke(ctx, c.leg, 7.6 - g.roll * 1.6);
   ctx.beginPath();
   ctx.moveTo(hx, hipY + 2);
   ctx.quadraticCurveTo(mx, my, leg.fx, leg.fy - 3.4);
   ctx.stroke();
-  const s = (1 - leg.z * 0.05) * (1 + g.roll * 0.25);
+  const s = (1 - leg.z * 0.05) * (1 - g.roll * 0.4);
   const sh = 6.4 + leg.lift * 1.6;
   ctx.fillStyle = c.shoe;
   pill(ctx, leg.fx - 5.2 * s, leg.fy - sh, 10.4 * s, sh, [3.6, 3.6, 2, 2]);
@@ -984,7 +984,7 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
   const phase = r.clock;
   const k = Math.min(1, speed / 700);
   const p = Math.min(1, roll);
-  const headY0 = lerp(-37.5, -25, p);
+  const headY0 = lerp(-37.5, -24, p);
   const g = { c, spec, time, phase, k, lean, air, fall, roll: p, hat, hw: spec.hw, hh: spec.hh, tw: spec.tw, sh: lerp(SHOULDER, -17, p), headY: headY0 };
   const colors = (spec.paint || defaultPaint)(c);
 
@@ -998,7 +998,7 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
   ctx.save();
   ctx.translate(0, r.y);
   ctx.rotate(lean * 0.3);
-  ctx.scale(sx, sy);
+  ctx.scale(sx * lerp(1, 1.08, p), sy * lerp(1, 0.72, p));
 
   if (spec.blob) {
     const ky = lerp(1, 0.6, p);
