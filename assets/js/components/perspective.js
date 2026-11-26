@@ -1,7 +1,7 @@
 import { clamp, mixColor, parseColor, toCss } from '../core/utils.js';
 import { LANE_W } from './lanes.js';
 import { drawProp, propsFor, tone } from './roadside.js';
-import { shade, texture } from './textures.js';
+import { shade } from './textures.js';
 
 export const NEAR = 8;
 export const FAR = 2800;
@@ -52,7 +52,7 @@ function ground(ctx, v, x0, x1, za, zb) {
   ctx.fill();
 }
 
-function box(ctx, v, c, x0, x1, y0, y1, z0, z1, flat = false) {
+function box(ctx, v, c, x0, x1, y0, y1, z0, z1) {
   if (z1 <= NEAR) return false;
   const ka = v.F / Math.max(z0, NEAR);
   const kb = v.F / z1;
@@ -74,7 +74,6 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1, flat = false) {
     ctx.closePath();
     ctx.fill();
     shade(ctx, ax0, 0, bx0, 0, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.32)');
-    if (!flat) texture(ctx, 'brushed', ax0, ay1, ka * 0.3, 0.5);
   } else if (v.x > x1) {
     ctx.beginPath();
     ctx.moveTo(ax1, ay1);
@@ -84,7 +83,6 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1, flat = false) {
     ctx.closePath();
     ctx.fill();
     shade(ctx, ax1, 0, bx1, 0, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.32)');
-    if (!flat) texture(ctx, 'brushed', ax1, ay1, ka * 0.3, 0.5);
   }
   if (v.eye > y1) {
     ctx.fillStyle = c.top;
@@ -96,7 +94,6 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1, flat = false) {
     ctx.closePath();
     ctx.fill();
     shade(ctx, 0, ay1, 0, by1, 'rgba(255,255,255,0.14)', 'rgba(0,0,0,0.12)');
-    if (!flat) texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.5);
   } else if (v.eye < y0) {
     ctx.beginPath();
     ctx.moveTo(ax0, ay0);
@@ -113,7 +110,6 @@ function box(ctx, v, c, x0, x1, y0, y1, z0, z1, flat = false) {
   ctx.beginPath();
   ctx.rect(ax0, ay1, ax1 - ax0, ay0 - ay1);
   shade(ctx, 0, ay1, 0, ay0, 'rgba(255,255,255,0.16)', 'rgba(0,0,0,0.22)');
-  if (!flat) texture(ctx, 'grain', ax0, ay1, ka * 0.3, 0.55);
   face.x = ax0;
   face.y = ay1;
   face.w = ax1 - ax0;
@@ -267,7 +263,7 @@ function tower(ctx, v, it, o) {
   const zb = it.z + d / 2;
   if (za < NEAR + 20) return;
   const c = { front: tone(o.c, v.night), side: tone(o.c, v.night + 0.3), top: tone(o.c, v.night * 0.5) };
-  const ok = box(ctx, v, c, xa, xb, 0, h, za, zb, true);
+  const ok = box(ctx, v, c, xa, xb, 0, h, za, zb);
   const night = v.night > 0.35;
   const cols = Math.max(2, Math.floor(w / 22));
   const rows = Math.floor(h / 26);
@@ -572,6 +568,28 @@ function shadow(ctx, v, o) {
   ground(ctx, v, x0 - 3, x1 + 3, o.z - 3, o.z + o.d + 3);
 }
 
+function trail(ctx, v, o) {
+  if (o.closing < 25) return;
+  const len = clamp(o.closing * 0.7, 20, 210);
+  const m = (o.x0 + o.x1) / 2;
+  const half = Math.min((o.x1 - o.x0) / 2, 30) * 0.8;
+  const za = o.z + o.d;
+  const base = ctx.globalAlpha;
+  const segs = 5;
+  ctx.fillStyle = v.pal.hazardLight;
+  for (let i = 0; i < segs; i++) {
+    const z0 = Math.max(za + (len * i) / segs, NEAR);
+    const z1 = za + (len * (i + 1)) / segs;
+    if (z1 <= NEAR) continue;
+    ctx.globalAlpha = base * 0.4 * (1 - i / segs);
+    for (const f of [-0.6, 0, 0.6]) {
+      const w = f === 0 ? 2.4 : 1.6;
+      ground(ctx, v, m + f * half - w, m + f * half + w, z0, z1);
+    }
+  }
+  ctx.globalAlpha = base;
+}
+
 const MARKED = { crate: 1, wall: 1, spikes: 1, saw: 1, roller: 1, field: 1, drone: 0 };
 
 function marks(ctx, v, o) {
@@ -800,6 +818,7 @@ export function drawObstacle(ctx, v, o) {
   const z1 = o.z + o.d;
   shadow(ctx, v, o);
   marks(ctx, v, o);
+  trail(ctx, v, o);
   switch (o.kind) {
     case 'crate':
       if (box(ctx, v, v.hazard, o.x0, o.x1, o.y0, o.y1, o.z, z1)) barrierFace(ctx, v, pal);
@@ -873,8 +892,18 @@ export function drawObstacle(ctx, v, o) {
       break;
     }
     case 'drone':
-      posts(ctx, v, o, o.bob ? 112 : o.y1 + 10, o.z + o.d * 0.4, o.z + o.d * 0.6);
-      if (box(ctx, v, v.gate, o.x0, o.x1, o.y0, o.y1, o.z + o.d * 0.12, o.z + o.d * 0.88)) tape(ctx, v, face.h, pal.hazardDark, pal.hazardLight);
+      if (o.bob) {
+        const m = (o.x0 + o.x1) / 2;
+        if (box(ctx, v, v.hazard, m - 20, m + 20, o.y0, o.y1, o.z, z1)) {
+          ctx.fillStyle = pal.hazardLight;
+          ctx.fillRect(face.x + face.w * 0.2, face.y + face.h * 0.3, face.w * 0.18, face.h * 0.34);
+          ctx.fillRect(face.x + face.w * 0.62, face.y + face.h * 0.3, face.w * 0.18, face.h * 0.34);
+        }
+        box(ctx, v, v.gate, m - 32, m + 32, o.y1, o.y1 + 3, o.z + o.d * 0.3, o.z + o.d * 0.7);
+      } else {
+        posts(ctx, v, o, o.y1 + 10, o.z + o.d * 0.4, o.z + o.d * 0.6);
+        if (box(ctx, v, v.gate, o.x0, o.x1, o.y0, o.y1, o.z + o.d * 0.12, o.z + o.d * 0.88)) tape(ctx, v, face.h, pal.hazardDark, pal.hazardLight);
+      }
       break;
     case 'saw':
       disc(ctx, v, o, 22, 20);
@@ -884,7 +913,19 @@ export function drawObstacle(ctx, v, o) {
       break;
     case 'missile': {
       const m = (o.x0 + o.x1) / 2;
-      box(ctx, v, v.hazard, m - 9, m + 9, o.y0, o.y1, o.z, z1);
+      if (box(ctx, v, v.hazard, m - 9, m + 9, o.y0, o.y1, o.z, z1)) {
+        const { x, y, w, h } = face;
+        ctx.fillStyle = pal.hazardDark;
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = pal.hazardLight;
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      box(ctx, v, v.gate, m - 17, m - 9, o.y0 + 2, o.y1 - 2, z1 - 6, z1);
+      box(ctx, v, v.gate, m + 9, m + 17, o.y0 + 2, o.y1 - 2, z1 - 6, z1);
       ctx.globalAlpha *= 0.8;
       box(ctx, v, { front: pal.hazardLight, top: pal.hazardLight, side: pal.hazardLight }, m - 5, m + 5, o.y0 + 3, o.y1 - 3, z1, z1 + 26 + Math.sin(v.time * 50) * 8);
       break;
