@@ -11,7 +11,7 @@ import { audio } from '../core/audio.js';
 import { speedAt } from '../core/difficulty.js';
 
 const STEP = 1 / 90;
-const HALF = 12;
+const HALF = 9;
 const REACH = 12;
 const SHIFT = 22;
 const SLIDE_TIME = 0.55;
@@ -255,7 +255,8 @@ export class ThirdPersonGame {
   }
 
   across(o) {
-    return this.x + HALF > o.x0 && this.x - HALF < o.x1;
+    const x = this.x + (this.lane * LANE_W - this.x) * 0.5;
+    return x + HALF > o.x0 && x - HALF < o.x1;
   }
 
   hits(o, lo, hi) {
