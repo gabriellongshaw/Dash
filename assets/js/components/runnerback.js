@@ -805,39 +805,64 @@ function drawArm(ctx, side, za, g, color) {
 function legPose(side, p, g) {
   const z = Math.cos(p);
   const lift = Math.max(0, -Math.sin(p));
-  let fx = side * (5.6 + lift * 1.3);
-  let fy = -lift * 10.5 - Math.max(0, z) * 3;
+  let fx = side * (5.6 + lift * 1.6);
+  let fy = -lift * 11 - Math.max(0, z) * 3.2;
   if (g.air > 0) {
     const f = clamp(g.fall, 0, 1);
     const ax = side * lerp(4.6, 8.5, f);
-    const ay = -lerp(side < 0 ? 6 : 11.5, 4, f);
+    const ay = -lerp(side < 0 ? 6 : 12.5, 4, f);
     fx = lerp(fx, ax, g.air);
     fy = lerp(fy, ay, g.air);
   }
   if (g.roll > 0) {
-    fx = lerp(fx, side * 10, g.roll);
-    fy = lerp(fy, -29, g.roll);
+    fx = lerp(fx, side * 18, g.roll);
+    fy = lerp(fy, -15, g.roll);
   }
-  return { fx, fy, z, lift: lerp(Math.max(0, -fy) / 10.5, 0.85, g.roll) };
+  return { fx, fy, z, lift: lerp(Math.max(0, -fy) / 11, 0.3, g.roll) };
 }
 
 function drawLeg(ctx, side, leg, hipY, g, c) {
-  const hx = side * (5.6 + g.roll * 1.2);
-  const mx = (hx + leg.fx) / 2 + side * Math.min(3.5, leg.lift * 3);
-  const my = (hipY + leg.fy) / 2;
-  stroke(ctx, c.leg, 7.6 - g.roll * 1.6);
+  const roll = g.roll;
+  const hx = side * (5.4 + roll * 1.4);
+  const hy = hipY + 2;
+  const fx = leg.fx;
+  const fy = leg.fy - 3.2;
+  const L = 9.4;
+  const dx = fx - hx;
+  const dy = fy - hy;
+  const d = Math.max(0.01, Math.min(Math.hypot(dx, dy), L * 2 - 0.3));
+  const hh = Math.sqrt(Math.max(0, L * L - (d / 2) * (d / 2)));
+  const ux = dx / Math.hypot(dx, dy);
+  const uy = dy / Math.hypot(dx, dy);
+  const mx = hx + ux * (d / 2);
+  const my = hy + uy * (d / 2);
+  const bow = side * 0.55 * lerp(1, 0.35, roll);
+  let kx = mx + (-uy * side) * hh * 0.5 * Math.abs(bow) / 0.55 + side * leg.lift * 1.8;
+  let ky = my + (ux * side) * hh * 0.12;
+  kx = lerp(kx, mx, roll);
+  ky = lerp(ky, my, roll);
+  const thigh = 8.2 - roll * 0.6;
+  const calf = 6.6 - roll * 0.6;
+  stroke(ctx, c.leg, thigh);
   ctx.beginPath();
-  ctx.moveTo(hx, hipY + 2);
-  ctx.quadraticCurveTo(mx, my, leg.fx, leg.fy - 3.4);
+  ctx.moveTo(hx, hy);
+  ctx.lineTo(kx, ky);
   ctx.stroke();
-  const s = (1 - leg.z * 0.05) * (1 - g.roll * 0.4);
-  const sh = 6.4 + leg.lift * 1.6;
+  stroke(ctx, c.leg, calf);
+  ctx.beginPath();
+  ctx.moveTo(kx, ky);
+  ctx.lineTo(fx, fy);
+  ctx.stroke();
+  ctx.fillStyle = darken(c.leg, 0.06);
+  dot(ctx, kx, ky, thigh / 2 - 0.4);
+  const s = (1 - leg.z * 0.05) * (1 - roll * 0.15);
+  const sh = (6.4 + leg.lift * 1.6) * (1 - roll * 0.3);
   ctx.fillStyle = c.shoe;
-  pill(ctx, leg.fx - 5.2 * s, leg.fy - sh, 10.4 * s, sh, [3.6, 3.6, 2, 2]);
+  pill(ctx, leg.fx - 5.4 * s, leg.fy - sh, 10.8 * s, sh, [3.6, 3.6, 2, 2]);
   ctx.fill();
   ctx.fillStyle = '#ffffff';
   ctx.globalAlpha = 0.9;
-  pill(ctx, leg.fx - 5.2 * s, leg.fy - 2.4 - leg.lift * 2, 10.4 * s, 2.4 + leg.lift * 2, 1.2);
+  pill(ctx, leg.fx - 5.4 * s, leg.fy - 2.4 - leg.lift * 2, 10.8 * s, 2.4 + leg.lift * 2, 1.2);
   ctx.fill();
   ctx.globalAlpha = 1;
 }
@@ -984,7 +1009,7 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
   const phase = r.clock;
   const k = Math.min(1, speed / 700);
   const p = Math.min(1, roll);
-  const headY0 = lerp(-37.5, -24, p);
+  const headY0 = lerp(-37.5, -21, p);
   const g = { c, spec, time, phase, k, lean, air, fall, roll: p, hat, hw: spec.hw, hh: spec.hh, tw: spec.tw, sh: lerp(SHOULDER, -17, p), headY: headY0 };
   const colors = (spec.paint || defaultPaint)(c);
 
@@ -998,12 +1023,12 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
   ctx.save();
   ctx.translate(0, r.y);
   ctx.rotate(lean * 0.3);
-  ctx.scale(sx * lerp(1, 1.08, p), sy * lerp(1, 0.72, p));
+  ctx.scale(sx * lerp(1, 0.92, p), sy * lerp(1, 0.92, p));
 
   if (spec.blob) {
-    const ky = lerp(1, 0.6, p);
+    const ky = lerp(1, 0.8, p);
     ctx.save();
-    ctx.scale(lerp(1, 1.1, p), ky);
+    ctx.scale(ky, ky);
     const top = drawBlob(ctx, spec.blob, g) * ky;
     ctx.restore();
     if (hat) {
@@ -1034,6 +1059,19 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
 
   for (const leg of legs) drawLeg(ctx, leg.side, leg, hipY, g, colors);
 
+  if (p > 0.25) {
+    ctx.save();
+    for (let i = 0; i < 6; i++) {
+      const u = (time * 2.6 + i / 6) % 1;
+      const side = i % 2 ? 1 : -1;
+      ctx.globalAlpha = 0.5 * p * (1 - u);
+      ctx.fillStyle = '#ffffff';
+      dot(ctx, side * (10 + u * 16 + (i % 3) * 3), -2 - u * 5, 2 + u * 4);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
   ctx.save();
   ctx.translate(sway, -bob);
   ctx.translate(0, HIP);
@@ -1044,8 +1082,8 @@ export function drawRunnerBack(r, ctx, pal, speed, time, look = {}, lean = 0) {
 
   const tw = spec.tw;
   ctx.fillStyle = colors.torso;
-  const tTop = lerp(TORSO_TOP, -19, p);
-  const tH = lerp(15.5, 10.5, p);
+  const tTop = lerp(TORSO_TOP, -18, p);
+  const tH = lerp(15.5, 11.5, p);
   pill(ctx, -tw / 2, tTop, tw, tH, [7.5, 7.5, 4, 4]);
   ctx.fill();
   ctx.save();
