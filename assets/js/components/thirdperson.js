@@ -3,7 +3,7 @@ import { World } from './world.js';
 import { LaneSpawner, LANE_W } from './lanes.js';
 import { Particles } from './particles.js';
 import { FAR, drawCoin, drawObstacle, drawRoad, drawRush, makeColors, makeView } from './perspective.js';
-import { propsFor } from './roadside.js';
+import { propsFor, coverFor, styleFor } from './roadside.js';
 import { fitStage } from './stage.js';
 import { readPalette, isDark } from '../core/theme.js';
 import { clamp } from '../core/utils.js';
@@ -110,6 +110,8 @@ export class ThirdPersonGame {
   paint() {
     this.view.pal = this.palette;
     this.view.props = propsFor(this.theme && this.theme.id);
+    this.view.cover = coverFor(this.theme && this.theme.id);
+    this.view.style = styleFor(this.theme && this.theme.id);
     this.view.night = this.world.s || 0;
     Object.assign(this.view, makeColors(this.palette, this.world.p));
   }

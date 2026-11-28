@@ -68,6 +68,81 @@ const KINDS = {
     ctx.ellipse(-13, -90, 6, 3.6, 0, 0, TAU);
     ctx.fill();
   },
+  tuft(ctx, o) {
+    ctx.strokeStyle = tone(o.c, o.n);
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    for (let i = -2; i <= 2; i++) {
+      const lean = i * 2.6 + (o.r - 0.5) * 4;
+      ctx.beginPath();
+      ctx.moveTo(i * 3.4, 0);
+      ctx.quadraticCurveTo(i * 3.4 + lean * 0.4, -7 - (2 - Math.abs(i)) * 3, i * 3.4 + lean, -12 - (2 - Math.abs(i)) * 4 - o.r * 5);
+      ctx.stroke();
+    }
+  },
+  pebbles(ctx, o) {
+    const n = 3 + Math.floor(o.r * 3);
+    for (let i = 0; i < n; i++) {
+      const x = (i - n / 2) * 9 + o.r * 6;
+      const r = 3.5 + ((i * 37 + o.r * 100) % 5);
+      ctx.fillStyle = tone(o.c, o.n + (i % 2) * 0.1);
+      ctx.beginPath();
+      ctx.ellipse(x, -r * 0.5, r * 1.3, r * 0.8, 0, 0, TAU);
+      ctx.fill();
+    }
+  },
+  drift(ctx, o) {
+    const w = 22 + o.r * 22;
+    ctx.fillStyle = tone(o.c, o.n);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, w, 9 + o.r * 5, 0, Math.PI, TAU);
+    ctx.fill();
+    ctx.fillStyle = tone('#93c5fd', o.n);
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    ctx.ellipse(w * 0.2, 0, w * 0.7, 5, 0, Math.PI, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  },
+  glint(ctx, o) {
+    const h = 14 + o.r * 22;
+    ctx.fillStyle = o.c;
+    ctx.globalAlpha = 0.14;
+    ctx.beginPath();
+    ctx.ellipse(0, -h / 2, 9, h * 0.8, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(0, -h);
+    ctx.lineTo(3.2, -h / 2);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-3.2, -h / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  },
+  sprinkle(ctx, o) {
+    for (let i = 0; i < 5; i++) {
+      ctx.save();
+      ctx.translate((i - 2) * 6 + o.r * 5, -3 - ((i * 53) % 7));
+      ctx.rotate(i * 1.3 + o.r * 4);
+      ctx.fillStyle = tone(i % 2 ? o.c : '#ffffff', o.n * 0.6);
+      ctx.beginPath();
+      ctx.roundRect(-5, -1.8, 10, 3.6, 1.8);
+      ctx.fill();
+      ctx.restore();
+    }
+  },
+  post(ctx, o) {
+    ctx.fillStyle = tone(o.c, o.n);
+    ctx.beginPath();
+    ctx.roundRect(-3.5, -34 - o.r * 10, 7, 34 + o.r * 10, 2);
+    ctx.fill();
+    ctx.fillStyle = tone('#000000', o.n);
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(0.5, -34 - o.r * 10, 3, 34 + o.r * 10);
+    ctx.globalAlpha = 1;
+  },
   cactus(ctx, o) {
     const h = 55 + o.r * 40;
     ctx.fillStyle = tone(o.c, o.n);
@@ -432,6 +507,82 @@ const SETS = {
 };
 
 export const propsFor = id => SETS[id] || SETS['world:skyline'];
+
+const STYLE_OF = {
+  'world:skyline': 'tiles',
+  'world:steampunk': 'tiles',
+  'world:storm': 'tiles',
+  'world:volcano': 'tiles',
+  'world:haunted': 'tiles',
+  'world:sunset': 'tiles',
+  'world:neon': 'glow',
+  'world:synthwave': 'glow',
+  'world:matrix': 'glow',
+  'world:space': 'glow',
+  'world:crystal': 'glow',
+  'world:abyss': 'glow',
+  'world:desert': 'path',
+  'world:canyon': 'path',
+  'world:savanna': 'path',
+  'world:dunes': 'path',
+  'world:mars': 'path',
+  'world:pyramids': 'path',
+  'world:oasis': 'path',
+  'world:moon': 'path',
+  'world:forest': 'planks',
+  'world:jungle': 'planks',
+  'world:swamp': 'planks',
+  'world:bamboo': 'planks',
+  'world:autumn': 'planks',
+  'world:ocean': 'planks',
+  'world:reef': 'planks',
+  'world:mushroom': 'planks',
+  'world:arctic': 'ice',
+  'world:aurora': 'ice',
+  'world:candy': 'checker',
+  'world:blossom': 'checker',
+  'world:lavender': 'checker'
+};
+
+export const styleFor = id => STYLE_OF[id] || 'tiles';
+
+const COVER_OF = {
+  'world:forest': [['tuft', ['#2f8a3e', '#3fae5c', '#237a40']], ['flowers', ['#f472b6', '#fde047']], ['tuft', ['#4ba85a']]],
+  'world:jungle': [['tuft', ['#16a34a', '#22c55e']], ['flowers', ['#f472b6', '#fb923c']], ['tuft', ['#15803d']]],
+  'world:swamp': [['tuft', ['#5a7a2e', '#4a6a28']], ['pebbles', ['#4a3b2a']], ['tuft', ['#6b8a34']]],
+  'world:bamboo': [['tuft', ['#6fb04a', '#84c45a']], ['pebbles', ['#8a8f7a']], ['tuft', ['#5fa23f']]],
+  'world:autumn': [['tuft', ['#d9731c', '#e8a317']], ['flowers', ['#f97316', '#facc15']], ['tuft', ['#b9461f']]],
+  'world:ocean': [['tuft', ['#5fbf9a', '#3da97e']], ['pebbles', ['#e5d3a8']], ['tuft', ['#7ad1b0']]],
+  'world:reef': [['pebbles', ['#fda4af', '#f9a8d4']], ['sprinkle', ['#fb7185', '#2dd4bf']], ['tuft', ['#2dd4bf']]],
+  'world:mushroom': [['tuft', ['#9575cd', '#7e57c2']], ['flowers', ['#fb7185', '#fde047']], ['sprinkle', ['#a78bfa']]],
+  'world:desert': [['pebbles', ['#b8864b', '#a37440']], ['tuft', ['#a8a04a', '#8f9a3e']], ['pebbles', ['#c99a55']]],
+  'world:canyon': [['pebbles', ['#9a5530', '#b45a30']], ['tuft', ['#8f8a3e']], ['pebbles', ['#c2693a']]],
+  'world:savanna': [['tuft', ['#b8a24a', '#c9b45a']], ['pebbles', ['#a8844a']], ['tuft', ['#a89040']]],
+  'world:dunes': [['pebbles', ['#c99a45', '#e0b05a']], ['tuft', ['#a8a04a']], ['pebbles', ['#d9a038']]],
+  'world:mars': [['pebbles', ['#9c4a30', '#b5593a']], ['pebbles', ['#7a3524']], ['pebbles', ['#a24d33']]],
+  'world:pyramids': [['pebbles', ['#c49a50', '#d29d46']], ['tuft', ['#a8a04a']], ['pebbles', ['#e0b25f']]],
+  'world:oasis': [['tuft', ['#3fae5c', '#2dbd7e']], ['flowers', ['#fbbf24', '#f472b6']], ['pebbles', ['#c9a86a']]],
+  'world:moon': [['pebbles', ['#8a93a8', '#707a91']], ['pebbles', ['#aab2c4']], ['pebbles', ['#6b7488']]],
+  'world:arctic': [['drift', ['#f1f9ff', '#dbeafe']], ['drift', ['#ffffff']], ['pebbles', ['#a5c8e6']]],
+  'world:aurora': [['drift', ['#e6fbff', '#d1faf5']], ['glint', ['#5eead4', '#a78bfa']], ['drift', ['#ffffff']]],
+  'world:candy': [['sprinkle', ['#f472b6', '#60a5fa', '#facc15']], ['sprinkle', ['#34d399', '#a78bfa']], ['sprinkle', ['#fb923c']]],
+  'world:blossom': [['flowers', ['#f9a8d4', '#ffffff']], ['sprinkle', ['#f9a8d4', '#fbcfe8']], ['tuft', ['#86c97a']]],
+  'world:lavender': [['flowers', ['#a78bfa', '#c084fc']], ['tuft', ['#9d7be0']], ['sprinkle', ['#e879f9']]],
+  'world:neon': [['glint', ['#22d3ee', '#f472b6']], ['glint', ['#a78bfa']], ['glint', ['#facc15']]],
+  'world:synthwave': [['glint', ['#ff4fd8', '#22d3ee']], ['glint', ['#facc15']], ['glint', ['#a78bfa']]],
+  'world:matrix': [['glint', ['#22c55e', '#4ade80']], ['glint', ['#16a34a']], ['glint', ['#86efac']]],
+  'world:space': [['glint', ['#a78bfa', '#60a5fa']], ['pebbles', ['#6b7280']], ['glint', ['#f472b6']]],
+  'world:crystal': [['glint', ['#38bdf8', '#a78bfa', '#f472b6']], ['pebbles', ['#334155']], ['glint', ['#34d399']]],
+  'world:abyss': [['glint', ['#22d3ee', '#34d399']], ['pebbles', ['#0f3d5c']], ['glint', ['#38bdf8']]],
+  'world:skyline': [['post', ['#8fc9b0', '#6fb89a']], ['pebbles', ['#6b8f80']], ['post', ['#5aa387']]],
+  'world:steampunk': [['post', ['#8c6a3c', '#a67c4a']], ['pebbles', ['#7a5a30']], ['post', ['#946b3a']]],
+  'world:storm': [['post', ['#475569', '#334155']], ['pebbles', ['#475569']], ['post', ['#64748b']]],
+  'world:volcano': [['pebbles', ['#4a2b27', '#3b2320']], ['glint', ['#f97316']], ['pebbles', ['#5a3530']]],
+  'world:haunted': [['pebbles', ['#2b1d3d', '#3a2652']], ['glint', ['#fb923c']], ['tuft', ['#3a2652']]],
+  'world:sunset': [['post', ['#7c3a62', '#a14a6c']], ['pebbles', ['#8a4a6a']], ['tuft', ['#1f8a6a']]]
+};
+
+export const coverFor = id => COVER_OF[id] || COVER_OF['world:skyline'];
 
 export function drawProp(ctx, entry, o) {
   const [kind, colors, opts] = entry;

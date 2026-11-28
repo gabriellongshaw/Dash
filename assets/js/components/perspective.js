@@ -20,13 +20,14 @@ const PROP_ROWS = [
   { off: 170, gap: 160, salt: 311 },
   { off: 290, gap: 200, salt: 733 }
 ];
+const COVER_ROW = { gap: 52, salt: 4177 };
 const STRIPE = 100;
 const DASH = 60;
 
 const face = { x: 0, y: 0, w: 0, h: 0 };
 
 export function makeView() {
-  return { fade: 1, w: 0, h: 0, cx: 0, hy: 0, F: 1, eye: 38, x: 0, p: null, pal: null, hazard: null, pylon: null, props: null, night: 0, time: 0, scroll: 0, speed: 0, reduced: false };
+  return { fade: 1, w: 0, h: 0, cx: 0, hy: 0, F: 1, eye: 38, x: 0, p: null, pal: null, hazard: null, pylon: null, props: null, cover: null, style: 'tiles', night: 0, time: 0, scroll: 0, speed: 0, reduced: false };
 }
 
 export function makeColors(pal, p) {
@@ -155,6 +156,111 @@ function sideWall(ctx, v) {
   }
 }
 
+const mix = (a, b, t) => toCss(mixColor(parseColor(a), parseColor(b), t));
+
+function bands(ctx, v, gap, len, fn) {
+  const shift = v.scroll % gap;
+  const base = Math.floor(v.scroll / gap);
+  for (let z = -shift, i = 0; z < FAR; z += gap, i++) {
+    if (z + len <= NEAR) continue;
+    fn(Math.max(z, NEAR), z + len, base + i);
+  }
+}
+
+const SURFACE = {
+  tiles(ctx, v) {
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    bands(ctx, v, STRIPE * 2, STRIPE, (za, zb) => ground(ctx, v, -ROAD_HALF, ROAD_HALF, za, zb));
+    ctx.fillStyle = '#000';
+    ctx.globalAlpha = 0.2;
+    bands(ctx, v, SLEEPER, 7, (za, zb) => {
+      for (let a = -1; a <= 1; a++) ground(ctx, v, a * LANE_W - LANE_W * 0.39, a * LANE_W + LANE_W * 0.39, za, zb);
+    });
+    ctx.globalAlpha = 1;
+  },
+  planks(ctx, v, day, dirt) {
+    ctx.fillStyle = mix(dirt, day > 0.3 ? '#9a6a38' : '#4a3320', 0.7);
+    ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
+    bands(ctx, v, 40, 20, (za, zb, i) => {
+      ctx.fillStyle = i % 3 === 0 ? 'rgba(255,230,190,0.16)' : 'rgba(255,230,190,0.07)';
+      ground(ctx, v, -ROAD_HALF, ROAD_HALF, za, zb);
+    });
+    ctx.fillStyle = 'rgba(0,0,0,0.38)';
+    bands(ctx, v, 40, 3, (za, zb) => ground(ctx, v, -ROAD_HALF, ROAD_HALF, za, zb));
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (const x of [-LANE_W * 1.5 + 8, LANE_W * 1.5 - 8]) ground(ctx, v, x - 3, x + 3, NEAR, ROAD_FAR);
+  },
+  path(ctx, v, day, dirt) {
+    ctx.fillStyle = mix(dirt, v.p.mid, 0.55);
+    ctx.globalAlpha = 0.85;
+    ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(0,0,0,0.14)';
+    for (let a = -1; a <= 1; a++) {
+      ground(ctx, v, a * LANE_W - 20, a * LANE_W - 11, NEAR, ROAD_FAR);
+      ground(ctx, v, a * LANE_W + 11, a * LANE_W + 20, NEAR, ROAD_FAR);
+    }
+    bands(ctx, v, 70, 22, (za, zb, i) => {
+      const h = hash(i * 31 + 7);
+      if (h % 3) return;
+      const a = (h >>> 4) % 3 - 1;
+      ctx.fillStyle = h % 2 ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.1)';
+      ground(ctx, v, a * LANE_W - 30 + (h % 20), a * LANE_W + 30 - (h % 17), za, zb);
+    });
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    for (const x of [-LANE_W / 2, LANE_W / 2]) {
+      bands(ctx, v, DASH * 2, DASH, (za, zb) => ground(ctx, v, x - 1.5, x + 1.5, za, zb));
+    }
+  },
+  ice(ctx, v, day) {
+    ctx.fillStyle = day > 0.3 ? 'rgba(236,248,255,0.62)' : 'rgba(120,160,210,0.5)';
+    ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    for (let a = -1; a <= 1; a++) ground(ctx, v, a * LANE_W - 5, a * LANE_W + 5, NEAR, ROAD_FAR);
+    bands(ctx, v, 90, 3, (za, zb, i) => {
+      const h = hash(i * 13 + 5);
+      const x = ((h % 100) / 100 - 0.5) * ROAD_HALF * 1.7;
+      ctx.fillStyle = 'rgba(70,120,180,0.32)';
+      ground(ctx, v, x, x + 26 + (h % 30), za, zb);
+    });
+    ctx.fillStyle = 'rgba(120,170,220,0.4)';
+    for (const x of [-LANE_W / 2, LANE_W / 2]) ground(ctx, v, x - 1.5, x + 1.5, NEAR, ROAD_FAR);
+  },
+  checker(ctx, v, day) {
+    const a0 = v.p.groundLine;
+    ctx.fillStyle = day > 0.3 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)';
+    ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
+    bands(ctx, v, 60, 60, (za, zb, i) => {
+      for (let a = -1; a <= 1; a++) {
+        if ((i + a) % 2) continue;
+        ctx.fillStyle = a0;
+        ctx.globalAlpha = 0.3;
+        ground(ctx, v, a * LANE_W - LANE_W / 2, a * LANE_W + LANE_W / 2, za, zb);
+      }
+    });
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    for (const x of [-LANE_W / 2, LANE_W / 2]) {
+      bands(ctx, v, DASH * 2, DASH, (za, zb) => ground(ctx, v, x - 1.5, x + 1.5, za, zb));
+    }
+  },
+  glow(ctx, v) {
+    const c = v.p.glow || v.p.groundLine;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
+    ctx.fillStyle = c;
+    ctx.globalAlpha = 0.3;
+    bands(ctx, v, 90, 3, (za, zb) => ground(ctx, v, -ROAD_HALF, ROAD_HALF, za, zb));
+    ctx.globalAlpha = 0.16;
+    for (let a = -1; a <= 1; a++) ground(ctx, v, a * LANE_W - LANE_W * 0.4, a * LANE_W + LANE_W * 0.4, NEAR, ROAD_FAR);
+    ctx.globalAlpha = 0.85;
+    for (const x of [-LANE_W * 1.5, -LANE_W / 2, LANE_W / 2, LANE_W * 1.5]) ground(ctx, v, x - 2, x + 2, NEAR, ROAD_FAR);
+    ctx.globalAlpha = 1;
+  }
+};
+
 export function drawRoad(ctx, v) {
   const { p, w, h, hy } = v;
   const day = 1 - clamp(v.night * 1.4, 0, 1);
@@ -164,28 +270,15 @@ export function drawRoad(ctx, v) {
   ctx.fillStyle = p.groundLine;
   ctx.fillRect(-30, hy, w + 60, 2);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ground(ctx, v, -ROAD_HALF, ROAD_HALF, NEAR, ROAD_FAR);
-
-  ctx.fillStyle = 'rgba(255,255,255,0.07)';
-  const shift = v.scroll % (STRIPE * 2);
-  for (let z = -shift; z < FAR; z += STRIPE * 2) {
-    if (z + STRIPE <= NEAR) continue;
-    ground(ctx, v, -ROAD_HALF, ROAD_HALF, Math.max(z, NEAR), z + STRIPE);
-  }
-
-  ctx.fillStyle = '#000';
-  ctx.globalAlpha = 0.2;
-  const tie = v.scroll % SLEEPER;
-  for (let z = -tie; z < FAR; z += SLEEPER) {
-    if (z + 7 <= NEAR) continue;
-    for (let a = -1; a <= 1; a++) ground(ctx, v, a * LANE_W - LANE_W * 0.39, a * LANE_W + LANE_W * 0.39, Math.max(z, NEAR), z + 7);
-  }
-  ctx.fillStyle = '#fff';
-  ctx.globalAlpha = 0.5;
-  for (let a = -1; a <= 1; a++) {
-    ground(ctx, v, a * LANE_W - LANE_W * 0.22, a * LANE_W - LANE_W * 0.178, NEAR, ROAD_FAR);
-    ground(ctx, v, a * LANE_W + LANE_W * 0.178, a * LANE_W + LANE_W * 0.22, NEAR, ROAD_FAR);
+  const style = v.style || 'tiles';
+  SURFACE[style](ctx, v, day, dirt);
+  if (style === 'tiles' || style === 'planks') {
+    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.5;
+    for (let a = -1; a <= 1; a++) {
+      ground(ctx, v, a * LANE_W - LANE_W * 0.22, a * LANE_W - LANE_W * 0.178, NEAR, ROAD_FAR);
+      ground(ctx, v, a * LANE_W + LANE_W * 0.178, a * LANE_W + LANE_W * 0.22, NEAR, ROAD_FAR);
+    }
   }
   ctx.fillStyle = p.groundLine;
   ctx.globalAlpha = 0.5;
@@ -235,6 +328,24 @@ export function drawRoad(ctx, v) {
       }
     }
   }
+  const cover = v.cover || [];
+  const covered = cover.length ? COVER_ROW : null;
+  if (covered) {
+    const first = covered.gap - (v.scroll % covered.gap);
+    const base = Math.floor(v.scroll / covered.gap) + 1;
+    for (let j = Math.floor((FAR - first) / covered.gap); j >= 0; j--) {
+      const z = first + j * covered.gap;
+      if (z < 40) continue;
+      const k = v.F / z;
+      for (let side = -1; side <= 1; side += 2) {
+        const hsh = hash((base + j) * 2 + (side > 0 ? 1 : 0) + covered.salt);
+        const x = side * (ROAD_HALF + 14 + (hsh % 300));
+        const sx = v.cx + (x - v.x) * k;
+        if (sx < -80 || sx > v.w + 80) continue;
+        list.push({ z, k, sx, hsh, entry: cover[(hsh >>> 3) % cover.length], small: true });
+      }
+    }
+  }
   list.sort((a, b) => b.z - a.z);
   for (const it of list) {
     o.r = ((it.hsh >>> 8) % 1000) / 1000;
@@ -246,7 +357,8 @@ export function drawRoad(ctx, v) {
     }
     ctx.save();
     ctx.translate(it.sx, v.hy + v.eye * it.k);
-    ctx.scale(it.k * PROP_SCALE, it.k * PROP_SCALE);
+    const sc = it.small ? 1.25 : PROP_SCALE;
+    ctx.scale(it.k * sc, it.k * sc);
     drawProp(ctx, it.entry, o);
     ctx.restore();
   }
