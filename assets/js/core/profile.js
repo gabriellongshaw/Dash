@@ -21,7 +21,7 @@ const COLLECTION = 'dashProfiles';
 const API_URL = 'https://dash-gamma-cyan.vercel.app/api/game';
 
 const listeners = new Set();
-const session = { status: 'loading', syncing: false, error: null };
+const session = { status: 'loading', syncing: false, error: null, save: null };
 let cloud = null;
 let cloudReady = false;
 let started = false;
@@ -189,8 +189,24 @@ function startAnonymous() {
 }
 
 let inflight = null;
+let retryTimer = 0;
+let retries = 0;
 
-async function handleUser(user) {
+function retrySync(now = false) {
+  if (retryTimer || !cloud || cloudReady) return;
+  if (!now && retries >= 8) return;
+  retries += 1;
+  retryTimer = setTimeout(
+    () => {
+      retryTimer = 0;
+      const user = cloud.auth.currentUser;
+      if (user && !cloudReady) handleUser(user, true);
+    },
+    now ? 0 : Math.min(20000, 1200 * retries * retries)
+  );
+}
+
+async function handleUser(user, quiet = false) {
   if (!user) {
     cloudReady = false;
     const leave = () => {
@@ -209,7 +225,7 @@ async function handleUser(user) {
   }
   const key = `${user.uid}:${user.isAnonymous}`;
   if (inflight && inflight.key === key) return inflight.promise;
-  const promise = runUser(user);
+  const promise = runUser(user, quiet);
   inflight = { key, promise };
   try {
     await promise;
@@ -218,9 +234,9 @@ async function handleUser(user) {
   }
 }
 
-async function runUser(user) {
+async function runUser(user, quiet = false) {
   const status = user.isAnonymous ? 'out' : 'in';
-  const hold = !user.isAnonymous && accountOf(state) !== user.uid ? holdPage() : null;
+  const hold = !quiet && !user.isAnonymous && accountOf(state) !== user.uid ? holdPage() : null;
   session.syncing = true;
   session.error = null;
   if (!hold) {
@@ -246,6 +262,8 @@ async function runUser(user) {
   if (hold) await hold.release(settle);
   else if (next && accountOf(next) !== accountOf(state)) await swapPage(settle);
   else settle();
+  if (next) retries = 0;
+  else retrySync();
 }
 
 async function finishLink() {
@@ -301,6 +319,16 @@ export const profile = {
       });
     window.addEventListener('online', () => {
       if (!cloud.auth.currentUser) startAnonymous();
+      else if (!cloudReady) {
+        retries = 0;
+        retrySync(true);
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && cloud.auth.currentUser && !cloudReady) {
+        retries = 0;
+        retrySync(true);
+      }
     });
   },
 
@@ -346,9 +374,32 @@ export const profile = {
     await cloud.authMod.signOut(cloud.auth);
   },
 
+  get connecting() {
+    return !(cloudReady && state.uid) && session.status !== 'unavailable' && !session.error;
+  },
+
+  whenReady(ms = 2500) {
+    if (cloudReady && state.uid) return Promise.resolve(true);
+    if (!this.connecting) return Promise.resolve(false);
+    return new Promise(resolve => {
+      const finish = ok => {
+        clearTimeout(timer);
+        listeners.delete(check);
+        resolve(ok);
+      };
+      const check = () => {
+        if (cloudReady && state.uid) finish(true);
+        else if (!this.connecting) finish(false);
+      };
+      const timer = setTimeout(() => finish(false), ms);
+      listeners.add(check);
+    });
+  },
+
   beginRun() {
     runPromise = null;
     lastSubmit = null;
+    session.save = null;
     if (!cloudReady || !state.uid) return;
     runPromise = call('startRun')
       .then(out => out.runId)
@@ -360,10 +411,15 @@ export const profile = {
 
   recordRun(run) {
     const { coins, score } = run;
-    if (!cloudReady || !state.uid) return;
+    if (!cloudReady || !state.uid) {
+      session.save = { status: 'offline' };
+      emit();
+      return;
+    }
     const third = run.mode === 'third';
     const quests = applyRun(state.quests, third ? { ...run, score: 0 } : run);
     const mine = state.weekThird;
+    session.save = { status: state.anon ? 'guest' : 'saving' };
     state = {
       ...state,
       coins: state.coins + coins,
@@ -378,29 +434,48 @@ export const profile = {
     const pending = runPromise;
     runPromise = null;
     const uid = state.uid;
+    const anon = state.anon;
     let runId = null;
+    const body = () => ({
+      runId,
+      meters: run.meters,
+      coins: run.coins,
+      jumps: run.jumps,
+      doubles: run.doubles,
+      slides: run.slides,
+      dodged: run.dodged,
+      mode: third ? 'third' : 'side'
+    });
+    const submit = tries =>
+      call('submitRun', body()).catch(e => {
+        const code = e && e.code;
+        const transient = !code || code === 'server' || code === 'board';
+        if (!transient || tries >= 2) throw e;
+        return new Promise(resolve => setTimeout(resolve, 1200 * (tries + 1))).then(() => submit(tries + 1).then(out => ({ ...out, retried: true })));
+      });
+    const finish = save => {
+      if (state.uid !== uid) return;
+      session.save = save;
+      emit();
+    };
     lastSubmit = Promise.resolve(pending)
       .then(id => {
-        if (!id) throw new Error('no-run');
+        if (!id) throw Object.assign(new Error('no-run'), { code: 'no-run' });
         runId = id;
-        return call('submitRun', {
-          runId,
-          meters: run.meters,
-          coins: run.coins,
-          jumps: run.jumps,
-          doubles: run.doubles,
-          slides: run.slides,
-          dodged: run.dodged,
-          mode: third ? 'third' : 'side'
-        });
+        return submit(0);
       })
       .then(out => {
-        if (out.rejected) console.warn(`[dash] run not saved: rejected (${out.rejected})`);
+        const repeat = out.rejected === 'replay' && out.retried;
+        const rejected = repeat ? null : out.rejected;
+        if (rejected) console.warn(`[dash] run not saved: rejected (${rejected})`);
         if (state.uid === uid) applyServer(out.profile);
-        return out.rejected ? null : runId;
+        finish(rejected ? { status: 'rejected', reason: rejected } : { status: anon ? 'guest' : 'saved' });
+        return rejected ? null : runId;
       })
       .catch(e => {
-        console.warn(`[dash] run not saved: ${(e && (e.code || e.message)) || 'unknown'}`);
+        const code = (e && (e.code || e.message)) || 'unknown';
+        console.warn(`[dash] run not saved: ${code}`);
+        finish({ status: 'failed', reason: code });
         refresh();
         return null;
       });

@@ -276,7 +276,7 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
         const profile = await load(tx, user.uid);
         if (started <= profile.lastRun) {
           console.warn('run rejected replay', user.uid);
-          return { profile, rejected: 'replay' };
+          return { profile, rejected: 'replay', again: started === profile.lastRun };
         }
         const problem = checkRun(run, (now() - started) / 1000);
         const base = { lastRun: started, lastCoins: 0, updatedAt: FieldValue.serverTimestamp() };
@@ -314,7 +314,7 @@ export function createApi({ db, verify, secret, now = () => Date.now(), adminEma
         });
         return { profile: next, rejected: null };
       });
-      if (!out.rejected && !(await publish(user, out.profile))) throw new Fail(503, 'board');
+      if ((!out.rejected || out.again) && !(await publish(user, out.profile))) throw new Fail(503, 'board');
       return { rejected: out.rejected, profile: view(out.profile) };
     },
 

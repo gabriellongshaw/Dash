@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showQuestNote();
       audio.duck(0.2);
       $('over-note').classList.toggle('hidden', profile.session.status !== 'out');
+      renderSave();
       $('over-score').textContent = result.score;
       $('over-best').textContent = result.best;
       $('over-coins').textContent = result.coins;
@@ -78,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
       offerDouble(result);
       overTimer = setTimeout(() => {
         showEl(overOverlay);
+        renderSave();
         if (result.isBest) audio.sfx('best');
         overReady = true;
         countTo($('over-score'), result.score, { duration: 850 });
@@ -87,6 +89,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 600);
     }
   });
+
+  const SAVE_TEXT = {
+    offline: 'Score not saved. Could not reach your account.',
+    'no-run': 'Score not saved. The run could not start on the server.',
+    failed: 'Score not saved. Please check your connection.',
+    rejected: 'Run not counted by the server.'
+  };
+
+  function renderSave() {
+    const save = profile.session.save;
+    const el = $('over-save');
+    const text = save && save.status !== 'saving' && save.status !== 'saved' && save.status !== 'guest' ? SAVE_TEXT[save.status === 'failed' && save.reason === 'no-run' ? 'no-run' : save.status] : '';
+    const detail = text && save.reason && save.reason !== 'no-run' ? ` (${save.reason})` : '';
+    $('over-save-text').textContent = text ? text + detail : '';
+    setShown(el, !!text && !overOverlay.classList.contains('hidden'));
+  }
 
   function showQuestNote() {
     const ready = profile.readyQuests();
@@ -205,8 +223,23 @@ document.addEventListener('DOMContentLoaded', () => {
     else pauseGame();
   }
 
+  let starting = false;
+
+  function begin() {
+    if (starting) return;
+    if (!profile.connecting) {
+      startRun();
+      return;
+    }
+    starting = true;
+    profile.whenReady().then(() => {
+      starting = false;
+      if (game.state === 'ready') startRun();
+    });
+  }
+
   function action() {
-    if (game.state === 'ready') startRun();
+    if (game.state === 'ready') begin();
     else if (game.state === 'playing') game.jump();
     else if (game.state === 'over' && overReady) restart();
   }
@@ -357,6 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
     game.best = Math.max(game.best, bestOf());
     if (game.state !== 'playing') bestEl.textContent = `Best ${bestOf()}`;
     setShown($('over-note'), profile.session.status === 'out' && !overOverlay.classList.contains('hidden'));
+    renderSave();
   });
 
   document.querySelectorAll('.button, .secondary-button, .leave-button, .icon-button').forEach(el => {
