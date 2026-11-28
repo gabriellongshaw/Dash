@@ -116,13 +116,13 @@ export class Runner {
         this.sliding = true;
         this.slideTime = 0;
         this.slid = true;
-        this.squash = 0.22;
+        this.squash = 0.06;
       }
       if (this.sliding) {
         this.slideTime += dt;
         if (!want && this.slideTime > MIN_SLIDE) {
           this.sliding = false;
-          this.squash = -0.18;
+          this.squash = -0.06;
         }
       }
       const rate = 8 + speed / 200;
@@ -165,17 +165,16 @@ export class Runner {
     const traits = traitsOf(look.char);
     const legRegion = traits.legs ? lerp(9, 0, pose) : 0;
     const bodyH = h - legRegion;
-    const shrink = lerp(1, 0.84, clamp(pose, 0, 1));
-    const sx = (1 + this.squash * 0.45) * shrink;
-    const sy = (1 - this.squash * 0.45) * shrink;
+    const sx = 1 + this.squash * 0.45;
+    const sy = 1 - this.squash * 0.45;
     const air = this.grounded ? 0 : clamp(this.vy / 3500, -0.18, 0.25);
-    const lean = -0.7 * clamp(pose, 0, 1.1);
+    const lean = -0.95 * clamp(pose, 0, 1.1);
     const rest = Math.abs(Math.sin(lean)) * (w / 2) + Math.cos(lean) * (h / 2);
 
     ctx.save();
     ctx.translate(this.x + w / 2, this.y);
     ctx.scale(sx, sy);
-    ctx.translate(0, -rest * lerp(1, 0.82, clamp(pose, 0, 1)));
+    ctx.translate(0, -rest * lerp(1, 0.9, clamp(pose, 0, 1)));
     const spin = this.flip < 1 ? -(1 - Math.pow(1 - this.flip, 2.2)) * Math.PI * 2 : 0;
     ctx.rotate(air + lean + spin);
 
@@ -230,19 +229,26 @@ export class Runner {
         ctx.fill();
         ctx.restore();
       };
-      const lighter = toCss(tintColor(parseColor(darkColor), [255, 255, 255, 1], 0.18 * clamp(pose, 0, 1)));
+      const lighter = toCss(tintColor(parseColor(darkColor), [255, 255, 255, 1], 0.22 * clamp(pose, 0, 1)));
       const run = [
         { x: -5.5, y: h / 2 - 12, a: this.grounded ? swing : 0.5 },
         { x: 6.5, y: h / 2 - 12, a: this.grounded ? -swing : -0.35 }
       ];
       const t = clamp(pose, 0, 1);
-      leg(lerp(run[0].x, w / 2 - 10, t), lerp(run[0].y, h / 2 - 6, t), lerp(run[0].a, -0.87 + flutter, t), lerp(12, 30, t), darkColor);
-      const second = 1 - clamp(t * 1.8, 0, 1);
-      if (second > 0.02) {
-        ctx.globalAlpha = second;
-        leg(run[1].x, run[1].y, run[1].a, 12, lighter);
-        ctx.globalAlpha = 1;
-      }
+      const far = {
+        x: lerp(run[1].x, w / 2 - 7, t),
+        y: lerp(run[1].y, h / 2 - 12, t),
+        a: lerp(run[1].a, -0.98 - flutter, t),
+        len: lerp(12, 26, t)
+      };
+      const near = {
+        x: lerp(run[0].x, w / 2 - 10, t),
+        y: lerp(run[0].y, h / 2 - 5, t),
+        a: lerp(run[0].a, -0.62 + flutter, t),
+        len: lerp(12, 28, t)
+      };
+      leg(far.x, far.y, far.a, far.len, lighter);
+      leg(near.x, near.y, near.a, near.len, darkColor);
     }
 
     drawCharacter(ctx, look.char, {
